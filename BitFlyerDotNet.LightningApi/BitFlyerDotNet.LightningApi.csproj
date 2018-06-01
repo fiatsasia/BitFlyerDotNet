@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{CF9B81B7-9690-4858-A0F8-9D43013AD244}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>BitFlyerDotNet.LightningApi</RootNamespace>
+    <AssemblyName>BitFlyerDotNet.LightningApi</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="EngineIoClientDotNet">
+      <HintPath>..\packages\EngineIoClientDotNet.1.0.6\lib\net45\EngineIoClientDotNet.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PubNub-Messaging">
+      <HintPath>..\packages\Pubnub.3.8.7.0\lib\net40\PubNub-Messaging.dll</HintPath>
+    </Reference>
+    <Reference Include="SocketIoClientDotNet">
+      <HintPath>..\packages\SocketIoClientDotNet.1.0.6\lib\net45\SocketIoClientDotNet.dll</HintPath>
+    </Reference>
+    <Reference Include="SuperSocket.ClientEngine">
+      <HintPath>..\packages\SuperSocket.ClientEngine.Core.0.10.0\lib\net45\SuperSocket.ClientEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Collections.Immutable, Version=1.1.37.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\System.Collections.Immutable.1.4.0\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core" />
+    <Reference Include="System.Reactive.Core">
+      <HintPath>..\packages\System.Reactive.Core.3.1.1\lib\net45\System.Reactive.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Interfaces">
+      <HintPath>..\packages\System.Reactive.Interfaces.3.1.1\lib\net45\System.Reactive.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Linq">
+      <HintPath>..\packages\System.Reactive.Linq.3.1.1\lib\net45\System.Reactive.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WebSocket4Net">
+      <HintPath>..\packages\WebSocket4Net.0.15.2\lib\net45\WebSocket4Net.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BitFlyerClient.cs" />
+    <Compile Include="BitFlyerRealtimeSourceFactory.cs" />
+    <Compile Include="Enums.cs" />
+    <Compile Include="Private\CancelAllChildOrders.cs" />
+    <Compile Include="Private\CancelChildOrder.cs" />
+    <Compile Include="Private\CancelParentOrder.cs" />
+    <Compile Include="Private\GetBalance.cs" />
+    <Compile Include="Private\GetBankAccounts.cs" />
+    <Compile Include="Private\GetChildOrders.cs" />
+    <Compile Include="Private\GetCoinAddresses.cs" />
+    <Compile Include="Private\GetCoinIns.cs" />
+    <Compile Include="Private\GetCoinOuts.cs" />
+    <Compile Include="Private\GetCollateral.cs" />
+    <Compile Include="Private\GetCollateralHistory.cs" />
+    <Compile Include="Private\GetDeposits.cs" />
+    <Compile Include="Private\GetParentOrderDetail.cs" />
+    <Compile Include="Private\GetParentOrders.cs" />
+    <Compile Include="Private\GetPermissions.cs" />
+    <Compile Include="Private\GetPositions.cs" />
+    <Compile Include="Private\GetPrivateExecutions.cs" />
+    <Compile Include="Private\GetTradingCommission.cs" />
+    <Compile Include="Private\GetWithdrawals.cs" />
+    <Compile Include="Private\SendChildOrder.cs" />
+    <Compile Include="Private\SendParentOrder.cs" />
+    <Compile Include="Private\WithDraw.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Public\GetBoard.cs" />
+    <Compile Include="Public\GetBoardState.cs" />
+    <Compile Include="Public\GetChats.cs" />
+    <Compile Include="Public\GetExchangeHealth.cs" />
+    <Compile Include="Public\GetExecutions.cs" />
+    <Compile Include="Public\GetMarkets.cs" />
+    <Compile Include="Public\GetTicker.cs" />
+    <Compile Include="Realtime\RealtimeBoardSnapshotSource.cs" />
+    <Compile Include="Realtime\RealtimeBoardSource.cs" />
+    <Compile Include="Realtime\RealtimeExecutionSource.cs" />
+    <Compile Include="Realtime\RealtimeSourceBase.cs" />
+    <Compile Include="Realtime\RealtimeTickerSource.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Fiats.Utils\Fiats.Utils.csproj">
+      <Project>{b373f4f4-13a9-46fc-80c5-9b29494f2410}</Project>
+      <Name>Fiats.Utils</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
