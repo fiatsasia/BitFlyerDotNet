@@ -31,7 +31,7 @@ namespace BfAutomatedTradeSample
         static void Main(string[] args)
         {
             // Create bitFlyer API client as security mode
-            Console.WriteLine("If you do not want real trade, skip key and sected below.");
+            Console.WriteLine("If you do not want real trade, skip key and secret below.");
             Console.Write("Key:"); var key = Console.ReadLine();
             Console.Write("Secret:"); var secret = Console.ReadLine();
             _client = new BitFlyerClient(key, secret);
