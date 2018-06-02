@@ -4,7 +4,7 @@ BitFlyerDotNet is bitFlyer Lightning API wrapper for .NET framework 4.5.1 or lat
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
 Supports all of Public/Private/Realtime APIs.  
-Supports all type of Realtime API interfaces (PubNub, Socket.IO and WebSocket).  
+Supports all types of Realtime API interfaces (PubNub, Socket.IO and WebSocket).  
 Realtime APIs are wrapped with Reactive Extensions.
 
 ## Sample code
@@ -24,22 +24,22 @@ Realtime APIs are wrapped with Reactive Extensions.
     });
 	Console.ReadLine();
 ### Public API
-	// Get supported currency pairs and aliases
+    // Get supported currency pairs and aliases
     var client = new BitFlyerClient();
     var resp = client.GetMarkets();
-	if (resp.IsError)
-	{
-		Console.WriteLine("Error occured:{0}", resp.ErrorMessage);
-	}
-	else
-	{
-		foreach (var market in resp.GetResult())
-		{
-			Console.WriteLine("{0} {1}", market.ProductCode, market.Alias);
-		}
-	}
+    if (resp.IsError)
+    {
+        Console.WriteLine("Error occured:{0}", resp.ErrorMessage);
+    }
+    else
+    {
+        foreach (var market in resp.GetResult())
+        {
+            Console.WriteLine("{0} {1}", market.ProductCode, market.Alias);
+        }
+    }
 ### Private API  
-	// Buy order
+    // Buy order
     Console.Write("Key:"); var key = Console.ReadLine();
     Console.Write("Secret:"); var secret = Console.ReadLine();
     var client = new BitFlyerClient(key, secret);
@@ -55,6 +55,7 @@ Realtime APIs are wrapped with Reactive Extensions.
 - Trade FX_BTC_JPY, 5/15 minutes Simple Moving Average crossover signal.
 
 ### SFDTicker
+![SFDTickerScreen](https://user-images.githubusercontent.com/39668702/40870381-1b24e4f4-6669-11e8-8498-c6c519d567b2.png)
 - WPF application
 - Displays FX_BTC_JPY/BTC_JPY rate of variance, SFD rate.
 - Displays server health and indicates background color.

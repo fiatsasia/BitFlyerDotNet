@@ -18,7 +18,7 @@ namespace RealtimeApiTest
     {
         static void Main(string[] args)
         {
-            var factory = new BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind.WebSocket);
+            var factory = new BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind.PubNub);
             factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(tick =>
             {
                 Console.WriteLine("{0} {1} {2} {3} {4} {5}",
