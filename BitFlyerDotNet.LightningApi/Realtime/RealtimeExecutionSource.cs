@@ -13,7 +13,6 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PubNubMessaging.Core;
-using Quobject.SocketIoClientDotNet.Client;
 using WebSocket4Net;
 
 namespace BitFlyerDotNet.LightningApi
@@ -24,11 +23,6 @@ namespace BitFlyerDotNet.LightningApi
 
         public RealtimeExecutionSource(Pubnub pubnub, JsonSerializerSettings jsonSettings, string productCode)
             : base(pubnub, ChannelFormat, jsonSettings, productCode)
-        {
-        }
-
-        public RealtimeExecutionSource(Socket socket, JsonSerializerSettings jsonSettings, string productCode)
-            : base(socket, ChannelFormat, jsonSettings, productCode)
         {
         }
 
@@ -43,11 +37,6 @@ namespace BitFlyerDotNet.LightningApi
             {
                 OnNext(execution.Value);
             }
-        }
-
-        protected override void OnScoketSubscribe(object message)
-        {
-            OnNextArray(message.ToString());
         }
 
         public override void OnWebSocketSubscribe(JToken token)

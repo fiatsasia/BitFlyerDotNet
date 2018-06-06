@@ -14,7 +14,6 @@ using System.Reactive.Disposables;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PubNubMessaging.Core;
-using Quobject.SocketIoClientDotNet.Client;
 using WebSocket4Net;
 
 namespace BitFlyerDotNet.LightningApi
@@ -29,7 +28,6 @@ namespace BitFlyerDotNet.LightningApi
     internal abstract class RealtimeSourceBase<TSource> : IRealtimeSource, IObservable<TSource> where TSource : class
     {
         Pubnub _pubnub;
-        Socket _socket;
         WebSocket _webSocket;
         JsonSerializerSettings _jsonSettings;
 
@@ -41,14 +39,6 @@ namespace BitFlyerDotNet.LightningApi
             _pubnub = pubnub;
             _jsonSettings = jsonSettings;
             Channel = string.Format(channelFormat, productCode);
-        }
-
-        public RealtimeSourceBase(Socket socket, string channelFormat, JsonSerializerSettings jsonSettings, string productCode)
-        {
-            _socket = socket;
-            _jsonSettings = jsonSettings;
-            Channel = string.Format(channelFormat, productCode);
-            _socket.On(Channel, OnScoketSubscribe);
         }
 
         public RealtimeSourceBase(WebSocket webSocket, string channelFormat, JsonSerializerSettings jsonSettings, string productCode)
@@ -63,10 +53,6 @@ namespace BitFlyerDotNet.LightningApi
             if (_pubnub != null)
             {
                 _pubnub.Subscribe<string>(Channel, OnPubnubSubscribe, OnPubnubConnect, OnPubnubError);
-            }
-            else if (_socket != null)
-            {
-                _socket.Emit("subscribe", Channel);
             }
             else if (_webSocket != null)
             {
@@ -91,10 +77,6 @@ namespace BitFlyerDotNet.LightningApi
             {
                 _pubnub.Unsubscribe<string>(Channel, OnPubnubSubscribe, OnPubnubConnect, OnPubnubDisconnect, OnPubnubError);
             }
-            else if (_socket != null)
-            {
-                _socket.Emit("unsubscribe", Channel);
-            }
             else if (_webSocket != null)
             {
                 _webSocket.Send(JsonConvert.SerializeObject(new { method = "unsubscribe", @params = new { channel = Channel }}));
@@ -108,7 +90,6 @@ namespace BitFlyerDotNet.LightningApi
         void OnPubnubError(PubnubClientError error) { }
 
         protected abstract void OnPubnubSubscribe(string json);
-        protected abstract void OnScoketSubscribe(object message);
         public abstract void OnWebSocketSubscribe(JToken token);
 
         protected void OnNext(string json)
@@ -119,15 +100,6 @@ namespace BitFlyerDotNet.LightningApi
         protected void OnNext(JToken token)
         {
             _observer?.OnNext(token.ToObject<TSource>());
-        }
-
-        protected void OnNextArray(string json)
-        {
-            var ticks = JsonConvert.DeserializeObject<TSource[]>(json, _jsonSettings);
-            foreach (var tick in ticks)
-            {
-                _observer?.OnNext(tick);
-            }
         }
 
         protected void OnNextArray(JToken token)

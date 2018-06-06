@@ -9,7 +9,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Collections.Concurrent;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 
@@ -19,7 +18,6 @@ using System.Reactive.Disposables;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PubNubMessaging.Core;
-using Quobject.SocketIoClientDotNet.Client;
 using WebSocket4Net;
 using Fiats.Utils;
 
@@ -28,7 +26,6 @@ namespace BitFlyerDotNet.LightningApi
     public enum BfRealtimeSourceKind
     {
         PubNub,
-        SocketIO,
         WebSocket,
     }
 
@@ -38,7 +35,6 @@ namespace BitFlyerDotNet.LightningApi
 
         BfRealtimeSourceKind _sourceKind;
         Pubnub _pubnub;
-        Socket _socket;
         WebSocket _webSocket;
         AutoResetEvent _openedEvent = new AutoResetEvent(false);
         JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
@@ -47,7 +43,6 @@ namespace BitFlyerDotNet.LightningApi
             DateTimeZoneHandling = DateTimeZoneHandling.Utc
         };
 
-        ConcurrentBag<IRealtimeSource> _socketSources = new ConcurrentBag<IRealtimeSource>();
         ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new ConcurrentDictionary<string, IRealtimeSource>();
         Timer _wsReconnectionTimer;
         const int WebSocketReconnectionIntervalMs = 3000;
@@ -90,47 +85,10 @@ namespace BitFlyerDotNet.LightningApi
                     _pubnub = new Pubnub("", "sub-c-52a9ab50-291b-11e5-baaa-0619f8945a4f");
                     break;
 
-                case BfRealtimeSourceKind.SocketIO:
-                    {
-                        _socket = IO.Socket(
-                            "https://io.lightstream.bitflyer.com",
-                            new IO.Options
-                            {
-                                Transports = ImmutableList.Create("websocket"),
-                                Reconnection = true,
-                                ReconnectionDelay = 3000,
-                                ReconnectionAttempts = 10,
-                                ForceNew = true,
-                            }
-                        );
-
-                        // Socket.IO sometimes disconnected from the server.
-                        _openedEvent.Reset();
-                        _socket.On(Socket.EVENT_CONNECT, () => { _openedEvent.Set(); });
-                        _socket.On(Socket.EVENT_DISCONNECT, reason =>
-                        {
-                            Debug.WriteLine("{0} socket.io disconnected. Reason : {1}", DateTime.Now, reason.ToString());
-                            switch (reason.ToString().Trim())
-                            {
-                                case "ping timeout":
-                                case "transport error":
-                                case "io server disconnect":
-                                    {
-                                        Debug.WriteLine("{0} socket.io connect again.", DateTime.Now);
-                                        _socket.Connect();
-                                        _openedEvent.WaitOne(10000);
-                                        _socketSources.ForEach(source => { source.Subscribe(); });
-                                    }
-                                    break;
-                            }
-                        });
-                        _openedEvent.WaitOne(10000);
-                    }
-                    break;
-
                 case BfRealtimeSourceKind.WebSocket:
                     {
                         _webSocket = new WebSocket("wss://ws.lightstream.bitflyer.com/json-rpc");
+                        _webSocket.Security.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
                         _wsReconnectionTimer = new Timer((_) =>
                         {
                             _wsReconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
@@ -228,11 +186,6 @@ namespace BitFlyerDotNet.LightningApi
                         source = new RealtimeExecutionSource(_pubnub, _jsonSettings, realProductCode);
                         break;
 
-                    case BfRealtimeSourceKind.SocketIO:
-                        source = new RealtimeExecutionSource(_socket, _jsonSettings, realProductCode);
-                        _socketSources.Add(source);
-                        break;
-
                     case BfRealtimeSourceKind.WebSocket:
                         source = new RealtimeExecutionSource(_webSocket, _jsonSettings, realProductCode);
                         _webSocketSources[source.Channel] = source;
@@ -272,11 +225,6 @@ namespace BitFlyerDotNet.LightningApi
                         source = new RealtimeTickerSource(_pubnub, _jsonSettings, realProductCode);
                         break;
 
-                    case BfRealtimeSourceKind.SocketIO:
-                        source = new RealtimeTickerSource(_socket, _jsonSettings, realProductCode);
-                        _socketSources.Add(source);
-                        break;
-
                     case BfRealtimeSourceKind.WebSocket:
                         source = new RealtimeTickerSource(_webSocket, _jsonSettings, realProductCode);
                         _webSocketSources[source.Channel] = source;
@@ -299,11 +247,6 @@ namespace BitFlyerDotNet.LightningApi
                         source = new RealtimeBoardSource(_pubnub, _jsonSettings, realProductCode);
                         break;
 
-                    case BfRealtimeSourceKind.SocketIO:
-                        source = new RealtimeBoardSource(_socket, _jsonSettings, realProductCode);
-                        _socketSources.Add(source);
-                        break;
-
                     case BfRealtimeSourceKind.WebSocket:
                         source = new RealtimeBoardSource(_webSocket, _jsonSettings, realProductCode);
                         _webSocketSources[source.Channel] = source;
@@ -313,10 +256,10 @@ namespace BitFlyerDotNet.LightningApi
             });
         }
 
-        ConcurrentDictionary<BfProductCode, IObservable<BfBoard>> _boardSanpshotSources = new ConcurrentDictionary<BfProductCode, IObservable<BfBoard>>();
+        ConcurrentDictionary<BfProductCode, IObservable<BfBoard>> _boardSnapshotSources = new ConcurrentDictionary<BfProductCode, IObservable<BfBoard>>();
         public IObservable<BfBoard> GetBoardSnapshotSource(BfProductCode productCode)
         {
-            return _boardSanpshotSources.GetOrAdd(productCode, _ =>
+            return _boardSnapshotSources.GetOrAdd(productCode, _ =>
             {
                 var realProductCode = _productCodeAliases[productCode.ToEnumString()];
                 var source = default(RealtimeBoardSnapshotSource);
@@ -324,11 +267,6 @@ namespace BitFlyerDotNet.LightningApi
                 {
                     case BfRealtimeSourceKind.PubNub:
                         source = new RealtimeBoardSnapshotSource(_pubnub, _jsonSettings, realProductCode);
-                        break;
-
-                    case BfRealtimeSourceKind.SocketIO:
-                        source = new RealtimeBoardSnapshotSource(_socket, _jsonSettings, realProductCode);
-                        _socketSources.Add(source);
                         break;
 
                     case BfRealtimeSourceKind.WebSocket:

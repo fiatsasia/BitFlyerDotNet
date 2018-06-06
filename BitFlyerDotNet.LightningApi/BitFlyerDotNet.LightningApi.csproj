@@ -31,17 +31,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EngineIoClientDotNet">
-      <HintPath>..\packages\EngineIoClientDotNet.1.0.6\lib\net45\EngineIoClientDotNet.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="PubNub-Messaging">
       <HintPath>..\packages\Pubnub.3.8.7.0\lib\net40\PubNub-Messaging.dll</HintPath>
-    </Reference>
-    <Reference Include="SocketIoClientDotNet">
-      <HintPath>..\packages\SocketIoClientDotNet.1.0.6\lib\net45\SocketIoClientDotNet.dll</HintPath>
     </Reference>
     <Reference Include="SuperSocket.ClientEngine">
       <HintPath>..\packages\SuperSocket.ClientEngine.Core.0.10.0\lib\net45\SuperSocket.ClientEngine.dll</HintPath>
@@ -111,6 +105,7 @@
     <Compile Include="Realtime\RealtimeTickerSource.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

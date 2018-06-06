@@ -4,7 +4,8 @@ BitFlyerDotNet is bitFlyer Lightning API wrapper for .NET framework 4.5.1 or lat
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
 Supports all of Public/Private/Realtime APIs.  
-Supports all types of Realtime API interfaces (PubNub, Socket.IO and WebSocket).  
+Supports Realtime API interfaces (PubNub, and WebSocket).  
+ -Socket.IO support was removed because Socket.IO library does not support TLS1.2.  
 Realtime APIs are wrapped with Reactive Extensions.
 
 ## Sample code

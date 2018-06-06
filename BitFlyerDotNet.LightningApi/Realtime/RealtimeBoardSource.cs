@@ -8,12 +8,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PubNubMessaging.Core;
-using Quobject.SocketIoClientDotNet.Client;
 using WebSocket4Net;
 
 namespace BitFlyerDotNet.LightningApi
@@ -27,11 +25,6 @@ namespace BitFlyerDotNet.LightningApi
         {
         }
 
-        public RealtimeBoardSource(Socket socket, JsonSerializerSettings jsonSettings, string productCode)
-            : base(socket, ChannelFormat, jsonSettings, productCode)
-        {
-        }
-
         public RealtimeBoardSource(WebSocket webSocket, JsonSerializerSettings jsonSettings, string productCode)
             : base(webSocket, ChannelFormat, jsonSettings, productCode)
         {
@@ -42,11 +35,6 @@ namespace BitFlyerDotNet.LightningApi
             json = json.Trim("[]".ToCharArray());
             json = json.Substring(0, json.LastIndexOf("},") + 1);
             OnNext(json);
-        }
-
-        protected override void OnScoketSubscribe(object message)
-        {
-            OnNext(message.ToString());
         }
 
         public override void OnWebSocketSubscribe(JToken token)
