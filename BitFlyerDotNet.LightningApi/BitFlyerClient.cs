@@ -164,12 +164,14 @@ namespace BitFlyerDotNet.LightningApi
 
         public BitFlyerClient()
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             _client = new HttpClient();
             _client.BaseAddress = new Uri(_baseUri);
         }
 
         public BitFlyerClient(string key, string secret)
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             _key = key;
             _hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
             _client = new HttpClient();
