@@ -11,6 +11,7 @@ using System.Threading;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 
 using System.Reactive.Subjects;
 using System.Reactive.Linq;
@@ -45,7 +46,7 @@ namespace BitFlyerDotNet.LightningApi
 
         ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new ConcurrentDictionary<string, IRealtimeSource>();
         Timer _wsReconnectionTimer;
-        const int WebSocketReconnectionIntervalMs = 3000;
+        const int WebSocketReconnectionIntervalMs = 5000;
 
         BitFlyerClient _client = new BitFlyerClient();
         Dictionary<string, string> _productCodeAliases = new Dictionary<string, string>();
@@ -93,74 +94,90 @@ namespace BitFlyerDotNet.LightningApi
                         {
                             _wsReconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
                             Debug.WriteLine("{0} WebSocket is reopening connection... state={1}", DateTime.Now, _webSocket.State);
-                            lock (_webSocket)
+                            switch (_webSocket.State)
                             {
-                                switch (_webSocket.State)
-                                {
-                                    case WebSocketState.None:
-                                    case WebSocketState.Closed:
-                                        try
-                                        {
-                                            _openedEvent.Reset();
-                                            _webSocket.Close();
-                                            _webSocket.Open();
-                                            _openedEvent.WaitOne(10000);
-                                            _webSocketSources.Values.ForEach(source => { source.Subscribe(); });
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            Debug.WriteLine(ex.Message);
-                                            _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite); // restart
-                                        }
-                                        break;
-
-                                    default:
+                                case WebSocketState.None:
+                                case WebSocketState.Closed:
+                                    try
+                                    {
+                                        _webSocket.Open();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Debug.WriteLine(ex.Message);
                                         _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite); // restart
-                                        break;
-                                }
+                                    }
+                                    break;
+
+                                case WebSocketState.Open:
+                                    Debug.WriteLine("{0} Web socket is still opened.", DateTime.Now);
+                                    break;
+
+                                default:
+                                    _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite); // restart
+                                    break;
                             }
                         });
                             
                         _openedEvent.Reset();
-                        _webSocket.Opened += (_, __) => { _openedEvent.Set(); };
+                        _webSocket.Opened += (_, __) =>
+                        {
+                            Debug.WriteLine("{0} WebSocket opened.", DateTime.Now);
+                            _wsReconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
+                            if (_webSocketSources.Count > 0)
+                            {
+                                Debug.WriteLine("{0} WebSocket recover subscriptions.", DateTime.Now);
+                                _webSocketSources.Values.ForEach(source => { source.Subscribe(); }); // resubscribe
+                            }
+                            _openedEvent.Set();
+                        };
+
                         _webSocket.MessageReceived += (_, e) =>
                         {
                             var subscriptionResult = JObject.Parse(e.Message)["params"];
                             var channel = subscriptionResult["channel"].Value<string>();
                             _webSocketSources[channel].OnWebSocketSubscribe(subscriptionResult["message"]);
                         };
-                        _webSocket.Closed += (_, e) =>
-                        {
-                            Debug.WriteLine("{0} WebSocket connection closed.", DateTime.Now);
-                        };
+
                         _webSocket.Error += (_, e) =>
                         {
-                            if (e.Exception is IOException) // Server disconnect during daily maintenance.
+                            var ex = e.Exception;
+                            if (ex is IOException)
                             {
-                                var socketEx = e.Exception.InnerException as System.Net.Sockets.SocketException;
-                                if (socketEx != null)
+                                ex = ex.InnerException;
+                            }
+
+                            if (ex is SocketException) // Server disconnects during daily maintenance.
+                            {
+                                var socketEx = ex as SocketException;
+                                Debug.WriteLine("{0} WebSocket socket error({1})", DateTime.Now, socketEx.SocketErrorCode);
+                                switch (socketEx.SocketErrorCode)
                                 {
-                                    Debug.WriteLine("{0} WebSocket socket error({1})", DateTime.Now, socketEx.SocketErrorCode);
-                                    switch (socketEx.SocketErrorCode)
-                                    {
-                                        case System.Net.Sockets.SocketError.ConnectionReset:
-                                            Debug.WriteLine("{0} WebSocket connection reset. Probably server is not active.", DateTime.Now);
-                                            throw socketEx;
+                                    case SocketError.TimedOut:
+                                    case SocketError.ConnectionReset:
+                                    case SocketError.NotConnected:
+                                    case SocketError.NoData:
+                                    case SocketError.ConnectionAborted:
+                                        Debug.WriteLine("{0} WebSocket caused exception. Will be closed.", DateTime.Now, e.Exception.Message);
+                                        break;
 
-                                        default:
-                                            Debug.WriteLine("{0} WebSocket unpredictable error.", DateTime.Now);
-                                            throw socketEx;
-                                    }
+                                    default:
+                                        Debug.WriteLine("{0} WebSocket unpredictable error({1}).", DateTime.Now, socketEx.SocketErrorCode);
+                                        throw socketEx;
                                 }
-
-                                Debug.WriteLine("{0} WebSocket caused IOException({1}). Will be closed and reopening...", DateTime.Now, e.Exception.Message);
-                                _wsReconnectionTimer.Change(0, Timeout.Infinite);
                             }
                             else
                             {
                                 throw e.Exception;
                             }
                         };
+
+                        _webSocket.Closed += (_, __) =>
+                        {
+                            Debug.WriteLine("{0} WebSocket connection closed. Will be reopening...", DateTime.Now);
+                            _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite);
+                        };
+
                         _webSocket.Open();
                         _openedEvent.WaitOne(10000);
                     }
