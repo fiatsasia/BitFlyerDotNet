@@ -55,31 +55,6 @@ namespace BitFlyerDotNet.LightningApi
         {
             _sourceKind = sourceKind;
 
-            // Convert from future product code alias to real product code
-            var resp = _client.GetMarkets();
-            if (resp.IsError)
-            {
-                if (resp.Exception != null)
-                {
-                    throw resp.Exception;
-                }
-                else
-                {
-                    throw new InvalidOperationException(resp.ErrorMessage);
-                }
-            }
-            foreach (var market in resp.GetResult())
-            {
-                if (!string.IsNullOrEmpty(market.Alias))
-                {
-                    _productCodeAliases[market.Alias] = market.ProductCode;
-                }
-                else
-                {
-                    _productCodeAliases[market.ProductCode] = market.ProductCode;
-                }
-            }
-
             switch (_sourceKind)
             {
                 case BfRealtimeSourceKind.PubNub:
@@ -151,20 +126,7 @@ namespace BitFlyerDotNet.LightningApi
                             {
                                 var socketEx = ex as SocketException;
                                 Debug.WriteLine("{0} WebSocket socket error({1})", DateTime.Now, socketEx.SocketErrorCode);
-                                switch (socketEx.SocketErrorCode)
-                                {
-                                    case SocketError.TimedOut:
-                                    case SocketError.ConnectionReset:
-                                    case SocketError.NotConnected:
-                                    case SocketError.NoData:
-                                    case SocketError.ConnectionAborted:
-                                        Debug.WriteLine("{0} WebSocket caused exception. Will be closed.", DateTime.Now, e.Exception.Message);
-                                        break;
-
-                                    default:
-                                        Debug.WriteLine("{0} WebSocket unpredictable error({1}).", DateTime.Now, socketEx.SocketErrorCode);
-                                        throw socketEx;
-                                }
+                                Debug.WriteLine("{0} WebSocket caused exception. Will be closed.", DateTime.Now, e.Exception.Message);
                             }
                             else
                             {
@@ -185,6 +147,39 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
+        void InitProductCodeAliases()
+        {
+            if (_productCodeAliases.Count > 0)
+            {
+                return; // Already initialized
+            }
+
+            // Convert from future product code alias to real product code
+            var resp = _client.GetMarkets();
+            if (resp.IsError)
+            {
+                if (resp.Exception != null)
+                {
+                    throw resp.Exception;
+                }
+                else
+                {
+                    throw new InvalidOperationException(resp.ErrorMessage);
+                }
+            }
+            foreach (var market in resp.GetResult())
+            {
+                if (!string.IsNullOrEmpty(market.Alias))
+                {
+                    _productCodeAliases[market.Alias] = market.ProductCode;
+                }
+                else
+                {
+                    _productCodeAliases[market.ProductCode] = market.ProductCode;
+                }
+            }
+        }
+
         public void Dispose()
         {
             _disposables.Dispose();
@@ -195,6 +190,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             return _executionSources.GetOrAdd(productCode, _ =>
             {
+                InitProductCodeAliases();
                 var realProductCode = _productCodeAliases[productCode.ToEnumString()];
                 var source = default(RealtimeExecutionSource);
                 switch (_sourceKind)
@@ -234,6 +230,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             return _tickSources.GetOrAdd(productCode, _ =>
             {
+                InitProductCodeAliases();
                 var realProductCode = _productCodeAliases[productCode.ToEnumString()];
                 var source = default(RealtimeTickerSource);
                 switch (_sourceKind)
@@ -256,6 +253,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             return _boardSources.GetOrAdd(productCode, _ =>
             {
+                InitProductCodeAliases();
                 var realProductCode = _productCodeAliases[productCode.ToEnumString()];
                 var source = default(RealtimeBoardSource);
                 switch (_sourceKind)
@@ -278,6 +276,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             return _boardSnapshotSources.GetOrAdd(productCode, _ =>
             {
+                InitProductCodeAliases();
                 var realProductCode = _productCodeAliases[productCode.ToEnumString()];
                 var source = default(RealtimeBoardSnapshotSource);
                 switch (_sourceKind)
