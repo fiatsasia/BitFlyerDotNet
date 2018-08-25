@@ -6,7 +6,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -18,7 +17,9 @@ using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+#if PUBNUB && DOTNETFRAMEWORK
 using PubNubMessaging.Core;
+#endif
 using WebSocket4Net;
 using Fiats.Utils;
 
@@ -26,7 +27,9 @@ namespace BitFlyerDotNet.LightningApi
 {
     public enum BfRealtimeSourceKind
     {
+#if PUBNUB && DOTNETFRAMEWORK
         PubNub,
+#endif
         WebSocket,
     }
 
@@ -35,7 +38,9 @@ namespace BitFlyerDotNet.LightningApi
         CompositeDisposable _disposables = new CompositeDisposable();
 
         BfRealtimeSourceKind _sourceKind;
+#if PUBNUB && DOTNETFRAMEWORK
         Pubnub _pubnub;
+#endif
         WebSocket _webSocket;
         AutoResetEvent _openedEvent = new AutoResetEvent(false);
         JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
@@ -51,15 +56,17 @@ namespace BitFlyerDotNet.LightningApi
         BitFlyerClient _client = new BitFlyerClient();
         Dictionary<string, string> _productCodeAliases = new Dictionary<string, string>();
 
-        public BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind sourceKind = BfRealtimeSourceKind.PubNub)
+        public BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind sourceKind)
         {
             _sourceKind = sourceKind;
 
             switch (_sourceKind)
             {
+#if PUBNUB && DOTNETFRAMEWORK
                 case BfRealtimeSourceKind.PubNub:
                     _pubnub = new Pubnub("", "sub-c-52a9ab50-291b-11e5-baaa-0619f8945a4f");
                     break;
+#endif
 
                 case BfRealtimeSourceKind.WebSocket:
                     {
@@ -195,9 +202,11 @@ namespace BitFlyerDotNet.LightningApi
                 var source = default(RealtimeExecutionSource);
                 switch (_sourceKind)
                 {
+#if PUBNUB && DOTNETFRAMEWORK
                     case BfRealtimeSourceKind.PubNub:
                         source = new RealtimeExecutionSource(_pubnub, _jsonSettings, realProductCode);
                         break;
+#endif
 
                     case BfRealtimeSourceKind.WebSocket:
                         source = new RealtimeExecutionSource(_webSocket, _jsonSettings, realProductCode);
@@ -235,9 +244,11 @@ namespace BitFlyerDotNet.LightningApi
                 var source = default(RealtimeTickerSource);
                 switch (_sourceKind)
                 {
+#if PUBNUB && DOTNETFRAMEWORK
                     case BfRealtimeSourceKind.PubNub:
                         source = new RealtimeTickerSource(_pubnub, _jsonSettings, realProductCode);
                         break;
+#endif
 
                     case BfRealtimeSourceKind.WebSocket:
                         source = new RealtimeTickerSource(_webSocket, _jsonSettings, realProductCode);
@@ -258,9 +269,11 @@ namespace BitFlyerDotNet.LightningApi
                 var source = default(RealtimeBoardSource);
                 switch (_sourceKind)
                 {
+#if PUBNUB && DOTNETFRAMEWORK
                     case BfRealtimeSourceKind.PubNub:
                         source = new RealtimeBoardSource(_pubnub, _jsonSettings, realProductCode);
                         break;
+#endif
 
                     case BfRealtimeSourceKind.WebSocket:
                         source = new RealtimeBoardSource(_webSocket, _jsonSettings, realProductCode);
@@ -281,9 +294,11 @@ namespace BitFlyerDotNet.LightningApi
                 var source = default(RealtimeBoardSnapshotSource);
                 switch (_sourceKind)
                 {
+#if PUBNUB && DOTNETFRAMEWORK
                     case BfRealtimeSourceKind.PubNub:
                         source = new RealtimeBoardSnapshotSource(_pubnub, _jsonSettings, realProductCode);
                         break;
+#endif
 
                     case BfRealtimeSourceKind.WebSocket:
                         source = new RealtimeBoardSnapshotSource(_webSocket, _jsonSettings, realProductCode);

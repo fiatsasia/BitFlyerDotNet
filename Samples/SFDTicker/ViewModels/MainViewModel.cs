@@ -64,7 +64,7 @@ namespace SFDTicker.ViewModels
         public MainViewModel()
         {
             _ctx = SynchronizationContext.Current;
-            _factory = new BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind.PubNub);
+            _factory = new BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind.WebSocket);
             _client = new BitFlyerClient();
 
             // Get and subscrive FXBTCJPY ticker

@@ -4,14 +4,12 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+#if PUBNUB && DOTNETFRAMEWORK
 using PubNubMessaging.Core;
+#endif
 using WebSocket4Net;
 
 namespace BitFlyerDotNet.LightningApi
@@ -20,10 +18,12 @@ namespace BitFlyerDotNet.LightningApi
     {
         const string ChannelFormat = "lightning_board_{0}";
 
+#if PUBNUB && DOTNETFRAMEWORK
         public RealtimeBoardSource(Pubnub pubnub, JsonSerializerSettings jsonSettings, string productCode)
             : base(pubnub, ChannelFormat, jsonSettings, productCode)
         {
         }
+#endif
 
         public RealtimeBoardSource(WebSocket webSocket, JsonSerializerSettings jsonSettings, string productCode)
             : base(webSocket, ChannelFormat, jsonSettings, productCode)

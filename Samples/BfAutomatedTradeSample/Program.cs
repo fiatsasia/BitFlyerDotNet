@@ -37,7 +37,7 @@ namespace BfAutomatedTradeSample
             _client = new BitFlyerClient(key, secret);
 
             // Create FXBTCJPY minutely OHLC source
-            var factory = new BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind.PubNub);
+            var factory = new BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind.WebSocket);
             var ohlcSource = factory.GetExecutionSource(ProductCode).Buffer(TickPeriod).Select(ticks =>
             {
                 var ohlc = new Ohlc(ticks);
