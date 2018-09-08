@@ -66,5 +66,15 @@ namespace BitFlyerDotNet.LightningApi
         {
             return GetExecutions(productCode.ToEnumString(), count, before, after);
         }
+
+        public BitFlyerResponse<BfExecution[]> GetExecutions(BfProductCode productCode)
+        {
+            return GetExecutions(productCode.ToEnumString(), 0, 0, 0);
+        }
+
+        public BitFlyerResponse<BfExecution[]> GetExecutions(BfProductCode productCode, int count)
+        {
+            return GetExecutions(productCode.ToEnumString(), count, 0, 0);
+        }
     }
 }
