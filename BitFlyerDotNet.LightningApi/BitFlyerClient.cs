@@ -35,6 +35,7 @@ namespace BitFlyerDotNet.LightningApi
         bool IsNetworkError { get; }
         bool IsApplicationError { get; }
         string ErrorMessage { get; }
+        bool IsUnauthorized { get; }
     }
 
     public class BitFlyerResponse : IBitFlyerResponse
@@ -44,6 +45,7 @@ namespace BitFlyerDotNet.LightningApi
         public bool IsError { get { return IsNetworkError || IsApplicationError; } }
         public bool IsNetworkError { get; private set; }
         public bool IsApplicationError { get; private set; }
+        public bool IsUnauthorized { get { return false; } }
         public string ErrorMessage { get; private set; }
 
         public BitFlyerResponse(bool isNetworkError, bool isApplicationError, string errorMessage)
@@ -76,6 +78,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public HttpStatusCode StatusCode { get; internal set; }
         public BfErrorResponse ErrorResponse { get; internal set; } = BfErrorResponse.Default;
+        public bool IsUnauthorized { get { return StatusCode == HttpStatusCode.Unauthorized; } }
 
         string _errorMessage;
         public string ErrorMessage
