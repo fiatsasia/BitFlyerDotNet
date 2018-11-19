@@ -4,7 +4,6 @@
 //
 
 using System;
-
 using Newtonsoft.Json;
 using Fiats.Utils;
 
@@ -47,13 +46,15 @@ namespace BitFlyerDotNet.LightningApi
 
         [JsonProperty(PropertyName = "volume_by_product")]
         public double VolumeByProduct { get; private set; }
+
+        public double MidPrice { get { return (BestAsk + BestBid) / 2.0; } }
     }
 
     public partial class BitFlyerClient
     {
         public BitFlyerResponse<BfTicker> GetTicker(BfProductCode productCode)
         {
-            return Get<BfTicker>(nameof(GetTicker), string.Format("product_code={0}", productCode.ToEnumString()));
+            return Get<BfTicker>(nameof(GetTicker), "product_code=" + productCode.ToEnumString());
         }
     }
 }

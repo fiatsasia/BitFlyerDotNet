@@ -4,7 +4,6 @@
 //
 
 using System;
-
 using Newtonsoft.Json;
 
 namespace BitFlyerDotNet.LightningApi
@@ -30,7 +29,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public BitFlyerResponse<BfChat[]> GetChats(DateTime fromDate)
         {
-            return Get<BfChat[]>(nameof(GetChats), string.Format("from_date={0}", fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff")));
+            return Get<BfChat[]>(nameof(GetChats), "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
         }
     }
 }

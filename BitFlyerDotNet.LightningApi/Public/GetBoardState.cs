@@ -3,8 +3,6 @@
 // http://www.fiats.asia/
 //
 
-using System;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Fiats.Utils;
@@ -26,7 +24,7 @@ namespace BitFlyerDotNet.LightningApi
     {
         public BitFlyerResponse<BfBoardStateResult> GetBoardState(BfProductCode productCode)
         {
-            return Get<BfBoardStateResult>(nameof(GetBoardState), string.Format("product_code={0}", productCode.ToEnumString()));
+            return Get<BfBoardStateResult>(nameof(GetBoardState), "product_code=" + productCode.ToEnumString());
         }
     }
 }

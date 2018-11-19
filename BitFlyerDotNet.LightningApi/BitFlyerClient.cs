@@ -158,7 +158,7 @@ namespace BitFlyerDotNet.LightningApi
         const string _privateBasePath = "/v1/me/";
 
         HttpClient _client;
-        string _key;
+        string _apiKey;
         HMACSHA256 _hmac;
 
         public bool IsPrivateApiEnabled { get { return _hmac != null; } }
@@ -170,11 +170,11 @@ namespace BitFlyerDotNet.LightningApi
             _client.BaseAddress = new Uri(_baseUri);
         }
 
-        public BitFlyerClient(string key, string secret)
+        public BitFlyerClient(string apiKey, string apiSecret)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-            _key = key;
-            _hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+            _apiKey = apiKey;
+            _hmac = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret));
             _client = new HttpClient();
             _client.BaseAddress = new Uri(_baseUri);
         }
@@ -252,7 +252,7 @@ namespace BitFlyerDotNet.LightningApi
             using (var request = new HttpRequestMessage(HttpMethod.Get, path))
             {
                 request.Headers.Clear();
-                request.Headers.Add("ACCESS-KEY", _key);
+                request.Headers.Add("ACCESS-KEY", _apiKey);
                 request.Headers.Add("ACCESS-TIMESTAMP", timestamp);
                 request.Headers.Add("ACCESS-SIGN", sign);
 
@@ -318,7 +318,7 @@ namespace BitFlyerDotNet.LightningApi
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
                 request.Content = content;
                 request.Headers.Clear();
-                request.Headers.Add("ACCESS-KEY", _key);
+                request.Headers.Add("ACCESS-KEY", _apiKey);
                 request.Headers.Add("ACCESS-TIMESTAMP", timestamp);
                 request.Headers.Add("ACCESS-SIGN", sign);
 

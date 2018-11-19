@@ -3,27 +3,25 @@
 // http://www.fiats.asia/
 //
 
-using System;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    class BfWithdrawRequest
+    public class BfWithdrawRequest
     {
         [JsonProperty(PropertyName = "currency_code")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfCurrencyCode CurrencyCode { get; internal set; }
+        public BfCurrencyCode CurrencyCode { get; set; }
 
         [JsonProperty(PropertyName = "bank_account_id")]
-        public int BankAccountId { get; internal set; }
+        public int BankAccountId { get; set; }
 
         [JsonProperty(PropertyName = "amount")]
-        public double Amount { get; internal set; }
+        public double Amount { get; set; }
 
         [JsonProperty(PropertyName = "code")]
-        public string AuthenticationCode { get; internal set; }
+        public string AuthenticationCode { get; set; }
         public bool ShouldSerializeAuthenticationCode() { return !string.IsNullOrEmpty(AuthenticationCode); }
     }
 
@@ -35,17 +33,21 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfWithdrawRequest request)
+        {
+            var jsonRequest = JsonConvert.SerializeObject(request, _jsonSettings);
+            return PrivatePost<BfWithdrawResponse>(nameof(Withdraw), jsonRequest);
+        }
+
         public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfCurrencyCode currencyCode, int bankAccountId, double amount, string authenticationCode)
         {
-            var request = new BfWithdrawRequest
+            return Withdraw(new BfWithdrawRequest
             {
                 CurrencyCode = currencyCode,
                 BankAccountId = bankAccountId,
                 Amount = amount,
                 AuthenticationCode = authenticationCode,
-            };
-            var jsonRequest = JsonConvert.SerializeObject(request, _jsonSettings);
-            return PrivatePost<BfWithdrawResponse>(nameof(Withdraw), jsonRequest);
+            });
         }
     }
 }

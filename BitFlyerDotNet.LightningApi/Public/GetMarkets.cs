@@ -3,8 +3,6 @@
 // http://www.fiats.asia/
 //
 
-using System;
-
 using Newtonsoft.Json;
 
 namespace BitFlyerDotNet.LightningApi

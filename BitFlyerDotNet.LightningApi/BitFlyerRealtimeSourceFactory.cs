@@ -25,22 +25,9 @@ using Fiats.Utils;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public enum BfRealtimeSourceKind
-    {
-#if PUBNUB && DOTNETFRAMEWORK
-        PubNub,
-#endif
-        WebSocket,
-    }
-
     public class BitFlyerRealtimeSourceFactory : IDisposable
     {
         CompositeDisposable _disposables = new CompositeDisposable();
-
-        BfRealtimeSourceKind _sourceKind;
-#if PUBNUB && DOTNETFRAMEWORK
-        Pubnub _pubnub;
-#endif
         WebSocket _webSocket;
         AutoResetEvent _openedEvent = new AutoResetEvent(false);
         JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
@@ -56,102 +43,87 @@ namespace BitFlyerDotNet.LightningApi
         BitFlyerClient _client = new BitFlyerClient();
         Dictionary<string, string> _productCodeAliases = new Dictionary<string, string>();
 
-        public BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind sourceKind)
+        public BitFlyerRealtimeSourceFactory()
         {
-            _sourceKind = sourceKind;
-
-            switch (_sourceKind)
+            _webSocket = new WebSocket("wss://ws.lightstream.bitflyer.com/json-rpc");
+            _webSocket.Security.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+            _wsReconnectionTimer = new Timer((_) =>
             {
-#if PUBNUB && DOTNETFRAMEWORK
-                case BfRealtimeSourceKind.PubNub:
-                    _pubnub = new Pubnub("", "sub-c-52a9ab50-291b-11e5-baaa-0619f8945a4f");
-                    break;
-#endif
-
-                case BfRealtimeSourceKind.WebSocket:
-                    {
-                        _webSocket = new WebSocket("wss://ws.lightstream.bitflyer.com/json-rpc");
-                        _webSocket.Security.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
-                        _wsReconnectionTimer = new Timer((_) =>
+                _wsReconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
+                Debug.WriteLine("{0} WebSocket is reopening connection... state={1}", DateTime.Now, _webSocket.State);
+                switch (_webSocket.State)
+                {
+                    case WebSocketState.None:
+                    case WebSocketState.Closed:
+                        try
                         {
-                            _wsReconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
-                            Debug.WriteLine("{0} WebSocket is reopening connection... state={1}", DateTime.Now, _webSocket.State);
-                            switch (_webSocket.State)
-                            {
-                                case WebSocketState.None:
-                                case WebSocketState.Closed:
-                                    try
-                                    {
-                                        _webSocket.Open();
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Debug.WriteLine(ex.Message);
-                                        _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite); // restart
-                                    }
-                                    break;
+                            _webSocket.Open();
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine(ex.Message);
+                            _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite); // restart
+                        }
+                        break;
 
-                                case WebSocketState.Open:
-                                    Debug.WriteLine("{0} Web socket is still opened.", DateTime.Now);
-                                    break;
+                    case WebSocketState.Open:
+                        Debug.WriteLine("{0} Web socket is still opened.", DateTime.Now);
+                        break;
 
-                                default:
-                                    _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite); // restart
-                                    break;
-                            }
-                        });
+                    default:
+                        _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite); // restart
+                        break;
+                }
+            });
                             
-                        _openedEvent.Reset();
-                        _webSocket.Opened += (_, __) =>
-                        {
-                            Debug.WriteLine("{0} WebSocket opened.", DateTime.Now);
-                            _wsReconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
-                            if (_webSocketSources.Count > 0)
-                            {
-                                Debug.WriteLine("{0} WebSocket recover subscriptions.", DateTime.Now);
-                                _webSocketSources.Values.ForEach(source => { source.Subscribe(); }); // resubscribe
-                            }
-                            _openedEvent.Set();
-                        };
+            _openedEvent.Reset();
+            _webSocket.Opened += (_, __) =>
+            {
+                Debug.WriteLine("{0} WebSocket opened.", DateTime.Now);
+                _wsReconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
+                if (_webSocketSources.Count > 0)
+                {
+                    Debug.WriteLine("{0} WebSocket recover subscriptions.", DateTime.Now);
+                    _webSocketSources.Values.ForEach(source => { source.Subscribe(); }); // resubscribe
+                }
+                _openedEvent.Set();
+            };
 
-                        _webSocket.MessageReceived += (_, e) =>
-                        {
-                            var subscriptionResult = JObject.Parse(e.Message)["params"];
-                            var channel = subscriptionResult["channel"].Value<string>();
-                            _webSocketSources[channel].OnWebSocketSubscribe(subscriptionResult["message"]);
-                        };
+            _webSocket.MessageReceived += (_, e) =>
+            {
+                var subscriptionResult = JObject.Parse(e.Message)["params"];
+                var channel = subscriptionResult["channel"].Value<string>();
+                _webSocketSources[channel].OnWebSocketSubscribe(subscriptionResult["message"]);
+            };
 
-                        _webSocket.Error += (_, e) =>
-                        {
-                            var ex = e.Exception;
-                            if (ex is IOException)
-                            {
-                                ex = ex.InnerException;
-                            }
+            _webSocket.Error += (_, e) =>
+            {
+                var ex = e.Exception;
+                if (ex is IOException)
+                {
+                    ex = ex.InnerException;
+                }
 
-                            if (ex is SocketException) // Server disconnects during daily maintenance.
-                            {
-                                var socketEx = ex as SocketException;
-                                Debug.WriteLine("{0} WebSocket socket error({1})", DateTime.Now, socketEx.SocketErrorCode);
-                                Debug.WriteLine("{0} WebSocket caused exception. Will be closed.", DateTime.Now, e.Exception.Message);
-                            }
-                            else
-                            {
-                                throw e.Exception;
-                            }
-                        };
+                if (ex is SocketException) // Server disconnects during daily maintenance.
+                {
+                    var socketEx = ex as SocketException;
+                    Debug.WriteLine("{0} WebSocket socket error({1})", DateTime.Now, socketEx.SocketErrorCode);
+                    Debug.WriteLine("{0} WebSocket caused exception. Will be closed.", DateTime.Now, e.Exception.Message);
+                }
+                else
+                {
+                    throw e.Exception;
+                }
+            };
 
-                        _webSocket.Closed += (_, __) =>
-                        {
-                            Debug.WriteLine("{0} WebSocket connection closed. Will be reopening...", DateTime.Now);
-                            _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite);
-                        };
+            _webSocket.Closed += (_, __) =>
+            {
+                Debug.WriteLine("{0} WebSocket connection closed. Will be reopening...", DateTime.Now);
+                _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite);
+            };
 
-                        _webSocket.Open();
-                        _openedEvent.WaitOne(10000);
-                    }
-                    break;
-            }
+            _webSocket.Open();
+            _openedEvent.WaitOne(10000);
         }
 
         void InitProductCodeAliases()
@@ -199,20 +171,8 @@ namespace BitFlyerDotNet.LightningApi
             {
                 InitProductCodeAliases();
                 var realProductCode = _productCodeAliases[productCode.ToEnumString()];
-                var source = default(RealtimeExecutionSource);
-                switch (_sourceKind)
-                {
-#if PUBNUB && DOTNETFRAMEWORK
-                    case BfRealtimeSourceKind.PubNub:
-                        source = new RealtimeExecutionSource(_pubnub, _jsonSettings, realProductCode);
-                        break;
-#endif
-
-                    case BfRealtimeSourceKind.WebSocket:
-                        source = new RealtimeExecutionSource(_webSocket, _jsonSettings, realProductCode);
-                        _webSocketSources[source.Channel] = source;
-                        break;
-                }
+                var source = new RealtimeExecutionSource(_webSocket, _jsonSettings, realProductCode);
+                _webSocketSources[source.Channel] = source;
                 return source.SkipWhile(tick => tick.ExecutionId == 0).Publish();
             });
         }
@@ -241,20 +201,8 @@ namespace BitFlyerDotNet.LightningApi
             {
                 InitProductCodeAliases();
                 var realProductCode = _productCodeAliases[productCode.ToEnumString()];
-                var source = default(RealtimeTickerSource);
-                switch (_sourceKind)
-                {
-#if PUBNUB && DOTNETFRAMEWORK
-                    case BfRealtimeSourceKind.PubNub:
-                        source = new RealtimeTickerSource(_pubnub, _jsonSettings, realProductCode);
-                        break;
-#endif
-
-                    case BfRealtimeSourceKind.WebSocket:
-                        source = new RealtimeTickerSource(_webSocket, _jsonSettings, realProductCode);
-                        _webSocketSources[source.Channel] = source;
-                        break;
-                }
+                var source = new RealtimeTickerSource(_webSocket, _jsonSettings, realProductCode);
+                _webSocketSources[source.Channel] = source;
                 return source.Publish().RefCount();
             });
         }
@@ -266,20 +214,8 @@ namespace BitFlyerDotNet.LightningApi
             {
                 InitProductCodeAliases();
                 var realProductCode = _productCodeAliases[productCode.ToEnumString()];
-                var source = default(RealtimeBoardSource);
-                switch (_sourceKind)
-                {
-#if PUBNUB && DOTNETFRAMEWORK
-                    case BfRealtimeSourceKind.PubNub:
-                        source = new RealtimeBoardSource(_pubnub, _jsonSettings, realProductCode);
-                        break;
-#endif
-
-                    case BfRealtimeSourceKind.WebSocket:
-                        source = new RealtimeBoardSource(_webSocket, _jsonSettings, realProductCode);
-                        _webSocketSources[source.Channel] = source;
-                        break;
-                }
+                var source = new RealtimeBoardSource(_webSocket, _jsonSettings, realProductCode);
+                _webSocketSources[source.Channel] = source;
                 return source.Publish().RefCount();
             });
         }
@@ -291,20 +227,8 @@ namespace BitFlyerDotNet.LightningApi
             {
                 InitProductCodeAliases();
                 var realProductCode = _productCodeAliases[productCode.ToEnumString()];
-                var source = default(RealtimeBoardSnapshotSource);
-                switch (_sourceKind)
-                {
-#if PUBNUB && DOTNETFRAMEWORK
-                    case BfRealtimeSourceKind.PubNub:
-                        source = new RealtimeBoardSnapshotSource(_pubnub, _jsonSettings, realProductCode);
-                        break;
-#endif
-
-                    case BfRealtimeSourceKind.WebSocket:
-                        source = new RealtimeBoardSnapshotSource(_webSocket, _jsonSettings, realProductCode);
-                        _webSocketSources[source.Channel] = source;
-                        break;
-                }
+                var source = new RealtimeBoardSnapshotSource(_webSocket, _jsonSettings, realProductCode);
+                _webSocketSources[source.Channel] = source;
                 return source.Publish().RefCount();
             });
         }

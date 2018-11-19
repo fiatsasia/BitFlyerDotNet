@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Fiats.Utils;
 using BitFlyerDotNet.LightningApi;
@@ -29,7 +30,11 @@ namespace PublicApiTests
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var board = resp.GetResult();
-            Assert.IsTrue(board.Asks.Length > 0 && board.Bids.Length > 0);
+            Console.WriteLine("{0}", board.MidPrice);
+            for (int i = 0; i < Math.Min(board.Asks.Length, board.Bids.Length); i++)
+            {
+                Console.WriteLine("Ask {0} {1} Bid {2} {3}", board.Asks[i].Price, board.Asks[i].Size, board.Bids[i].Price, board.Bids[i].Size);
+            }
         }
 
         [TestMethod]
@@ -39,29 +44,18 @@ namespace PublicApiTests
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var boardState = resp.GetResult();
-            Assert.IsTrue(boardState.State != BfBoardState.Unknown);
-            Assert.IsTrue(boardState.Health != BfBoardHealth.Unknown);
+            Console.WriteLine("Health:{0} State:{1}", boardState.Health, boardState.State);
         }
 
         [TestMethod]
         public void GetChats()
         {
-            var resp = _client.GetChats();
+            // Until 5 minutes before
+            var resp = _client.GetChats(DateTime.UtcNow - TimeSpan.FromMinutes(5));
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var chats = resp.GetResult();
-            Assert.IsTrue(chats.Length > 0);
-        }
-
-        [TestMethod]
-        public void GetChatsFromDate()
-        {
-            // Get chats from 10 minuts before
-            var resp = _client.GetChats(DateTime.UtcNow - TimeSpan.FromMinutes(10));
-            Assert.IsFalse(resp.IsErrorOrEmpty);
-
-            var chats = resp.GetResult();
-            Assert.IsTrue(chats.Length > 0);
+            chats.ForEach(chat => { Console.WriteLine("{0} {1} {2}", chat.Nickname, chat.Message, chat.Date.ToLocalTime()); });
         }
 
         [TestMethod]
@@ -71,28 +65,27 @@ namespace PublicApiTests
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var health = resp.GetResult();
-            Assert.IsTrue(health.Status != BfBoardHealth.Unknown);
+            Console.WriteLine("{0}", health.Status);
         }
 
         [TestMethod]
         public void GetExecutions()
         {
-            // Default count = 100
             var resp = _client.GetExecutions(ProductCode);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
-            var executions = resp.GetResult();
-            Assert.IsTrue(executions.Length == 100);
-        }
-
-        [TestMethod]
-        public void GetExecutions10()
-        {
-            var resp = _client.GetExecutions(ProductCode, 10);
-            Assert.IsFalse(resp.IsErrorOrEmpty);
-
-            var executions = resp.GetResult();
-            Assert.IsTrue(executions.Length == 10);
+            var execs = resp.GetResult();
+            execs.ForEach(exec =>
+            {
+                Console.WriteLine("{0} {1} {2} {3} {4} {5}",
+                    exec.ExecutionId,
+                    exec.Side,
+                    exec.Price,
+                    exec.Size,
+                    exec.ExecutedTime.ToLocalTime(),
+                    exec.ChildOrderAcceptanceId
+                );
+            });
         }
 
         [TestMethod]
@@ -102,7 +95,7 @@ namespace PublicApiTests
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var markets = resp.GetResult();
-            Assert.IsTrue(markets.Length > 0);
+            markets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
         }
 
         [TestMethod]
@@ -112,7 +105,12 @@ namespace PublicApiTests
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var ticker = resp.GetResult();
-            Assert.AreEqual(ticker.ProductCode, ProductCode.ToEnumString());
+            Console.WriteLine("{0} {1} {2} {3}",
+                ticker.ProductCode,
+                ticker.Timestamp.ToLocalTime(),
+                ticker.BestAsk,
+                ticker.BestBid
+            );
         }
     }
 }

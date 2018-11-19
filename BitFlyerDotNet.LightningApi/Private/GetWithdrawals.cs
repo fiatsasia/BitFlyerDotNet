@@ -4,7 +4,6 @@
 //
 
 using System;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -13,7 +12,7 @@ namespace BitFlyerDotNet.LightningApi
     public class BfWithdrawal
     {
         [JsonProperty(PropertyName = "id")]
-        public int Id { get; private set; }
+        public int PagingId { get; private set; }
 
         [JsonProperty(PropertyName = "order_id")]
         public string OrderId { get; private set; }
@@ -35,10 +34,10 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        public BitFlyerResponse<BfWithdrawal[]> GetWithdrawals(string messageId, int count, int before, int after)
+        public BitFlyerResponse<BfWithdrawal[]> GetWithdrawals(string messageId = null, int count = 0, int before = 0, int after = 0)
         {
             var query = string.Format("{0}{1}{2}{3}",
-                !string.IsNullOrEmpty(messageId) ? string.Format("message_id={0}", messageId) : "",
+                !string.IsNullOrEmpty(messageId) ? "message_id=" + messageId : "",
                 (count > 0) ? string.Format("&count={0}", count) : "",
                 (before > 0) ? string.Format("&before={0}", before) : "",
                 (after > 0) ? string.Format("&after={0}", after) : ""

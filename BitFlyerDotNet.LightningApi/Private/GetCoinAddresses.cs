@@ -3,8 +3,6 @@
 // http://www.fiats.asia/
 //
 
-using System;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -25,11 +23,9 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        const string GetAddressesMethod = "getaddresses";
-
         public BitFlyerResponse<BfCoinAddress[]> GetCoinAddresses()
         {
-            return PrivateGet<BfCoinAddress[]>(GetAddressesMethod);
+            return PrivateGet<BfCoinAddress[]>("getaddresses");
         }
     }
 }

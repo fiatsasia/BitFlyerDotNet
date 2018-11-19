@@ -4,52 +4,46 @@
 //
 
 using System;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    class BfCancelParentOrderRequest
+    public class BfCancelParentOrderRequest
     {
         [JsonProperty(PropertyName = "product_code")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfProductCode ProductCode { get; internal set; }
+        public BfProductCode ProductCode { get; set; }
 
         [JsonProperty(PropertyName = "parent_order_id")]
-        public string ParentOrderId { get; internal set; }
+        public string ParentOrderId { get; set; }
         public bool ShouldSerializeParentOrderId() { return !string.IsNullOrEmpty(ParentOrderId); }
 
         [JsonProperty(PropertyName = "parent_order_acceptance_id")]
-        public string ParentOrderAcceptanceId { get; internal set; }
+        public string ParentOrderAcceptanceId { get; set; }
         public bool ShouldSerializeParentOrderAcceptanceId() { return !string.IsNullOrEmpty(ParentOrderAcceptanceId); }
     }
 
     public partial class BitFlyerClient
     {
-        BitFlyerResponse<string> CancelParentOrder(BfCancelParentOrderRequest cancel)
+        public BitFlyerResponse<string> CancelParentOrder(BfCancelParentOrderRequest request)
         {
-            return PrivatePost<string>(nameof(CancelParentOrder), JsonConvert.SerializeObject(cancel, _jsonSettings));
+            return PrivatePost<string>(nameof(CancelParentOrder), JsonConvert.SerializeObject(request, _jsonSettings));
         }
 
-        public BitFlyerResponse<string> CancelParentOrderByOrderId(BfProductCode productCode, string parentOrderId)
+        public BitFlyerResponse<string> CancelParentOrder(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
         {
-            var cancel = new BfCancelParentOrderRequest
+            if (string.IsNullOrEmpty(parentOrderId) && string.IsNullOrEmpty(parentOrderAcceptanceId))
             {
-                ProductCode = productCode,
-                ParentOrderId = parentOrderId
-            };
-            return CancelParentOrder(cancel);
-        }
+                throw new ArgumentException();
+            }
 
-        public BitFlyerResponse<string> CancelParentOrderByAcceptanceId(BfProductCode productCode, string parentOrderAcceptanceId)
-        {
-            var cancel = new BfCancelParentOrderRequest
+            return CancelParentOrder(new BfCancelParentOrderRequest
             {
                 ProductCode = productCode,
+                ParentOrderId = parentOrderId,
                 ParentOrderAcceptanceId = parentOrderAcceptanceId
-            };
-            return CancelParentOrder(cancel);
+            });
         }
     }
 }

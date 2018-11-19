@@ -14,9 +14,9 @@
             <Viewbox>
                 <TextBlock Text="{Binding PriceFXBTCJPY, StringFormat='{}{0:0,0}'}" HorizontalAlignment="Center" />
             </Viewbox>
-            <Label Content="FXBTCJPY/BTCJPY variance" />
+            <Label Content="FXBTCJPY/BTCJPY difference" />
             <Viewbox>
-                <TextBlock Text="{Binding SFDVariance, StringFormat={}{0:0.000000%}}" HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding SFDDifference, StringFormat={}{0:0.000000%}}" HorizontalAlignment="Center" />
             </Viewbox>
             <Grid>
                 <Grid.ColumnDefinitions>

@@ -4,7 +4,6 @@
 //
 
 using System;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Fiats.Utils;
@@ -67,59 +66,17 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        public BitFlyerResponse<BfParentOrder[]> GetParentOrders(string productCode, int count = 0, int before = 0, int after = 0)
+        public BitFlyerResponse<BfParentOrder[]> GetParentOrders(BfProductCode productCode, BfOrderState orderState = BfOrderState.Unknown, int count = 0, int before = 0, int after = 0)
         {
             var query = string.Format("product_code={0}{1}{2}{3}",
-                productCode,
+                productCode.ToEnumString(),
+                orderState != BfOrderState.Unknown ? "&parent_order_state=" + orderState.ToEnumString() : "",
                 (count > 0) ? string.Format("&count={0}", count) : "",
                 (before > 0) ? string.Format("&before={0}", before) : "",
                 (after > 0) ? string.Format("&after={0}", after) : ""
             );
+
             return PrivateGet<BfParentOrder[]>(nameof(GetParentOrders), query);
-        }
-
-        public BitFlyerResponse<BfParentOrder[]> GetParentOrders(BfProductCode productCode, int count = 0, int before = 0, int after = 0)
-        {
-            return GetParentOrders(productCode.ToEnumString(), count, before, after);
-        }
-
-        public BitFlyerResponse<BfParentOrder[]> GetParentOrders(string productCode, BfOrderState orderState, int count = 0, int before = 0, int after = 0)
-        {
-            var query = string.Format("product_code={0}&parent_order_state={1}{2}{3}{4}",
-                productCode,
-                orderState.ToEnumString(),
-                (count > 0) ? string.Format("&count={0}", count) : "",
-                (before > 0) ? string.Format("&before={0}", before) : "",
-                (after > 0) ? string.Format("&after={0}", after) : ""
-            );
-            return PrivateGet<BfParentOrder[]>(nameof(GetParentOrders), query);
-        }
-
-        public BitFlyerResponse<BfParentOrder[]> GetParentOrders(BfProductCode productCode, BfOrderState orderState, int count = 0, int before = 0, int after = 0)
-        {
-            return GetParentOrders(productCode.ToEnumString(), orderState, count, before, after);
-        }
-
-        public BitFlyerResponse<BfParentOrder[]> GetParentOrdersByAcceptanceId(string productCode, string parentOrderAcceptanceId)
-        {
-            var p = string.Format("product_code={0}&parent_order_acceptance_id={1}", productCode, parentOrderAcceptanceId);
-            return PrivateGet<BfParentOrder[]>(nameof(GetParentOrders), p);
-        }
-
-        public BitFlyerResponse<BfParentOrder[]> GetParentOrdersByAcceptanceId(BfProductCode productCode, string parentOrderAcceptanceId)
-        {
-            return GetParentOrdersByAcceptanceId(productCode.ToEnumString(), parentOrderAcceptanceId);
-        }
-
-        public BitFlyerResponse<BfParentOrder[]> GetParentOrdersByOrderId(string productCode, string parentOrderId)
-        {
-            var p = string.Format("product_code={0}&parent_order_id={1}", productCode, parentOrderId);
-            return PrivateGet<BfParentOrder[]>(nameof(GetParentOrders), p);
-        }
-
-        public BitFlyerResponse<BfParentOrder[]> GetParentOrdersByOrderId(BfProductCode productCode, string parentOrderId)
-        {
-            return GetParentOrdersByOrderId(productCode.ToEnumString(), parentOrderId);
         }
     }
 }

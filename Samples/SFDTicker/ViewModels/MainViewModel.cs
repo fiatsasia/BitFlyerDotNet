@@ -4,9 +4,6 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.ComponentModel;
 using System.Windows.Media;
@@ -32,7 +29,7 @@ namespace SFDTicker.ViewModels
         public event PropertyChangedEventHandler PropertyChanged;
         public double PriceFXBTCJPY { get; private set; }
         public double PriceBTCJPY { get; private set; }
-        public double SFDVariance { get; private set; }
+        public double SFDDifference { get; private set; }
         public double SFDRate { get; private set; }
 
         public BfBoardHealth ExchangeStatus { get; private set; }
@@ -64,7 +61,7 @@ namespace SFDTicker.ViewModels
         public MainViewModel()
         {
             _ctx = SynchronizationContext.Current;
-            _factory = new BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind.WebSocket);
+            _factory = new BitFlyerRealtimeSourceFactory();
             _client = new BitFlyerClient();
 
             // Get and subscrive FXBTCJPY ticker
@@ -74,8 +71,8 @@ namespace SFDTicker.ViewModels
                 PriceFXBTCJPY = _fxBtcJpyTickerTick.LastTradedPrice;
                 if (_fxBtcJpyTickerTick != default(BfTicker) && _btcJpyTickerTick != default(BfTicker))
                 {
-                    SFDVariance = (PriceFXBTCJPY - PriceBTCJPY) / PriceBTCJPY;
-                    SFDRate = CalculateSfdRate(Math.Abs(SFDVariance));
+                    SFDDifference = (PriceFXBTCJPY - PriceBTCJPY) / PriceBTCJPY;
+                    SFDRate = CalculateSfdRate(Math.Abs(SFDDifference));
                     _ctx.Post(_ =>
                     {
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
@@ -90,8 +87,8 @@ namespace SFDTicker.ViewModels
                 PriceBTCJPY = _btcJpyTickerTick.LastTradedPrice;
                 if (_fxBtcJpyTickerTick != default(BfTicker) && _btcJpyTickerTick != default(BfTicker))
                 {
-                    SFDVariance = (PriceFXBTCJPY - PriceBTCJPY) / PriceBTCJPY;
-                    SFDRate = CalculateSfdRate(Math.Abs(SFDVariance));
+                    SFDDifference = (PriceFXBTCJPY - PriceBTCJPY) / PriceBTCJPY;
+                    SFDRate = CalculateSfdRate(Math.Abs(SFDDifference));
                     _ctx.Post(_ =>
                     {
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));

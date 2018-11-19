@@ -3,29 +3,31 @@
 // http://www.fiats.asia/
 //
 
-using System;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    class BfCancelAllChildOrdersRequest
+    public class BfCancelAllChildOrdersRequest
     {
         [JsonProperty(PropertyName = "product_code")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfProductCode ProductCode { get; internal set; }
+        public BfProductCode ProductCode { get; set; }
     }
 
     public partial class BitFlyerClient
     {
+        public BitFlyerResponse<string> CancelAllChildOrders(BfCancelAllChildOrdersRequest request)
+        {
+            return PrivatePost<string>(nameof(CancelAllChildOrders), JsonConvert.SerializeObject(request, _jsonSettings));
+        }
+
         public BitFlyerResponse<string> CancelAllChildOrders(BfProductCode productCode)
         {
-            var cancel = new BfCancelAllChildOrdersRequest
+            return CancelAllChildOrders(new BfCancelAllChildOrdersRequest
             {
                 ProductCode = productCode,
-            };
-            return PrivatePost<string>(nameof(CancelAllChildOrders), JsonConvert.SerializeObject(cancel, _jsonSettings));
+            });
         }
     }
 }

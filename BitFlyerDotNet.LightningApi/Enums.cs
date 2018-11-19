@@ -5,7 +5,6 @@
 
 using System;
 using System.Runtime.Serialization;
-
 using Newtonsoft.Json;
 
 namespace BitFlyerDotNet.LightningApi
@@ -122,6 +121,26 @@ namespace BitFlyerDotNet.LightningApi
         StopLimit,
         [EnumMember(Value = "TRAIL")]
         Trail,
+        [EnumMember(Value = "IFD")]
+        IFD,
+        [EnumMember(Value = "OCO")]
+        OCO,
+        [EnumMember(Value = "IFDOCO")]
+        IFDOCO,
+    }
+
+    public enum BfParentOrderMethod
+    {
+        [EnumMember(Value = "")]
+        Unknown,
+        [EnumMember(Value = "SIMPLE")]
+        Simple,
+        [EnumMember(Value = "IFD")]
+        IFD,
+        [EnumMember(Value = "OCO")]
+        OCO,
+        [EnumMember(Value = "IFDOCO")]
+        IFDOCO,
     }
 
     class DecimalJsonConverter : JsonConverter
@@ -190,18 +209,5 @@ namespace BitFlyerDotNet.LightningApi
         Expired,
         [EnumMember(Value = "REJECTED")]
         Rejected,
-    }
-
-    public enum BfOrderMethod
-    {
-        Unknown,
-        [EnumMember(Value = "SIMPLE")]
-        Simple,
-        [EnumMember(Value = "IFD")]
-        IFD,
-        [EnumMember(Value = "OCO")]
-        OCO,
-        [EnumMember(Value = "IFDOCO")]
-        IFDOCO,
     }
 }

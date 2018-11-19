@@ -3,9 +3,7 @@
 // http://www.fiats.asia/
 //
 
-using System;
 using System.Collections.Generic;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -38,7 +36,8 @@ namespace BitFlyerDotNet.LightningApi
         public bool ShouldSerializeTriggerPrice() { return ConditionType == BfOrderType.Stop || ConditionType == BfOrderType.StopLimit; }
 
         [JsonProperty(PropertyName = "offset")]
-        public int Offset { get; set; }
+        [JsonConverter(typeof(DecimalJsonConverter))]
+        public double Offset { get; set; }
         public bool ShouldSerializeOffset() { return ConditionType == BfOrderType.Trail; }
     }
 
@@ -46,7 +45,7 @@ namespace BitFlyerDotNet.LightningApi
     {
         [JsonProperty(PropertyName = "order_method")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfOrderMethod OrderMethod { get; set; }
+        public BfParentOrderMethod OrderMethod { get; set; }
 
         [JsonProperty(PropertyName = "minute_to_expire")]
         public int MinuteToExpire { get; set; }
@@ -58,15 +57,10 @@ namespace BitFlyerDotNet.LightningApi
         public bool ShouldSerializeTimeInForce() { return TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
 
         [JsonProperty(PropertyName = "parameters")]
-        internal List<BfParentOrderRequestParameter> Paremters { get; } = new List<BfParentOrderRequestParameter>();
-
-        public void AddChildOrder(BfParentOrderRequestParameter order)
-        {
-            Paremters.Add(order);
-        }
+        public List<BfParentOrderRequestParameter> Paremters { get; } = new List<BfParentOrderRequestParameter>();
     }
 
-    public class ParentOrderResponse
+    public class BfParentOrderResponse
     {
         [JsonProperty(PropertyName = "parent_order_acceptance_id")]
         public string ParentOrderAcceptanceId { get; private set; }
@@ -74,10 +68,10 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        public BitFlyerResponse<ParentOrderResponse> SendParentOrder(BfParentOrderRequest order)
+        public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest order)
         {
             var jsonRequest = JsonConvert.SerializeObject(order, _jsonSettings);
-            return PrivatePost<ParentOrderResponse>(nameof(SendParentOrder), jsonRequest);
+            return PrivatePost<BfParentOrderResponse>(nameof(SendParentOrder), jsonRequest);
         }
     }
 }

@@ -3,8 +3,6 @@
 // http://www.fiats.asia/
 //
 
-using System;
-
 namespace BitFlyerDotNet.LightningApi
 {
     public partial class BitFlyerClient

@@ -12,7 +12,8 @@ namespace RealtimeApiTest
     {
         static void Main(string[] args)
         {
-            var factory = new BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind.WebSocket);
+            var factory = new BitFlyerRealtimeSourceFactory();
+#if false
             factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(tick =>
             {
                 Console.WriteLine("{0} {1} {2} {3} {4} {5}",
@@ -25,22 +26,23 @@ namespace RealtimeApiTest
             });
 
             factory.StartAllExecutionSources();
-#if false
-            factory.GetTickerSource(BfProductCode.BTCJPYMAT3M).Subscribe(tick =>
+#endif
+#if true
+            factory.GetTickerSource(BfProductCode.FXBTCJPY).Subscribe(ticker =>
             {
                 Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11}",
-                    tick.ProductCode,
-                    tick.Timestamp.ToLocalTime(),
-                    tick.TickId,
-                    tick.BestBid,
-                    tick.BestAsk,
-                    tick.BestBidSize,
-                    tick.BestAskSize,
-                    tick.TotalBidDepth,
-                    tick.TotalAskDepth,
-                    tick.LastTradedPrice,
-                    tick.Last24HoursVolume,
-                    tick.VolumeByProduct);
+                    ticker.ProductCode,
+                    ticker.Timestamp.ToLocalTime(),
+                    ticker.TickId,
+                    ticker.BestBid,
+                    ticker.BestAsk,
+                    ticker.BestBidSize,
+                    ticker.BestAskSize,
+                    ticker.TotalBidDepth,
+                    ticker.TotalAskDepth,
+                    ticker.LastTradedPrice,
+                    ticker.Last24HoursVolume,
+                    ticker.VolumeByProduct);
             });
 #endif
             Console.ReadLine();

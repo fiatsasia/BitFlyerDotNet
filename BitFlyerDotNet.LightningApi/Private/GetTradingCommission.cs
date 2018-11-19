@@ -3,8 +3,6 @@
 // http://www.fiats.asia/
 //
 
-using System;
-
 using Newtonsoft.Json;
 using Fiats.Utils;
 
@@ -20,7 +18,7 @@ namespace BitFlyerDotNet.LightningApi
     {
         public BitFlyerResponse<BfTradingCommission> GetTradingCommission(BfProductCode productCode)
         {
-            return PrivateGet<BfTradingCommission>(nameof(GetTradingCommission), string.Format("product_code={0}", productCode.ToEnumString()));
+            return PrivateGet<BfTradingCommission>(nameof(GetTradingCommission), "product_code=" + productCode.ToEnumString());
         }
     }
 }

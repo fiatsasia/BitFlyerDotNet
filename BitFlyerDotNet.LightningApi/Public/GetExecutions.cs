@@ -4,7 +4,6 @@
 //
 
 using System;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Fiats.Utils;
@@ -51,30 +50,15 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        public BitFlyerResponse<BfExecution[]> GetExecutions(string productCode, int count, int before, int after)
+        public BitFlyerResponse<BfExecution[]> GetExecutions(BfProductCode productCode, int count = 0, int before = 0, int after = 0)
         {
             var query = string.Format("product_code={0}{1}{2}{3}",
-                productCode,
+                productCode.ToEnumString(),
                 (count > 0) ? string.Format("&count={0}", count) : "",
                 (before > 0) ? string.Format("&before={0}", before) : "",
                 (after > 0) ? string.Format("&after={0}", after) : ""
             );
             return Get<BfExecution[]>(nameof(GetExecutions), query);
-        }
-
-        public BitFlyerResponse<BfExecution[]> GetExecutions(BfProductCode productCode, int count, int before, int after)
-        {
-            return GetExecutions(productCode.ToEnumString(), count, before, after);
-        }
-
-        public BitFlyerResponse<BfExecution[]> GetExecutions(BfProductCode productCode)
-        {
-            return GetExecutions(productCode.ToEnumString(), 0, 0, 0);
-        }
-
-        public BitFlyerResponse<BfExecution[]> GetExecutions(BfProductCode productCode, int count)
-        {
-            return GetExecutions(productCode.ToEnumString(), count, 0, 0);
         }
     }
 }

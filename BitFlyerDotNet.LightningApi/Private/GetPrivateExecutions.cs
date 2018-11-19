@@ -4,7 +4,6 @@
 //
 
 using System;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Fiats.Utils;
@@ -41,28 +40,18 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        const string GetExecutionsMethod = "getexecutions";
-
-        public BitFlyerResponse<BfPrivateExecution[]> GetPrivateExecutions(string productCode)
+        public BitFlyerResponse<BfPrivateExecution[]> GetPrivateExecutions(BfProductCode productCode, int count = 0, int before = 0, int after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
         {
-            var p = string.Format("product_code={0}",  productCode);
-            return PrivateGet<BfPrivateExecution[]>(GetExecutionsMethod, p);
-        }
+            var query = string.Format("product_code={0}{1}{2}{3}{4}{5}",
+                productCode.ToEnumString(),
+                (count > 0) ? string.Format("&count={0}", count) : "",
+                (before > 0) ? string.Format("&before={0}", before) : "",
+                (after > 0) ? string.Format("&after={0}", after) : "",
+                !string.IsNullOrEmpty(childOrderId) ? "&child_order_id=" + childOrderId : "",
+                !string.IsNullOrEmpty(childOrderAcceptanceId) ? "&child_order_acceptance_id=" + childOrderAcceptanceId : ""
+            );
 
-        public BitFlyerResponse<BfPrivateExecution[]> GetPrivateExecutions(BfProductCode productCode)
-        {
-            return GetPrivateExecutions(productCode.ToEnumString());
-        }
-
-        public BitFlyerResponse<BfPrivateExecution[]> GetPrivateExecutionsByAcceptanceId(string productCode, string childOrderAcceptanceId)
-        {
-            var p = string.Format("product_code={0}&child_order_acceptance_id={1}", productCode, childOrderAcceptanceId);
-            return PrivateGet<BfPrivateExecution[]>(GetExecutionsMethod, p);
-        }
-
-        public BitFlyerResponse<BfPrivateExecution[]> GetPrivateExecutionsByAcceptanceId(BfProductCode productCode, string childOrderAcceptanceId)
-        {
-            return GetPrivateExecutionsByAcceptanceId(productCode.ToEnumString(), childOrderAcceptanceId);
+            return PrivateGet<BfPrivateExecution[]>("getexecutions", query);
         }
     }
 }

@@ -8,24 +8,23 @@ Supported platform is changed from .NET Framework to .NET Standard.
 Supports all of Public/Private/Realtime APIs.  
 Supports Realtime API interfaces (WebSocket).  
  -Socket.IO support was removed because Socket.IO library does not support TLS1.2.  
- -PubNub support was deprecated because PubNub .NET standard version(PubnubNetPlatform)
-  is incompatible from .NET Framework version.
+ -PubNub support was removed because bitFlyer will not support PubNub officially.
 Realtime APIs are wrapped with Reactive Extensions.
 
 ## Sample code
 
 ### Realtime API
 	// Display realtime executions from WebSocket
-    var factory = new BitFlyerRealtimeSourceFactory(BfRealtimeSourceKind.WebSocket);
-    factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(tick =>
+    var factory = new BitFlyerRealtimeSourceFactory();
+    factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(exec =>
     {
         Console.WriteLine("{0} {1} {2} {3} {4} {5}",
-            tick.ExecutionId,
-            tick.Side,
-            tick.Price,
-            tick.Size,
-            tick.ExecutedTime.ToLocalTime(),
-            tick.ChildOrderAcceptanceId);
+            exec.ExecutionId,
+            exec.Side,
+            exec.Price,
+            exec.Size,
+            exec.ExecutedTime.ToLocalTime(),
+            exec.ChildOrderAcceptanceId);
     });
 	Console.ReadLine();
 ### Public API
@@ -69,12 +68,6 @@ Realtime APIs are wrapped with Reactive Extensions.
 ## Known issues
 
 - Private API getcollateralhistory always returns InternalServerError.
-- Realtime execution ID is often replaced by 0.
-- PubNub library ver. 4.0.x does not work. Using 3.8.7. Let me know if you could work
-  with recent 4.0.x version.
-- PubNub execution tick is sometimes missing.
-- WebSocket reconnection does not work correctly.
-
 
 Let me know if you have any questions or requests. We could accept English and Japanese.
 
