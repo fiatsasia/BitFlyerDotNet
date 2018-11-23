@@ -53,10 +53,19 @@ namespace BitFlyerDotNet.LightningApi
         Buy,
         [EnumMember(Value = "SELL")]
         Sell,
+        [EnumMember(Value = "BUYSELL")]
+        BuySell,
     }
     public static class BfTradeSideExtensions
     {
-        public static BfTradeSide Opposite(this BfTradeSide side) { return side == BfTradeSide.Buy ? BfTradeSide.Sell : BfTradeSide.Buy; }
+        public static BfTradeSide Opposite(this BfTradeSide side)
+        {
+            if (side != BfTradeSide.Buy && side != BfTradeSide.Sell)
+            {
+                throw new ArgumentException();
+            }
+            return side == BfTradeSide.Buy ? BfTradeSide.Sell : BfTradeSide.Buy;
+        }
     }
 
     public enum BfBoardHealth
@@ -121,18 +130,6 @@ namespace BitFlyerDotNet.LightningApi
         StopLimit,
         [EnumMember(Value = "TRAIL")]
         Trail,
-        [EnumMember(Value = "IFD")]
-        IFD,
-        [EnumMember(Value = "OCO")]
-        OCO,
-        [EnumMember(Value = "IFDOCO")]
-        IFDOCO,
-    }
-
-    public enum BfParentOrderMethod
-    {
-        [EnumMember(Value = "")]
-        Unknown,
         [EnumMember(Value = "SIMPLE")]
         Simple,
         [EnumMember(Value = "IFD")]

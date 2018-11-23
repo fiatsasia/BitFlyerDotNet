@@ -10,14 +10,15 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public interface ITradeAccount
+    public interface ITradingAccount
     {
+        BitFlyerClient Client { get; }
         BfProductCode ProductCode { get; }
 
         int MinuteToExpire { get; set; }
         BfTimeInForce TimeInForce { get; set; }
 
-        void OnOrderStatusChanged(BfTradeOrderState status, IBfTradeOrder order);
+        void OnOrderStatusChanged(OrderTransactionState status, IOrderTransaction transaction);
 
         DateTime ServerTime { get; }
         IObservable<BfTicker> TickerSource { get; }

@@ -17,17 +17,17 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public partial class TradeAccount : ITradeAccount
+    public partial class TradingAccount : ITradingAccount
     {
         // Optional parameters
-        public int MinuteToExpire { get; set; } = 0;
+        public int MinuteToExpire { get; set; }
         public BfTimeInForce TimeInForce { get; set; } = BfTimeInForce.NotSpecified;
         public int OrderRetryMax { get; set; } = 3;
         public TimeSpan OrderRetryInterval { get; set; } = TimeSpan.FromSeconds(3);
 
         // Properties
         public BfProductCode ProductCode { get; private set; }
-        BitFlyerClient _client;
+        public BitFlyerClient Client { get; private set; }
         string[] _permissions;
         ConcurrentBag<BfPosition> _positions = new ConcurrentBag<BfPosition>();
         public IEnumerable<BfPosition> Positions { get { return _positions; } }
@@ -40,13 +40,13 @@ namespace BitFlyerDotNet.Trading
         public double AskPrice { get { return Ticker.BestAsk; } }
         public double BidPrice { get { return Ticker.BestBid; } }
 
-        public event OrderStatusChangedCallback OrderStatusChanged;
+        public event OrderTransactionStatusChangedCallback OrderStatusChanged;
         public event PositionStatusChangedCallback PositionStatusChanged;
 
         public IObservable<BfTicker> TickerSource { get; private set; }
         public IObservable<IBfExecution> ExecutionSource { get; private set; }
 
-        public TradeAccount(BfProductCode productCode)
+        public TradingAccount(BfProductCode productCode)
         {
             ProductCode = productCode;
 
@@ -61,7 +61,7 @@ namespace BitFlyerDotNet.Trading
 
         public void Login(string apiKey, string apiSecret)
         {
-            _client = new BitFlyerClient(apiKey, apiSecret);
+            Client = new BitFlyerClient(apiKey, apiSecret);
 
             if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiSecret))
             {
@@ -70,7 +70,7 @@ namespace BitFlyerDotNet.Trading
 
             // Check API permissions
             {
-                var resp = _client.GetPermissions();
+                var resp = Client.GetPermissions();
                 if (resp.IsError)
                 {
                     if (resp.StatusCode == HttpStatusCode.Unauthorized)
@@ -91,7 +91,7 @@ namespace BitFlyerDotNet.Trading
 
             // Get positions
             {
-                var resp = _client.GetPositions(ProductCode);
+                var resp = Client.GetPositions(ProductCode);
                 if (resp.IsError)
                 {
                     throw new ApplicationException(resp.ErrorMessage);
@@ -101,7 +101,7 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        public Task<bool> PlaceOrder(IBfTradeOrder order, int retryMax, TimeSpan retryInterval)
+        public Task<bool> PlaceOrder(IOrderTransaction order, int retryMax, TimeSpan retryInterval)
         {
             DebugEx.Trace();
             return Task.Run(() =>
@@ -110,16 +110,16 @@ namespace BitFlyerDotNet.Trading
                 for (var retry = 0; retry <= retryMax; retry++)
                 {
                     DebugEx.Trace();
-                    if (!order.Status.IsOrderable())
+                    if (!order.TransactionStatus.IsOrderable())
                     {
                         DebugEx.Trace();
                         return false;
                     }
 
-                    if (!order.Send(_client))
+                    if (!order.Send())
                     {
                         DebugEx.Trace("Trying retry...");
-                        if (!order.Status.IsOrderable())
+                        if (!order.TransactionStatus.IsOrderable())
                         {
                             DebugEx.Trace();
                             return false;
@@ -136,22 +136,22 @@ namespace BitFlyerDotNet.Trading
             });
         }
 
-        public Task<bool> PlaceOrder(IBfTradeOrder order)
+        public Task<bool> PlaceOrder(IOrderTransaction order)
         {
             DebugEx.Trace();
             return PlaceOrder(order, OrderRetryMax, OrderRetryInterval);
         }
 
-        public void CancelOrder(IBfTradeOrder order)
+        public void CancelOrder(IOrderTransaction order)
         {
-            order.Cancel(_client);
+            order.Cancel();
         }
 
-        public void OnOrderStatusChanged(BfTradeOrderState status, IBfTradeOrder order)
+        public void OnOrderStatusChanged(OrderTransactionState status, IOrderTransaction order)
         {
             OrderStatusChanged?.Invoke(status, order);
 
-            if (status == BfTradeOrderState.Executing || status == BfTradeOrderState.Executed)
+            if (status == OrderTransactionState.Executing || status == OrderTransactionState.Executed)
             {
                 Task.Run(() =>
                 {
@@ -159,7 +159,7 @@ namespace BitFlyerDotNet.Trading
                     for (var retry = 0; retry <= OrderRetryMax; retry++)
                     {
                         DebugEx.Trace();
-                        var resp = _client.GetPositions(ProductCode);
+                        var resp = Client.GetPositions(ProductCode);
                         if (resp.IsError)
                         {
                             DebugEx.Trace("Trying retry...");

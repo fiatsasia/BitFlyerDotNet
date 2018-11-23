@@ -45,7 +45,7 @@ namespace BitFlyerDotNet.LightningApi
     {
         [JsonProperty(PropertyName = "order_method")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfParentOrderMethod OrderMethod { get; set; }
+        public BfOrderType OrderMethod { get; set; }
 
         [JsonProperty(PropertyName = "minute_to_expire")]
         public int MinuteToExpire { get; set; }

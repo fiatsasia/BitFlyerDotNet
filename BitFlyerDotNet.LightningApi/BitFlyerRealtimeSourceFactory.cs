@@ -17,9 +17,6 @@ using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-#if PUBNUB && DOTNETFRAMEWORK
-using PubNubMessaging.Core;
-#endif
 using WebSocket4Net;
 using Fiats.Utils;
 

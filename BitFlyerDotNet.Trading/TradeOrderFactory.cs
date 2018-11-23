@@ -7,46 +7,46 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public partial class TradeAccount : ITradeAccount
+    public partial class TradingAccount : ITradingAccount
     {
-        public IBfTradeOrder CreateMarketPriceOrder(BfTradeSide side, double size)
+        public IChildOrderTransaction CreateMarketPriceOrder(BfTradeSide side, double size)
         {
-            return new ChildOrder(this, BfOrderType.Market, side, size);
+            return new ChildOrderTransaction(this, BfOrderType.Market, side, size);
         }
 
-        public IBfTradeOrder CreateLimitPriceOrder(BfTradeSide side, double size, double price)
+        public IChildOrderTransaction CreateLimitPriceOrder(BfTradeSide side, double size, double price)
         {
-            return new ChildOrder(this, BfOrderType.Limit, side, size, price);
+            return new ChildOrderTransaction(this, BfOrderType.Limit, side, size, price);
         }
 
-        public IBfTradeOrder CreateStopOrder(BfTradeSide side, double size, double triggerPrice)
+        public IParentOrderTransaction CreateStopOrder(BfTradeSide side, double size, double stopTriggerPrice)
         {
-            return new SimpleOrder(this, BfOrderType.Stop, side, size, double.NaN, triggerPrice: triggerPrice);
+            return new ParentOrderTransaction(this, BfOrderType.Simple, new IChildOrder[] { new StopOrder(this.ProductCode, side, size, stopTriggerPrice) });
         }
 
-        public IBfTradeOrder CreateStopLimitOrder(BfTradeSide side, double size, double price, double triggerPrice)
+        public IParentOrderTransaction CreateStopLimitOrder(BfTradeSide side, double size, double price, double stopTriggerPrice)
         {
-            return new SimpleOrder(this, BfOrderType.StopLimit, side, size, price, triggerPrice: triggerPrice);
+            return new ParentOrderTransaction(this, BfOrderType.Simple, new IChildOrder[] { new StopLimitOrder(this.ProductCode, side, size, price, stopTriggerPrice) });
         }
 
-        public IBfTradeOrder CreateTrailOrder(BfTradeSide side, double size, double limitOffset)
+        public IParentOrderTransaction CreateTrailOrder(BfTradeSide side, double size, double trailingStopPriceOffset)
         {
-            return new SimpleOrder(this, BfOrderType.Trail, side, size, limitOffset: limitOffset);
+            return new ParentOrderTransaction(this, BfOrderType.Simple, new IChildOrder[] { new TrailingStopOrder(this.ProductCode, side, size, trailingStopPriceOffset) });
         }
 
-        public IBfTradeOrder CreateIFD(IBfTradeOrder first, IBfTradeOrder second)
+        public IParentOrderTransaction CreateIFD(IChildOrder first, IChildOrder second)
         {
-            return new ParentOrder(this, BfParentOrderMethod.IFD, new IBfTradeOrder[] { first, second });
+            return new ParentOrderTransaction(this, BfOrderType.IFD, new IChildOrder[] { first, second });
         }
 
-        public IBfTradeOrder CreateOCO(IBfTradeOrder first, IBfTradeOrder second)
+        public IParentOrderTransaction CreateOCO(IChildOrder first, IChildOrder second)
         {
-            return new ParentOrder(this, BfParentOrderMethod.OCO, new IBfTradeOrder[] { first, second });
+            return new ParentOrderTransaction(this, BfOrderType.OCO, new IChildOrder[] { first, second });
         }
 
-        public IBfTradeOrder CreateIFDOCO(IBfTradeOrder ifdone, IBfTradeOrder ocoFirst, IBfTradeOrder ocoSecond)
+        public IParentOrderTransaction CreateIFDOCO(IChildOrder ifdone, IChildOrder ocoFirst, IChildOrder ocoSecond)
         {
-            return new ParentOrder(this, BfParentOrderMethod.IFDOCO, new IBfTradeOrder[] { ifdone, ocoFirst, ocoSecond });
+            return new ParentOrderTransaction(this, BfOrderType.IFDOCO, new IChildOrder[] { ifdone, ocoFirst, ocoSecond });
         }
     }
 }

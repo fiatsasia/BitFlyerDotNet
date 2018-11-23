@@ -18,6 +18,11 @@ namespace PrivateApiTests
         static string _secret;
         BitFlyerClient _client;
 
+        string _parentOrderAcceptanceId;
+        string _parentOrderId;
+        string _childOrderAcceptanceId;
+        string _childOrderId;
+
         [TestInitialize]
         public void Initialize()
         {
@@ -44,6 +49,13 @@ namespace PrivateApiTests
             return resp.IsUnauthorized;
         }
 
+        void DumpJson(IBitFlyerResponse resp)
+        {
+            Console.WriteLine("JSON:");
+            Console.WriteLine(resp.Json);
+            Console.WriteLine("--------------------------------");
+        }
+
         [TestMethod]
         public void CancelAllChildOrders()
         {
@@ -53,6 +65,33 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
+        }
+
+        [TestMethod]
+        [Ignore]
+        public void CancelChildOrderByAcceptanceId()
+        {
+            var resp = _client.CancelChildOrder(_productCode, childOrderAcceptanceId: _childOrderAcceptanceId);
+            if (CheckUnauthorized(resp))
+            {
+                return;
+            }
+            Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
+        }
+
+        [TestMethod]
+        [Ignore]
+        public void CancelChildOrderById()
+        {
+            var resp = _client.CancelChildOrder(_productCode, childOrderId: _childOrderId);
+            if (CheckUnauthorized(resp))
+            {
+                return;
+            }
+            Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
         }
 
         //
@@ -60,49 +99,28 @@ namespace PrivateApiTests
         //
         [TestMethod]
         [Ignore]
-        public void CancelChildOrder()
+        public void CancelParentOrderByAcceptanceId()
         {
-            // Cancel child order by child order id
-            var childOrderId = "";
-            var resp = _client.CancelChildOrder(_productCode, childOrderId: childOrderId);
+            var resp = _client.CancelParentOrder(_productCode, parentOrderAcceptanceId: _parentOrderAcceptanceId);
             if (CheckUnauthorized(resp))
             {
                 return;
             }
             Assert.IsFalse(resp.IsError);
-
-            // Cancel child order by child order acceptance id
-            var childOrderAcceptanceId = "";
-            resp = _client.CancelChildOrder(_productCode, childOrderAcceptanceId: childOrderAcceptanceId);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
         }
 
-        //
-        // Order testing needs test server environment
-        //
         [TestMethod]
         [Ignore]
-        public void CancelParentOrder()
+        public void CancelParentOrderById()
         {
-            var parentOrderId = "";
-            var resp = _client.CancelParentOrder(_productCode, parentOrderId: parentOrderId);
+            var resp = _client.CancelParentOrder(_productCode, parentOrderId: _parentOrderId);
             if (CheckUnauthorized(resp))
             {
                 return;
             }
             Assert.IsFalse(resp.IsError);
-
-            var parentOrderAcceptanceId = "";
-            resp = _client.CancelParentOrder(_productCode, parentOrderAcceptanceId: parentOrderAcceptanceId);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
         }
 
         [TestMethod]
@@ -114,6 +132,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsErrorOrEmpty);
+            DumpJson(resp);
 
             var balances = resp.GetResult();
             balances.ForEach(balance => { Console.WriteLine("{0} {1} {2}", balance.CurrencyCode, balance.Available, balance.Amount); });
@@ -128,6 +147,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsErrorOrEmpty);
+            DumpJson(resp);
 
             var bankAccounts = resp.GetResult();
             bankAccounts.ForEach(ba =>
@@ -147,21 +167,22 @@ namespace PrivateApiTests
         [TestMethod]
         public void GetChildOrders()
         {
-            var resp = _client.GetChildOrders(_productCode, count: 10);
+            var resp = _client.GetChildOrders(_productCode, count: 5);
             if (CheckUnauthorized(resp))
             {
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var orders = resp.GetResult();
             orders.ForEach(order =>
             {
                 Console.WriteLine("{0} {1} {2} {3}",
-                    order.PagingId,
                     order.Side,
                     order.ChildOrderType,
-                    order.ChildOrderState
+                    order.ChildOrderState,
+                    order.ChildOrderAcceptanceId
                 );
             });
         }
@@ -175,6 +196,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var coinAddresses = resp.GetResult();
             coinAddresses.ForEach(add => { Console.WriteLine("{0} {1} {2}", add.AddressType, add.CurrencyCode, add.Address); });
@@ -189,6 +211,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var coinins = resp.GetResult();
             coinins.ForEach(coinin =>
@@ -215,6 +238,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var coinouts = resp.GetResult();
             coinouts.ForEach(coinout =>
@@ -243,6 +267,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var coll = resp.GetResult();
             Console.WriteLine("{0} {1} {2} {3}",
@@ -265,8 +290,8 @@ namespace PrivateApiTests
             {
                 return;
             }
-
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var colls = resp.GetResult();
             colls.ForEach(coll =>
@@ -291,6 +316,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var deposits = resp.GetResult();
             deposits.ForEach(deposit =>
@@ -313,39 +339,32 @@ namespace PrivateApiTests
         [Ignore]
         public void GetParentOrder()
         {
-            // Cancel child order by child order id
-            var parentOrderId = "";
-            var resp = _client.GetParentOrder(_productCode, parentOrderId: parentOrderId);
+            var resp = _client.GetParentOrder(_productCode, parentOrderAcceptanceId: _parentOrderAcceptanceId);
             if (CheckUnauthorized(resp))
             {
                 return;
             }
             Assert.IsFalse(resp.IsError);
-
-            // Cancel child order by child order acceptance id
-            var parentOrderAcceptanceId = "";
-            resp = _client.GetParentOrder(_productCode, parentOrderAcceptanceId: parentOrderAcceptanceId);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
         }
 
         [TestMethod]
         public void GetParentOrders()
         {
-            var resp = _client.GetParentOrders(_productCode);
+            var resp = _client.GetParentOrders(_productCode, count: 5);
             if (CheckUnauthorized(resp))
             {
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var orders = resp.GetResult();
             orders.ForEach(order =>
             {
-                Console.WriteLine("{0} [1} {2} {3}",
+                Console.WriteLine("{0} {1} {2} {3} {4} {5}",
+                    order.ParentOrderAcceptanceId,
+                    order.ParentOrderId,
                     order.Side,
                     order.ParentOrderType,
                     order.ParentOrderState,
@@ -363,6 +382,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var permissions = resp.GetResult();
             permissions.ForEach(permisson => { Console.WriteLine(permisson); });
@@ -377,6 +397,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var positions = resp.GetResult();
             positions.ForEach(pos =>
@@ -396,12 +417,13 @@ namespace PrivateApiTests
         [TestMethod]
         public void GetExecutions()
         {
-            var resp = _client.GetPrivateExecutions(_productCode, count: 10);
+            var resp = _client.GetPrivateExecutions(_productCode, count: 5);
             if (CheckUnauthorized(resp))
             {
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var execs = resp.GetResult();
             execs.ForEach(exec =>
@@ -425,6 +447,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsErrorOrEmpty);
+            DumpJson(resp);
 
             var commission = resp.GetResult();
             Console.WriteLine("Commission rate = {0}", commission.CommissionRate);
@@ -439,6 +462,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
 
             var withdrawls = resp.GetResult();
             withdrawls.ForEach(withdrawl =>
@@ -464,6 +488,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
         }
 
         [TestMethod]
@@ -477,6 +502,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
         }
 
         [TestMethod]
@@ -490,6 +516,7 @@ namespace PrivateApiTests
                 return;
             }
             Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
         }
     }
 }

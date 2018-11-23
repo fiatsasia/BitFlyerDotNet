@@ -31,6 +31,7 @@ namespace BitFlyerDotNet.LightningApi
 
     public interface IBitFlyerResponse
     {
+        string Json { get; }
         bool IsError { get; }
         bool IsNetworkError { get; }
         bool IsApplicationError { get; }
@@ -42,6 +43,7 @@ namespace BitFlyerDotNet.LightningApi
     {
         public static readonly IBitFlyerResponse Success = new BitFlyerResponse(false, false, "Success");
 
+        public string Json { get; }
         public bool IsError { get { return IsNetworkError || IsApplicationError; } }
         public bool IsNetworkError { get; private set; }
         public bool IsApplicationError { get; private set; }
@@ -70,10 +72,6 @@ namespace BitFlyerDotNet.LightningApi
         {
             StatusCode = message.StatusCode;
             Json = message.Content.ReadAsStringAsync().Result;
-            if (StatusCode == HttpStatusCode.BadRequest)
-            {
-                throw new ArgumentException(request); // Requested prameters are illegal
-            }
         }
 
         public HttpStatusCode StatusCode { get; internal set; }

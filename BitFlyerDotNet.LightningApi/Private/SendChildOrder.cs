@@ -22,13 +22,13 @@ namespace BitFlyerDotNet.LightningApi
         [JsonConverter(typeof(StringEnumConverter))]
         public BfTradeSide Side { get; set; }
 
+        [JsonProperty(PropertyName = "size")]
+        public double Size { get; set; }
+
         [JsonProperty(PropertyName = "price")]
         [JsonConverter(typeof(DecimalJsonConverter))]
         public double Price { get; set; }
         public bool ShouldSerializePrice() { return OrderType == BfOrderType.Limit; }
-
-        [JsonProperty(PropertyName = "size")]
-        public double Size { get; set; }
 
         [JsonProperty(PropertyName = "minute_to_expire")]
         public int MinuteToExpire { get; set; }

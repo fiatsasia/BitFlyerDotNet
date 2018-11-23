@@ -13,43 +13,56 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    internal class SimpleOrder : IBfTradeOrder
+    class ChildOrderTransaction : IChildOrderTransaction
     {
-        ITradeAccount _account;
-        BfParentOrderRequest _request;
-        BitFlyerResponse<BfParentOrderResponse> _response;
+        // IChildOrder
+        public BfProductCode ProductCode { get { return _request.ProductCode; } }
+        public BfOrderType OrderType { get { return _request.OrderType; } }
+        public BfTradeSide Side { get { return _request.Side; } }
+        public double OrderSize { get { return _request.Size; } }
+        public double OrderPrice { get { return _request.Price == 0.0 ? double.NaN : _request.Price; } }
+        public double StopTriggerPrice { get { throw new NotSupportedException(); } }
+        public double TrailingStopPriceOffset { get { throw new NotSupportedException(); } }
+
+        // IOrderTransaction
+        public BfOrderState OrderStatus { get { return (_order == null) ? BfOrderState.Unknown : _order.ChildOrderState; } }
+        public DateTime OrderDate { get { return (_order == null) ? default(DateTime) : _order.ChildOrderDate; } }
+        public DateTime OrderCreatedTime { get; private set; }
+        public DateTime OrderRequestedTime { get; private set; }
+        public DateTime OrderAcceptedTime { get; private set; }
+        public double ReferencePrice { get { return _ticker.MidPrice; } }
+
+        // IChildOrderTransaction
+        public string ChildOrderAcceptanceId { get { return _response.GetResult().ChildOrderAcceptanceId; } }
+        public string ChildOrderId { get { return (_order == null) ? string.Empty : _order.ChildOrderId; } }
+        public double ExecutedPrice { get { return _execs.IsEmpty() ? double.NaN : _execs.Sum(e => e.Price * e.Size) / _execs.Sum(e => e.Size); } }
+        public double ExecutedSize { get { return _execs.Sum(e => e.Size); } }
+        public DateTime ExecutedTime { get { return _execs.Select(e => e.ExecutedTime).DefaultIfEmpty().Max(); } }
+
+        public int MinuteToExpire { get { return _request.MinuteToExpire; } }
+        public BfTimeInForce TimeInForce { get { return _request.TimeInForce; } }
+
+        public bool IsError { get { return _response != null && _response.IsError; } }
+        public bool IsExecuted { get { return _status == OrderTransactionState.Executed; } }
+        public bool IsCompleted { get { return _status.IsCompleted(); } }
+        public bool IsCancelable { get { return _status.IsCancelable(); } }
+
+        public object Tag { get; set; }
+
+        // Properties
+        ITradingAccount _account;
+        BfChildOrderRequest _request;
+        BitFlyerResponse<BfChildOrderResponse> _response;
         BfChildOrder _order;
         List<IBfExecution> _execs = new List<IBfExecution>();
         CompositeDisposable _disposables = new CompositeDisposable();
         BfTicker _ticker;
 
-        // Properties
-        public bool IsSimple { get { return true; } }
-        public BfProductCode ProductCode { get { return _request.Paremters[0].ProductCode; } }
-        public BfOrderType OrderType { get { return _request.Paremters[0].ConditionType; } }
-        public BfTradeSide Side { get { return _request.Paremters[0].Side; } }
-        public object Tag { get; set; }
-
-        // Order informations
-        public DateTime OrderCreatedTime { get; private set; }
-        public DateTime OrderRequestedTime { get; private set; }
-        public DateTime OrderAcceptedTime { get; private set; }
-        public double OrderSize { get { return _request.Paremters[0].Size; } }
-        public double OrderPrice { get { return _request.Paremters[0].Price == 0.0 ? double.NaN : _request.Paremters[0].Price; } }
-        public double TriggerPrice { get { return 0.0; } }
-        public double LimitOffset { get { return 0.0; } }
-        public double ReferencePrice { get { return _ticker.MidPrice; } }
-
-        // Executed informations
-        public double ExecutedPrice { get { return _execs.IsEmpty() ? double.NaN : _execs.Sum(e => e.Price * e.Size) / _execs.Sum(e => e.Size); } }
-        public double ExecutedSize { get { return _execs.Sum(e => e.Size); } }
-        public DateTime ExecutedTime { get { return _execs.Select(e => e.ExecutedTime).LastOrDefault(); } }
-
         // Manage order status
         ReaderWriterLockSlim _statusLock = new ReaderWriterLockSlim();
-        public event OrderStatusChangedCallback StatusChanged;
-        BfTradeOrderState _status;
-        public BfTradeOrderState Status
+        public event OrderTransactionStatusChangedCallback StatusChanged;
+        OrderTransactionState _status;
+        public OrderTransactionState TransactionStatus
         {
             get
             {
@@ -65,7 +78,7 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        void UpdateStatus(BfTradeOrderState status)
+        void UpdateStatus(OrderTransactionState status)
         {
             _status = status;
             try
@@ -84,23 +97,11 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        public bool IsExecuted { get { return _status == BfTradeOrderState.Executed; } }
-        public bool IsCompleted { get { return _status.IsCompleted(); } }
-        public bool IsCancelable { get { return _status.IsCancelable(); } }
-
         Timer _orderConfirmPollingTimer;
         public TimeSpan OrderConfirmPollingInterval { get; set; } = TimeSpan.FromSeconds(3);
-
-        public bool IsError { get { return _response != null && _response.IsError; } }
-        BfOrderState PrimitiveStatus { get { return (_order == null) ? BfOrderState.Unknown : _order.ChildOrderState; } }
-
-        string ParentOrderAcceptanceId { get { return _response.GetResult().ParentOrderAcceptanceId; } }
-        string ChildOrderAcceptanceId { get { return (_order == null) ? string.Empty : _order.ChildOrderAcceptanceId; } }
-        string ChildOrderId { get { return (_order == null) ? string.Empty : _order.ChildOrderId; } }
-
         public static bool MonitorExecution { get; set; } = true;
 
-        public SimpleOrder(ITradeAccount account, BfOrderType orderType, BfTradeSide side, double size, double price = 0.0, double triggerPrice = 0.0, double limitOffset = 0.0)
+        public ChildOrderTransaction(ITradingAccount account, BfOrderType orderType, BfTradeSide side, double size, double price)
         {
             DebugEx.EnterMethod();
             _account = account;
@@ -109,33 +110,43 @@ namespace BitFlyerDotNet.Trading
             OrderCreatedTime = _account.ServerTime;
             StatusChanged += _account.OnOrderStatusChanged;
 
-            _request = new BfParentOrderRequest
+            _request = new BfChildOrderRequest
             {
-                OrderMethod = BfParentOrderMethod.Simple,
+                ProductCode = _account.ProductCode,
+                OrderType = orderType,
+                Side = side,
+                Size = size,
+                Price = price,
                 MinuteToExpire = _account.MinuteToExpire,
                 TimeInForce = _account.TimeInForce,
             };
 
-            _request.Paremters.Add(new BfParentOrderRequestParameter
-            {
-                ProductCode = _account.ProductCode,
-                ConditionType = orderType,
-                Side = side,
-                Size = size,
-                Price = price,
-                TriggerPrice = triggerPrice,
-                Offset = limitOffset,
-            });
-
-            UpdateStatus(BfTradeOrderState.Created);
+            UpdateStatus(OrderTransactionState.Created);
         }
 
-        /// <summary>
-        /// Send simple order
-        /// </summary>
-        /// <param name="client"></param>
-        /// <returns></returns>
-        public bool Send(BitFlyerClient client)
+        public ChildOrderTransaction(ITradingAccount account, BfOrderType orderType, BfTradeSide side, double size)
+        {
+            DebugEx.EnterMethod();
+            _account = account;
+            _ticker = _account.Ticker;
+
+            OrderCreatedTime = _account.ServerTime;
+            StatusChanged += _account.OnOrderStatusChanged;
+
+            _request = new BfChildOrderRequest
+            {
+                ProductCode = _account.ProductCode,
+                OrderType = orderType,
+                Side = side,
+                Size = size,
+                MinuteToExpire = _account.MinuteToExpire,
+                TimeInForce = _account.TimeInForce,
+            };
+
+            UpdateStatus(OrderTransactionState.Created);
+        }
+
+        public bool Send()
         {
             DebugEx.EnterMethod();
             try
@@ -153,12 +164,12 @@ namespace BitFlyerDotNet.Trading
                     DebugEx.Trace();
                     _statusLock.EnterWriteLock();
                     OrderRequestedTime = _account.ServerTime;
-                    UpdateStatus(BfTradeOrderState.Ordering);
-                    _response = client.SendParentOrder(_request);
+                    UpdateStatus(OrderTransactionState.Ordering);
+                    _response = _account.Client.SendChildOrder(_request);
                     if (_response.IsError)
                     {
                         _disposables.Dispose();
-                        UpdateStatus(BfTradeOrderState.OrderFailed);
+                        UpdateStatus(OrderTransactionState.OrderFailed);
                         DebugEx.Trace();
                         return false;
                     }
@@ -171,8 +182,8 @@ namespace BitFlyerDotNet.Trading
                     }
 
                     OrderAcceptedTime = _account.ServerTime;
-                    UpdateStatus(BfTradeOrderState.OrderAccepted);
-                    _orderConfirmPollingTimer = new Timer(OnConfirmPollingTimerExired, client, TimeSpan.Zero, OrderConfirmPollingInterval).AddTo(_disposables);
+                    UpdateStatus(OrderTransactionState.OrderAccepted);
+                    _orderConfirmPollingTimer = new Timer(OnConfirmPollingTimerExired, this, TimeSpan.Zero, OrderConfirmPollingInterval).AddTo(_disposables);
                     DebugEx.Trace();
                     return true;
                 }
@@ -180,7 +191,7 @@ namespace BitFlyerDotNet.Trading
                 {
                     DebugEx.Trace();
                     _disposables.Dispose();
-                    UpdateStatus(BfTradeOrderState.OrderFailed);
+                    UpdateStatus(OrderTransactionState.OrderFailed);
                     throw;
                 }
                 finally
@@ -209,33 +220,32 @@ namespace BitFlyerDotNet.Trading
             if (ExecutedSize < OrderSize)
             {
                 DebugEx.Trace();
-                UpdateStatus(BfTradeOrderState.Executing);
+                UpdateStatus(OrderTransactionState.Executing);
             }
             else
             {
                 DebugEx.Trace();
                 switch (_status)
                 {
-                    case BfTradeOrderState.Canceling:
-                    case BfTradeOrderState.CancelAccepted:
-                        UpdateStatus(BfTradeOrderState.CancelIgnored);
+                    case OrderTransactionState.Canceling:
+                    case OrderTransactionState.CancelAccepted:
+                        UpdateStatus(OrderTransactionState.CancelIgnored);
                         break;
 
                     default:
-                        UpdateStatus(BfTradeOrderState.Executed);
+                        UpdateStatus(OrderTransactionState.Executed);
                         break;
                 }
             }
             DebugEx.ExitMethod();
         }
 
-        void OnConfirmPollingTimerExired(object state)
+        void OnConfirmPollingTimerExired(object _)
         {
             DebugEx.EnterMethod();
-            var client = state as BitFlyerClient;
             _orderConfirmPollingTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop timer
 
-            if (!Confirm(client) || !IsCompleted)
+            if (!Confirm() || !IsCompleted)
             {
                 _orderConfirmPollingTimer.Change(OrderConfirmPollingInterval, OrderConfirmPollingInterval); // restart timer
                 DebugEx.ExitMethod();
@@ -249,7 +259,7 @@ namespace BitFlyerDotNet.Trading
         /// </summary>
         /// <param name="client"></param>
         /// <returns></returns>
-        public bool Cancel(BitFlyerClient client)
+        public bool Cancel()
         {
             DebugEx.EnterMethod();
             try
@@ -265,24 +275,24 @@ namespace BitFlyerDotNet.Trading
                 {
                     DebugEx.Trace();
                     _statusLock.EnterWriteLock();
-                    if (_status == BfTradeOrderState.OrderFailed)
+                    if (_status == OrderTransactionState.OrderFailed)
                     {
                         DebugEx.Trace();
-                        UpdateStatus(BfTradeOrderState.Canceled);
+                        UpdateStatus(OrderTransactionState.Canceled);
                         return true;
                     }
 
                     // During cancelable, monitoring timer is running
-                    UpdateStatus(BfTradeOrderState.Canceling);
-                    var resp = client.CancelParentOrder(ProductCode, parentOrderAcceptanceId: ParentOrderAcceptanceId);
-                    UpdateStatus(resp.IsError ? BfTradeOrderState.CancelFailed : BfTradeOrderState.CancelAccepted);
+                    UpdateStatus(OrderTransactionState.Canceling);
+                    var resp = _account.Client.CancelChildOrder(ProductCode, childOrderAcceptanceId: ChildOrderAcceptanceId);
+                    UpdateStatus(resp.IsError ? OrderTransactionState.CancelFailed : OrderTransactionState.CancelAccepted);
                     DebugEx.Trace();
                     return !resp.IsError;
                 }
                 catch
                 {
                     DebugEx.Trace();
-                    UpdateStatus(BfTradeOrderState.CancelFailed);
+                    UpdateStatus(OrderTransactionState.CancelFailed);
                     throw;
                 }
                 finally
@@ -297,7 +307,7 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        public bool Confirm(BitFlyerClient client)
+        public bool Confirm()
         {
             DebugEx.Trace();
             try
@@ -310,7 +320,7 @@ namespace BitFlyerDotNet.Trading
                 }
 
                 // Get order information
-                var resp = client.GetChildOrders(ProductCode, parentOrderId: ParentOrderAcceptanceId);
+                var resp = _account.Client.GetChildOrders(ProductCode, childOrderAcceptanceId: ChildOrderAcceptanceId);
                 if (resp.IsError)
                 {
                     DebugEx.Trace();
@@ -322,8 +332,8 @@ namespace BitFlyerDotNet.Trading
                 if (!orders.IsEmpty())
                 {
                     DebugEx.Trace();
-                    _order = orders.First();
-                    var respExec = client.GetPrivateExecutions(ProductCode, childOrderAcceptanceId: ChildOrderAcceptanceId);
+                    _order = orders[0];
+                    var respExec = _account.Client.GetPrivateExecutions(ProductCode, childOrderAcceptanceId: ChildOrderAcceptanceId);
                     if (respExec.IsError)
                     {
                         DebugEx.Trace();
@@ -337,14 +347,14 @@ namespace BitFlyerDotNet.Trading
                 {
                     DebugEx.Trace();
                     _statusLock.EnterWriteLock();
-                    switch (PrimitiveStatus)
+                    switch (OrderStatus)
                     {
                         case BfOrderState.Unknown: // Primitive stauts element was empty
                             DebugEx.Trace();
-                            if (_status == BfTradeOrderState.CancelAccepted)
+                            if (_status == OrderTransactionState.CancelAccepted)
                             {
                                 DebugEx.Trace();
-                                UpdateStatus(BfTradeOrderState.Canceled);
+                                UpdateStatus(OrderTransactionState.Canceled);
                             }
                             return true;
 
@@ -353,42 +363,42 @@ namespace BitFlyerDotNet.Trading
                             if (_execs.IsEmpty())
                             {
                                 DebugEx.Trace();
-                                UpdateStatus(BfTradeOrderState.OrderConfirmed);
+                                UpdateStatus(OrderTransactionState.OrderConfirmed);
                                 return true;
                             }
-                            UpdateStatus((OrderSize > ExecutedSize) ? BfTradeOrderState.Executing : BfTradeOrderState.Executed);
+                            UpdateStatus((OrderSize > ExecutedSize) ? OrderTransactionState.Executing : OrderTransactionState.Executed);
                             break;
 
                         case BfOrderState.Completed:
                             DebugEx.Trace();
                             switch (_status)
                             {
-                                case BfTradeOrderState.Canceling:
-                                case BfTradeOrderState.CancelAccepted:
+                                case OrderTransactionState.Canceling:
+                                case OrderTransactionState.CancelAccepted:
                                     DebugEx.Trace();
-                                    UpdateStatus(BfTradeOrderState.CancelIgnored);
+                                    UpdateStatus(OrderTransactionState.CancelIgnored);
                                     break;
 
                                 default:
                                     DebugEx.Trace();
-                                    UpdateStatus(BfTradeOrderState.Executed);
+                                    UpdateStatus(OrderTransactionState.Executed);
                                     break;
                             }
                             return true;
 
                         case BfOrderState.Canceled:
                             DebugEx.Trace();
-                            UpdateStatus(BfTradeOrderState.Canceled);
+                            UpdateStatus(OrderTransactionState.Canceled);
                             return true;
 
                         case BfOrderState.Expired:
                             DebugEx.Trace();
-                            UpdateStatus(BfTradeOrderState.Expired);
+                            UpdateStatus(OrderTransactionState.Expired);
                             return true;
 
                         case BfOrderState.Rejected:
                             DebugEx.Trace();
-                            UpdateStatus(BfTradeOrderState.Rejected);
+                            UpdateStatus(OrderTransactionState.Rejected);
                             return true;
                     }
                 }

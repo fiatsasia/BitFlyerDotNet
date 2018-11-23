@@ -8,11 +8,11 @@ namespace TradingApiTests
     [TestClass]
     public class UnitTest1
     {
-        static BfProductCode _productCode;
+        const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
         static string _key;
         static string _secret;
         BitFlyerClient _client;
-        TradeAccount _account;
+        TradingAccount _account;
 
         const double Volume = 0.01;
         const int RetryMax = 3;
@@ -22,7 +22,7 @@ namespace TradingApiTests
         public void Initialize()
         {
             _client = new BitFlyerClient(_key, _secret);
-            _account = new TradeAccount(BfProductCode.FXBTCJPY);
+            _account = new TradingAccount(BfProductCode.FXBTCJPY);
             _account.OrderStatusChanged += OnOrderStatusChanged;
         }
 
@@ -31,11 +31,11 @@ namespace TradingApiTests
         {
             var order = _account.CreateMarketPriceOrder(BfTradeSide.Buy, Volume);
 
-            if (!await _account.PlaceOrder(order, RetryMax, RetryInterval))
+            if (!await _account.PlaceOrder(order))
             {
-                switch (order.Status)
+                switch (order.TransactionStatus)
                 {
-                    case BfTradeOrderState.OrderFailed:
+                    case OrderTransactionState.OrderFailed:
                         break;
 
                     default:
@@ -47,14 +47,14 @@ namespace TradingApiTests
         [TestMethod]
         public async void IFDOrderTest1()
         {
-            var firstOrder = _account.CreateMarketPriceOrder(BfTradeSide.Buy, Volume);
-            var secondOrder = _account.CreateMarketPriceOrder(BfTradeSide.Sell, Volume);
+            var firstOrder = new MarketPriceOrder(ProductCode, BfTradeSide.Buy, Volume);
+            var secondOrder = new TrailingStopOrder(ProductCode, BfTradeSide.Sell, Volume, 10000.0);
             var order = _account.CreateIFD(firstOrder, secondOrder);
             if (!await _account.PlaceOrder(order, RetryMax, RetryInterval))
             {
-                switch (order.Status)
+                switch (order.TransactionStatus)
                 {
-                    case BfTradeOrderState.OrderFailed:
+                    case OrderTransactionState.OrderFailed:
                         break;
 
                     default:
@@ -63,7 +63,7 @@ namespace TradingApiTests
             }
         }
 
-        void OnOrderStatusChanged(BfTradeOrderState status, IBfTradeOrder order)
+        void OnOrderStatusChanged(OrderTransactionState status, IOrderTransaction transaction)
         {
 
         }

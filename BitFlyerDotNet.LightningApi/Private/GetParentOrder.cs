@@ -33,20 +33,20 @@ namespace BitFlyerDotNet.LightningApi
         public double TriggerPrice { get; private set; }
 
         [JsonProperty(PropertyName = "offset")]
-        public int Offset { get; private set; }
+        public double Offset { get; private set; }
     }
 
     public class BfParentOrderDetail
     {
         [JsonProperty(PropertyName = "id")]
-        public string PagingId { get; private set; }
+        public int PagingId { get; private set; }
 
         [JsonProperty(PropertyName = "parent_order_id")]
         public string ParentOrderId { get; private set; }
 
         [JsonProperty(PropertyName = "order_method")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfParentOrderMethod OrderMethod { get; private set; }
+        public BfOrderType OrderMethod { get; private set; }
 
         [JsonProperty(PropertyName = "minute_to_expire")]
         public int MinuteToExpire { get; private set; }
