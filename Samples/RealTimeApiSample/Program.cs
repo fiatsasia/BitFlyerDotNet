@@ -10,6 +10,10 @@ namespace RealTimeApiSample
         static void Main(string[] args)
         {
             var factory = new BitFlyerRealtimeSourceFactory();
+            factory.ErrorHandlers += (error) =>
+            {
+                Console.WriteLine("Error: {0} Socket Error = {1}", error.Message, error.SocketError);
+            };
 
             Console.WriteLine("1) RealtimeExecutionSample");
             Console.WriteLine("2) RealtimeTickerSample");

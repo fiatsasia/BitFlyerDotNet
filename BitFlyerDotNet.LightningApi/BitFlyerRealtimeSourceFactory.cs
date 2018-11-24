@@ -24,6 +24,14 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BitFlyerRealtimeSourceFactory : IDisposable
     {
+        public class ErrorStatus
+        {
+            public SocketError SocketError { get; set; } = SocketError.Success;
+            public string Message { get; set; }
+        }
+        public delegate void BitFlyerRealtimeErrorHandler(ErrorStatus error);
+        public BitFlyerRealtimeErrorHandler ErrorHandlers;
+
         CompositeDisposable _disposables = new CompositeDisposable();
         WebSocket _webSocket;
         AutoResetEvent _openedEvent = new AutoResetEvent(false);
@@ -95,10 +103,12 @@ namespace BitFlyerDotNet.LightningApi
 
             _webSocket.Error += (_, e) =>
             {
+                var error = new ErrorStatus();
                 var ex = e.Exception;
                 if (ex is IOException)
                 {
                     ex = ex.InnerException;
+                    error.Message = ex.Message;
                 }
 
                 if (ex is SocketException) // Server disconnects during daily maintenance.
@@ -106,11 +116,15 @@ namespace BitFlyerDotNet.LightningApi
                     var socketEx = ex as SocketException;
                     Debug.WriteLine("{0} WebSocket socket error({1})", DateTime.Now, socketEx.SocketErrorCode);
                     Debug.WriteLine("{0} WebSocket caused exception. Will be closed.", DateTime.Now, e.Exception.Message);
+                    error.SocketError = socketEx.SocketErrorCode;
+                    error.Message = e.Exception.Message;
                 }
                 else
                 {
                     throw e.Exception;
                 }
+
+                ErrorHandlers?.Invoke(error);
             };
 
             _webSocket.Closed += (_, __) =>
