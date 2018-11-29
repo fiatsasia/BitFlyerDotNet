@@ -13,9 +13,17 @@ using System.Reactive.Disposables;
 
 namespace Fiats.Utils
 {
-    public static class EnumUtil
+    public static class DateTimeUtil
     {
-        public static string ToEnumString<TEnum>(this TEnum type) where TEnum : struct
+        public static DateTime Round(this DateTime dt, TimeSpan period)
+        {
+            return new DateTime(dt.Ticks / period.Ticks * period.Ticks, dt.Kind);
+        }
+    }
+
+    internal static class EnumUtil
+    {
+        internal static string ToEnumString<TEnum>(this TEnum type) where TEnum : struct
         {
             var enumType = typeof(TEnum);
             var name = Enum.GetName(enumType, type);

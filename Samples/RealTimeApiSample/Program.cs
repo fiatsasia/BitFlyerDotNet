@@ -9,7 +9,7 @@ namespace RealTimeApiSample
 
         static void Main(string[] args)
         {
-            var factory = new BitFlyerRealtimeSourceFactory();
+            var factory = new RealtimeSourceFactory();
             factory.ErrorHandlers += (error) =>
             {
                 Console.WriteLine("Error: {0} Socket Error = {1}", error.Message, error.SocketError);
@@ -32,7 +32,7 @@ namespace RealTimeApiSample
             Console.ReadLine();
         }
 
-        static void RealtimeExecutionSample(BitFlyerRealtimeSourceFactory factory)
+        static void RealtimeExecutionSample(RealtimeSourceFactory factory)
         {
             factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(tick =>
             {
@@ -48,7 +48,7 @@ namespace RealTimeApiSample
             factory.StartAllExecutionSources();
         }
 
-        static void RealtimeTickerSample(BitFlyerRealtimeSourceFactory factory)
+        static void RealtimeTickerSample(RealtimeSourceFactory factory)
         {
             factory.GetTickerSource(BfProductCode.FXBTCJPY).Subscribe(ticker =>
             {

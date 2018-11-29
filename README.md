@@ -1,15 +1,21 @@
 # BitFlyerDotNet
-BitFlyerDotNet is bitFlyer Lightning API wrapper for .NET Standard 2.0.
+BitFlyerDotNet is bitFlyer Lightning API wrapper and libraries for .NET Standard 2.0.
 
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
-Supported platform is changed from .NET Framework to .NET Standard.
-
-Supports all of Public/Private/Realtime APIs.  
-Supports Realtime API interfaces (WebSocket).  
- -Socket.IO support was removed because Socket.IO library does not support TLS1.2.  
- -PubNub support was removed because bitFlyer will not support PubNub officially.
-Realtime APIs are wrapped with Reactive Extensions.
+#### BitFlyerDotNet.LightningAPI
+- bitFlyer Lightning API wrapper
+- Supports all of Public/Private/Realtime APIs
+- Realtime APIs are wrapped with Reactive Extensions (Rx)
+#### BitFlyerDotNet.Trading
+- Designed for trading applications
+- Quick confirm executed order
+- Error retry and recovery
+#### BitFlyerDotNet.Historical
+- Designed for charting applications
+- Smart cache mechanism with Reactive Extensions and Entity Framework Core
+- Realtime updating OHLC stream with execution cache
+- Supports Cryptowatch API with cache
 
 ## Sample code
 

@@ -4,12 +4,18 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>Fiats Inc.</Authors>
     <Copyright />
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+    <Product>BitFlyerDotNet</Product>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DefineConstants>TRACE</DefineConstants>
+    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>pdbonly</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
@@ -22,7 +28,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="REM xcopy /Y &quot;$(TargetDir)..\*.nupkg&quot; &quot;$(SolutionDir)..\..\packages\&quot;&#xD;&#xA;" />
+    <Exec Command="&#xD;&#xA;" />
   </Target>
 
 </Project>

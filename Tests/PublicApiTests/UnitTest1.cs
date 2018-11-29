@@ -6,7 +6,6 @@
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Fiats.Utils;
 using BitFlyerDotNet.LightningApi;
 
 namespace PublicApiTests
@@ -101,7 +100,7 @@ namespace PublicApiTests
         [TestMethod]
         public void GetTicker()
         {
-            var resp = _client.GetTicker(ProductCode);
+            var resp = _client.GetTicker(BfProductCode.BTCJPYMAT3M);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var ticker = resp.GetResult();

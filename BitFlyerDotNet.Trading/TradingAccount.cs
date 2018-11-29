@@ -51,7 +51,7 @@ namespace BitFlyerDotNet.Trading
             ProductCode = productCode;
 
             // FXBTCJPY の場合は、SFDがあるので、現物も同時に受ける必要がある。
-            var factory = new BitFlyerRealtimeSourceFactory();
+            var factory = new RealtimeSourceFactory();
             TickerSource = factory.GetTickerSource(ProductCode);
             TickerSource.Subscribe(ticker => { Ticker = ticker; }).AddTo(_disposables);
             ExecutionSource = factory.GetExecutionSource(ProductCode);

@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
     <Authors>Fiats Inc.</Authors>
     <Product>BitFlyerDotNet</Product>
   </PropertyGroup>
@@ -19,15 +17,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Reactive" Version="4.1.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.1.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BitFlyerDotNet.LightningApi\BitFlyerDotNet.LightningApi.csproj" />
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="&#xD;&#xA;" />
-  </Target>
 
 </Project>

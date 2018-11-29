@@ -20,7 +20,7 @@ namespace SFDTicker.ViewModels
         CompositeDisposable _disposables = new CompositeDisposable();
         SynchronizationContext _ctx;
 
-        BitFlyerRealtimeSourceFactory _factory;
+        RealtimeSourceFactory _factory;
         BitFlyerClient _client;
         BfTicker _fxBtcJpyTickerTick;
         BfTicker _btcJpyTickerTick;
@@ -61,7 +61,7 @@ namespace SFDTicker.ViewModels
         public MainViewModel()
         {
             _ctx = SynchronizationContext.Current;
-            _factory = new BitFlyerRealtimeSourceFactory();
+            _factory = new RealtimeSourceFactory();
             _client = new BitFlyerClient();
 
             // Get and subscrive FXBTCJPY ticker

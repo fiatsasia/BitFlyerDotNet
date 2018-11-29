@@ -27,6 +27,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TradingApiTests", "Tests\Tr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RealTimeApiSample", "Samples\RealTimeApiSample\RealTimeApiSample.csproj", "{9A745091-C3D4-4608-A97B-D1249B010DDF}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HistoricalApiTests", "Tests\HistoricalApiTests\HistoricalApiTests.csproj", "{83A1944F-9321-4E04-AA9B-90E6C197023D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BitFlyerDotNet.Historical", "BitFlyerDotNet.Historical\BitFlyerDotNet.Historical.csproj", "{0CC385DC-5529-486A-8152-6A9E0E28FF9E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +65,14 @@ Global
 		{9A745091-C3D4-4608-A97B-D1249B010DDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A745091-C3D4-4608-A97B-D1249B010DDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9A745091-C3D4-4608-A97B-D1249B010DDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83A1944F-9321-4E04-AA9B-90E6C197023D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83A1944F-9321-4E04-AA9B-90E6C197023D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83A1944F-9321-4E04-AA9B-90E6C197023D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83A1944F-9321-4E04-AA9B-90E6C197023D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0CC385DC-5529-486A-8152-6A9E0E28FF9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CC385DC-5529-486A-8152-6A9E0E28FF9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CC385DC-5529-486A-8152-6A9E0E28FF9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CC385DC-5529-486A-8152-6A9E0E28FF9E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -71,6 +83,7 @@ Global
 		{A8EE30D8-C5AF-41FF-BEF6-F8C95D1B241F} = {D83B5B79-F757-4B13-8603-48C066582321}
 		{BAD099C7-8266-47DE-A8A2-E2AD49E741D2} = {D83B5B79-F757-4B13-8603-48C066582321}
 		{9A745091-C3D4-4608-A97B-D1249B010DDF} = {ADD45BCB-D5E2-4D5C-A4BD-820833C9597F}
+		{83A1944F-9321-4E04-AA9B-90E6C197023D} = {D83B5B79-F757-4B13-8603-48C066582321}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {17B9077E-309C-4379-86AB-16545A0B7E72}
