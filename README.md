@@ -65,8 +65,8 @@ BitFlyerDotNet is bitFlyer Lightning API wrapper and libraries for .NET Standard
 - Trade FX_BTC_JPY, 5/15 minutes Simple Moving Average crossover signal.
 
 ### SFDTicker
-![SFDTickerScreen](https://user-images.githubusercontent.com/39668702/40870381-1b24e4f4-6669-11e8-8498-c6c519d567b2.png)
-- WPF application (.NET Framework 4.6.1)
+![SFDTickerScreen](https://i.gyazo.com/74f3e351c2ab5d75785b25db902b81ff.png)
+- WPF/UWP/MacOS/iOS/Android application
 - Displays FX_BTC_JPY/BTC_JPY rate of variance, SFD rate.
 - Displays server health and indicates background color.
 

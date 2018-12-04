@@ -27,8 +27,4 @@
     <PackageReference Include="WebSocket4Net" Version="0.15.2" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="&#xD;&#xA;" />
-  </Target>
-
 </Project>
