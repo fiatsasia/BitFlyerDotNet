@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:SFDTicker"
+             x:Class="SFDTicker.MainPage"
+             BackgroundColor="{Binding ExchangeStatusColor}">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <x:Double x:Key="labelFontSize">24</x:Double>
+            <x:Double x:Key="textFontSize">48</x:Double>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <StackLayout>
+        <Label Text="FXBTCJPY price" FontSize="{StaticResource labelFontSize}" />
+        <Label x:Name="priceFXBTCJPY" FontSize="{StaticResource textFontSize}" Text="{Binding PriceFXBTCJPY, StringFormat='{}{0:0,0}'}" HorizontalTextAlignment="Center" />
+        <Label Text="FXBTCJPY/BTCJPY difference" FontSize="{StaticResource labelFontSize}" />
+        <Label x:Name="sFDDifference" FontSize="{StaticResource textFontSize}" Text="{Binding SFDDifference, StringFormat='{}{0:0.000000%}'}" HorizontalTextAlignment="Center" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Label Grid.Column="0" Grid.Row="0" Text="BTCJPY Price:" FontSize="{StaticResource labelFontSize}" />
+            <Label Grid.Column="1" Grid.Row="0" x:Name="priceBTCJPY" FontSize="{StaticResource textFontSize}" Text="{Binding PriceBTCJPY, StringFormat='{}{0:0,0}'}" />
+            <Label Grid.Column="0" Grid.Row="1" Text="SFD Rate:" FontSize="{StaticResource labelFontSize}" />
+            <Label Grid.Column="1" Grid.Row="1" x:Name="sFDRate" FontSize="{StaticResource textFontSize}" Text="{Binding SFDRate, StringFormat='{}{0:0.00%}'}" />
+            <Label Grid.Column="0" Grid.Row="2" Text="Exchange status:" FontSize="{StaticResource labelFontSize}" />
+            <Label Grid.Column="1" Grid.Row="2" x:Name="exchangeStatus" FontSize="{StaticResource textFontSize}" Text="{Binding ExchangeStatus}" />
+        </Grid>
+    </StackLayout>
+
+</ContentPage>
