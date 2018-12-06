@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿//==============================================================================
+// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
+//
+
 using Xamarin.Forms;
 using SFDTicker.ViewModels;
 
@@ -17,11 +17,6 @@ namespace SFDTicker
             InitializeComponent();
 
             this.BindingContext = _vm;
-            priceFXBTCJPY.BindingContext = _vm;
-            sFDDifference.BindingContext = _vm;
-            priceBTCJPY.BindingContext = _vm;
-            sFDRate.BindingContext = _vm;
-            exchangeStatus.BindingContext = _vm;
         }
     }
 }
