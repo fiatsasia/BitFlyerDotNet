@@ -1,7 +1,12 @@
 # BitFlyerDotNet
+[“ú–{Œê](README.ja-JP.md)  
 BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) wrapper and libraries for .NET Standard 2.0.
 
-<span style="color: red;">**BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**</span>
+**BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
+### Install
+```
+PM> Install-Package BitFlyerDotNet.LightningApi
+```
 
 ### Environment 
 - Solution and Projects are for Visual Studio 2017 and 2017 for Mac.
@@ -19,7 +24,7 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 #### BitFlyerDotNet.Trading
 - Class library for trading applications
 - Quick confirm executed order
-- Error retry and recovery
+- Error retry, safe cancel, prevent order duplication 
 #### BitFlyerDotNet.Historical
 - Class library for charting applications
 - Smart cache mechanism with Reactive Extensions and Entity Framework Core

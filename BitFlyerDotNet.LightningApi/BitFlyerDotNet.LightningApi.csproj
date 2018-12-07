@@ -3,10 +3,16 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>Fiats Inc.</Authors>
-    <Copyright />
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Copyright>Copyright (c) 2017-2018 Fiats Inc. All rights reserved.</Copyright>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
     <Product>BitFlyerDotNet</Product>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseUrl>https://licenses.nuget.org/MIT</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/fiatsasia/BitFlyerDotNet</PackageProjectUrl>
+    <Description>BitFlyerDotNet is a bitFlyer Lightning API wrapper and libraries.</Description>
+    <RepositoryUrl>https://github.com/fiatsasia/BitFlyerDotNet</RepositoryUrl>
+    <PackageTags>bitflyer bitflyer-lightning-apis realtime-apis</PackageTags>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
