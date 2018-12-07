@@ -1,6 +1,6 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// https://www.fiats.asia/
 //
 
 using System;
@@ -143,7 +143,7 @@ namespace BitFlyerDotNet.LightningApi
         }
     }
 
-    public partial class BitFlyerClient
+    public partial class BitFlyerClient : IDisposable
     {
         static readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
         {
@@ -175,6 +175,12 @@ namespace BitFlyerDotNet.LightningApi
             _hmac = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret));
             _client = new HttpClient();
             _client.BaseAddress = new Uri(_baseUri);
+        }
+
+        public void Dispose()
+        {
+            _client.Dispose();
+            _hmac.Dispose();
         }
 
         internal BitFlyerResponse<T> Get<T>(string apiName, string queryParameters = "")
