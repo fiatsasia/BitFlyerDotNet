@@ -1,5 +1,5 @@
 # BitFlyerDotNet
-[“ú–{Œê](README.ja-JP.md)  
+[æ—¥æœ¬èªž](README.ja-JP.md)  
 BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) wrapper and libraries for .NET Standard 2.0.
 
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
