@@ -30,7 +30,7 @@ namespace BitFlyerDotNet.Historical
             { BfProductCode.BTCJPYMAT2WK, "btcjpy-biweekly-futures" },
             { BfProductCode.BTCJPYMAT3M, "btcjpy-quarterly-futures" },
         };
-        internal static readonly List<TimeSpan> SupportedPeriods = new List<TimeSpan>
+        internal static readonly List<TimeSpan> SupportedFrameSpans = new List<TimeSpan>
         {
             { TimeSpan.FromMinutes(1) },
             { TimeSpan.FromMinutes(3) },
@@ -46,6 +46,10 @@ namespace BitFlyerDotNet.Historical
             { TimeSpan.FromDays(3) },
             { TimeSpan.FromDays(7) },
         };
+        public static bool IsSupportedFrameSpan(TimeSpan frameSpan)
+        {
+            return SupportedFrameSpans.Contains(frameSpan);
+        }
 
         static HttpClient _client;
 
@@ -55,33 +59,43 @@ namespace BitFlyerDotNet.Historical
             _client.BaseAddress = new Uri(_baseUri);
         }
 
-        static readonly BfHistoricalOhlc[] _errorResult = new BfHistoricalOhlc[0];
-        static IEnumerable<BfHistoricalOhlc> JsonDeserialize(TimeSpan period, string json)
+        class Ohlc : IBfOhlc
         {
-            var ohlcs = new List<BfHistoricalOhlc>();
-            var result = JsonConvert.DeserializeObject<JObject>(json)["result"][period.TotalSeconds.ToString()];
+            public DateTime Start { get; set; }
+            public double Open { get; set; }
+            public double High { get; set; }
+            public double Low { get; set; }
+            public double Close { get; set; }
+            public double Volume { get; set; }
+        }
+
+        static readonly Ohlc[] _errorResult = new Ohlc[0];
+        static IEnumerable<Ohlc> JsonDeserialize(TimeSpan frameSpan, string json)
+        {
+            var ohlcs = new List<Ohlc>();
+            var result = JsonConvert.DeserializeObject<JObject>(json)["result"][frameSpan.TotalSeconds.ToString()];
             foreach (var element in result)
             {
-                var ohlc = new BfHistoricalOhlc();
+                var ohlc = new Ohlc();
                 var closeTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse((string)element[0])).UtcDateTime;
                 ohlc.Open = double.Parse((string)element[1]);
                 ohlc.High = double.Parse((string)element[2]);
                 ohlc.Low = double.Parse((string)element[3]);
                 ohlc.Close = double.Parse((string)element[4]);
                 ohlc.Volume = double.Parse((string)element[5]);
-                ohlc.Start = closeTime - period;
+                ohlc.Start = closeTime - frameSpan;
                 ohlcs.Add(ohlc);
             }
             return ohlcs;
         }
 
-        public static IEnumerable<BfHistoricalOhlc> Get(BfProductCode productCode, TimeSpan frameSpan, DateTime beforeClose, DateTime afterClose)
+        public static IEnumerable<IBfOhlc> Get(BfProductCode productCode, TimeSpan frameSpan, DateTime beforeClose, DateTime afterClose)
         {
             if (!_productSymbols.ContainsKey(productCode))
             {
                 throw new NotSupportedException(string.Format("Product '{0}' is not supported.", productCode));
             }
-            if (!SupportedPeriods.Contains(frameSpan))
+            if (!SupportedFrameSpans.Contains(frameSpan))
             {
                 throw new NotSupportedException(string.Format("Frame span '{0}' is not supported.", frameSpan));
             }

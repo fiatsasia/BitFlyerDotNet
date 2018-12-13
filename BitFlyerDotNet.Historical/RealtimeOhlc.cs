@@ -21,7 +21,7 @@ namespace BitFlyerDotNet.Historical
         public double Volume { get { return BuyVolume + SellVolume + ExecutedVolume; } }
 
         // IBfOhlcEx
-        public int TickCount { get; private set; }
+        public int ExecutionCount { get; private set; }
         public double VWAP { get; private set; }
         public double BuyVolume { get; private set; }
         public double SellVolume { get; private set; }
@@ -40,7 +40,7 @@ namespace BitFlyerDotNet.Historical
 
         public RealtimeOhlc Update(IBfExecution exec)
         {
-            TickCount++;
+            ExecutionCount++;
             if (exec.ExecutedTime < Start)
             {
                 Start = exec.ExecutedTime;

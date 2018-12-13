@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.IO;
 using System.Linq;
 using System.Diagnostics;
@@ -12,6 +13,8 @@ namespace HistoricalApiTests
     [TestClass]
     public class UnitTest1
     {
+        static string _cacheDirectoryPath;
+
         [TestInitialize]
         public void Initialize()
         {
@@ -20,6 +23,7 @@ namespace HistoricalApiTests
         [ClassInitialize]
         public static void Classinitialize(TestContext context)
         {
+            _cacheDirectoryPath = context.Properties["CacheDirectoryPath"].ToString();
         }
 
         [TestMethod]
@@ -38,6 +42,7 @@ namespace HistoricalApiTests
         [TestMethod]
         public void HistoricalOhlcSource()
         {
+#if false
             var cacheFolderBasePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().ProcessName)
@@ -52,17 +57,30 @@ namespace HistoricalApiTests
             });
 
             Console.WriteLine("Completed.");
+#endif
         }
 
         [TestMethod]
-        public void DbCreationTest()
+        public void CacheFillGapsTest()
         {
-            var cacheFolderBasePath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().ProcessName)
-            );
-
-            var ctx = new ExecutionMinuteMarketDbContext(BfProductCode.FXBTCJPY, cacheFolderBasePath, "MARKER");
+            var client = new BitFlyerClient();
+            var cacheFactory = new SqlServerCacheFactory(@"server=(local);Initial Catalog=bitflyer;Integrated Security=True");
+            var cache = cacheFactory.GetExecutionCache(BfProductCode.FXBTCJPY);
+            var completed = new ManualResetEvent(false);
+            var recentTime = DateTime.UtcNow;
+            cache.UpdateRecents(client).Subscribe(exec =>
+            {
+                if (exec.ExecutedTime.Day != recentTime.Day)
+                {
+                    recentTime = exec.ExecutedTime;
+                    Console.WriteLine("{0} Completed", recentTime.ToLocalTime().Date);
+                }
+            },
+            () =>
+            {
+                completed.Set();
+            });
+            completed.WaitOne();
         }
     }
 }

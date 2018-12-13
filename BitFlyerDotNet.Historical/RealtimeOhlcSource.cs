@@ -19,7 +19,7 @@ namespace BitFlyerDotNet.Historical
 
         public delegate void RealtimeOhlcUpdated(RealtimeOhlc ohlc);
 
-        public RealtimeOhlcSource(HistoricalExecutionSourceFactory historicalFactory, BfProductCode productCode, TimeSpan frameSpan, IObservable<BfExecution> realtime)
+        public RealtimeOhlcSource(ExecutionCachedSourceFactory historicalFactory, BfProductCode productCode, TimeSpan frameSpan, IObservable<BfExecution> realtime)
         {
             IDisposable subscribed = null;
             _source = Observable.Create<RealtimeOhlc>(observer =>
@@ -33,7 +33,7 @@ namespace BitFlyerDotNet.Historical
                     {
                         firstOhlc = currentOhlc = new RealtimeOhlc(current);
                         var refTime = current.ExecutedTime.Round(frameSpan);
-                        subscribed = historicalFactory.GetHistoricalExecutionSource(productCode, current.ExecutionId)
+                        subscribed = historicalFactory.GetExecutionCachedSource(productCode, current.ExecutionId)
                         .TakeWhile(tick => tick.ExecutedTime >= refTime)
                         .Finally(() =>
                         {

@@ -10,16 +10,18 @@ namespace BitFlyerDotNet.Historical
 {
     public class HistoricalOhlcSourceFactory
     {
+        ICacheFactory _cacheFactory;
         string _cacheFolderBasePath;
 
-        public HistoricalOhlcSourceFactory(string cacheFolderBasePath)
+        public HistoricalOhlcSourceFactory(ICacheFactory cacheFactory, string cacheFolderBasePath)
         {
+            _cacheFactory = cacheFactory;
             _cacheFolderBasePath = cacheFolderBasePath;
         }
 
         public IObservable<IBfOhlc> GetHistoricalOhlcSource(BfProductCode productCode, TimeSpan frameSpan, DateTime endFrom, TimeSpan span)
         {
-            return new HistoricalOhlcSource(productCode, frameSpan, endFrom, span, _cacheFolderBasePath);
+            return new HistoricalOhlcSource(_cacheFactory, productCode, frameSpan, endFrom, span, _cacheFolderBasePath);
         }
     }
 }

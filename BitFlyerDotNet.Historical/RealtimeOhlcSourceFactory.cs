@@ -11,9 +11,9 @@ namespace BitFlyerDotNet.Historical
     public class RealtimeOhlcSourceFactory
     {
         RealtimeSourceFactory _realtimeFactory;
-        HistoricalExecutionSourceFactory _historicalFactory;
+        ExecutionCachedSourceFactory _historicalFactory;
 
-        public RealtimeOhlcSourceFactory(RealtimeSourceFactory realtimeFactory, HistoricalExecutionSourceFactory historicalFactory)
+        public RealtimeOhlcSourceFactory(RealtimeSourceFactory realtimeFactory, ExecutionCachedSourceFactory historicalFactory)
         {
             _realtimeFactory = realtimeFactory;
             _historicalFactory = historicalFactory;

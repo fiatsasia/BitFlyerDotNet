@@ -17,9 +17,19 @@ namespace BitFlyerDotNet.LightningApi
         double Volume { get; }
     }
 
+    public class BfOhlc : IBfOhlc
+    {
+        public DateTime Start { get; }
+        public double Open { get; }
+        public double High { get; }
+        public double Low { get; }
+        public double Close { get; }
+        public double Volume { get; }
+    }
+
     public interface IBfOhlcEx : IBfOhlc
     {
-        int TickCount { get; }
+        int ExecutionCount { get; }
         double VWAP { get; }
         double BuyVolume { get; }
         double SellVolume { get; }
