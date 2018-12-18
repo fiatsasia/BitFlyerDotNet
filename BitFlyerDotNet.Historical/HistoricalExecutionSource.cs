@@ -18,7 +18,7 @@ namespace BitFlyerDotNet.Historical
     {
         const int ReadCountMax = 500;
         static readonly TimeSpan ErrorInterval = TimeSpan.FromMilliseconds(15000); // Public API is limited 500 requests in a minute.
-        static readonly TimeSpan ReadInterval = TimeSpan.FromMilliseconds(1000);
+        static readonly TimeSpan ReadInterval = TimeSpan.FromMilliseconds(0);
 
         CancellationTokenSource _cancel = new CancellationTokenSource();
         CompositeDisposable _disposables = new CompositeDisposable();

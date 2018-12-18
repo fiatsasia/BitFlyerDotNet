@@ -14,6 +14,7 @@ namespace BitFlyerDotNet.Historical
     abstract class BfDbContextBaseSqlServer : DbContext
     {
         readonly string _connStr;
+        static readonly TimeSpan CommandTimeout = TimeSpan.MaxValue;
 
         public abstract DbSet<DbManageRecord> GetManageTable();
         public abstract DbSet<DbExecution> GetExecutions();
@@ -25,6 +26,7 @@ namespace BitFlyerDotNet.Historical
         {
             _connStr = connStr;
             ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            Database.SetCommandTimeout(CommandTimeout);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -109,33 +111,45 @@ namespace BitFlyerDotNet.Historical
     class SqlServerCacheDbContext : ICacheDbContext
     {
         public BfProductCode ProductCode { get; }
+        string _connStr;
 
         BfDbContextBaseSqlServer _ctx;
 
         public SqlServerCacheDbContext(string connStr, BfProductCode productCode)
         {
+            _connStr = connStr;
             ProductCode = productCode;
+            CreateContext();
+        }
+
+        void CreateContext()
+        {
             switch (ProductCode)
             {
                 case BfProductCode.FXBTCJPY:
-                    _ctx = new BfFxBtcJpyDbContextSqlServer(connStr);
+                    _ctx = new BfFxBtcJpyDbContextSqlServer(_connStr);
                     break;
 
                 case BfProductCode.BTCJPY:
-                    _ctx = new BfBtcJpyDbContextSqlServer(connStr);
+                    _ctx = new BfBtcJpyDbContextSqlServer(_connStr);
                     break;
 
                 case BfProductCode.ETHBTC:
-                    _ctx = new BfEthBtcDbContextSqlServer(connStr);
+                    _ctx = new BfEthBtcDbContextSqlServer(_connStr);
                     break;
 
                 case BfProductCode.BCHBTC:
-                    _ctx = new BfBCHBtcDbContextSqlServer(connStr);
+                    _ctx = new BfBCHBtcDbContextSqlServer(_connStr);
                     break;
 
                 default:
                     throw new NotSupportedException();
             }
+        }
+
+        public void Dispose()
+        {
+            _ctx.Dispose();
         }
 
         public void SaveExecutionChanges()
@@ -145,6 +159,8 @@ namespace BitFlyerDotNet.Historical
 
         public void ClearCache()
         {
+            _ctx.Dispose();
+            CreateContext();
         }
 
         //
@@ -169,6 +185,11 @@ namespace BitFlyerDotNet.Historical
         //
         // Executions
         //
+        public IEnumerable<IBfExecution> GetBackwardExecutions()
+        {
+            return _ctx.GetExecutions();
+        }
+
         public IEnumerable<IBfExecution> GetBackwardExecutions(int before, int after)
         {
             return _ctx.GetExecutions()

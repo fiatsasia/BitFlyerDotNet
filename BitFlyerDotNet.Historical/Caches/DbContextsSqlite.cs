@@ -15,15 +15,12 @@ namespace BitFlyerDotNet.Historical
 {
     abstract class BfDbContextSqliteBase : DbContext
     {
-        readonly string _dbFilePath;
+        readonly string _connStr;
 
-        public BfDbContextSqliteBase(DbContextOptions options, BfProductCode productCode, string cacheFolderBasePath, string name)
+        public BfDbContextSqliteBase(DbContextOptions options, string connStr)
             : base(options)
         {
-            var dbFolderPath = Path.Combine(cacheFolderBasePath, productCode.ToString());
-            Directory.CreateDirectory(dbFolderPath);
-
-            _dbFilePath = Path.Combine(dbFolderPath, name + ".db3");
+            _connStr = connStr;
             ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             this.Database.EnsureCreated();
         }
@@ -39,12 +36,21 @@ namespace BitFlyerDotNet.Historical
                 command.ExecuteNonQuery();
             }
 #endif
-            modelBuilder.Entity<DbHistoricalOhlc>().HasKey(c => new { c.FrameSpanSeconds, c.Start });
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite("data source=" + _dbFilePath);
+            optionsBuilder.UseSqlite(_connStr);
+        }
+    }
+
+    class ManageSqliteDbContext : BfDbContextSqliteBase
+    {
+        public DbSet<DbManageRecord> Instance { get; set; }
+
+        public ManageSqliteDbContext(string connStr)
+            : base(new DbContextOptionsBuilder<ManageSqliteDbContext>().Options, connStr)
+        {
         }
     }
 
@@ -52,8 +58,8 @@ namespace BitFlyerDotNet.Historical
     {
         public DbSet<DbExecution> Instance { get; set; }
 
-        public ExecutionsDbSqliteContext(BfProductCode productCode, string cacheFolderBasePath, string name)
-            : base(new DbContextOptionsBuilder<ExecutionsDbSqliteContext>().Options, productCode, cacheFolderBasePath, name)
+        public ExecutionsDbSqliteContext(string connStr)
+            : base(new DbContextOptionsBuilder<ExecutionsDbSqliteContext>().Options, connStr)
         {
         }
 
@@ -64,22 +70,12 @@ namespace BitFlyerDotNet.Historical
         }
     }
 
-    class ManageSqliteDbContext : BfDbContextSqliteBase
-    {
-        public DbSet<DbManageRecord> Instance { get; set; }
-
-        public ManageSqliteDbContext(BfProductCode productCode, string cacheFolderBasePath, string name)
-            : base(new DbContextOptionsBuilder<ManageSqliteDbContext>().Options, productCode, cacheFolderBasePath, name)
-        {
-        }
-    }
-
     class MarkerSqliteDbContext : BfDbContextSqliteBase
     {
         public DbSet<DbMinuteMarker> Instance { get; set; }
 
-        public MarkerSqliteDbContext(BfProductCode productCode, string cacheFolderBasePath, string name)
-            : base(new DbContextOptionsBuilder<MarkerSqliteDbContext>().Options, productCode, cacheFolderBasePath, name)
+        public MarkerSqliteDbContext(string connStr)
+            : base(new DbContextOptionsBuilder<MarkerSqliteDbContext>().Options, connStr)
         {
         }
     }
@@ -89,13 +85,18 @@ namespace BitFlyerDotNet.Historical
     {
         public DbSet<DbHistoricalOhlc> Instance { get; set; }
 
-        public OhlcSqliteDbContext(BfProductCode productCode, string cacheFolderBasePath, string name)
-            : base(new DbContextOptionsBuilder<OhlcSqliteDbContext>().Options, productCode, cacheFolderBasePath, name)
+        public OhlcSqliteDbContext(string connStr)
+            : base(new DbContextOptionsBuilder<OhlcSqliteDbContext>().Options, connStr)
         {
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<DbHistoricalOhlc>().HasKey(c => new { c.FrameSpanSeconds, c.Start });
         }
     }
 
-    class SqliteCacheDbContext : ICacheDbContext
+    class SqliteCacheDbContext : ICacheDbContext //, IDisposable
     {
         // Parameters
         public BfProductCode ProductCode { get; }
@@ -110,10 +111,24 @@ namespace BitFlyerDotNet.Historical
         {
             _cacheFolderBasePath = cacheFolderBasePath;
             ProductCode = productCode;
+            CreateContext();
+        }
 
-            _ctxManage = new ManageSqliteDbContext(productCode, cacheFolderBasePath, "MANAGE");
-            _ctxExec = new ExecutionsDbSqliteContext(productCode, cacheFolderBasePath, "EXEC");
-            _ctxMarker = new MarkerSqliteDbContext(productCode, cacheFolderBasePath, "MARKER");
+        void CreateContext()
+        {
+            var dbFolderPath = Path.Combine(_cacheFolderBasePath, ProductCode.ToString());
+            Directory.CreateDirectory(dbFolderPath);
+
+            _ctxManage = new ManageSqliteDbContext("data source=" + Path.Combine(dbFolderPath, "MANAGE.db3"));
+            _ctxExec = new ExecutionsDbSqliteContext("data source=" + Path.Combine(dbFolderPath, "EXEC.db3"));
+            _ctxMarker = new MarkerSqliteDbContext("data source=" + Path.Combine(dbFolderPath, "MARKER.db3"));
+        }
+
+        public void Dispose()
+        {
+            _ctxManage.Dispose();
+            _ctxExec.Dispose();
+            _ctxMarker.Dispose();
         }
 
         public void SaveExecutionChanges()
@@ -125,6 +140,10 @@ namespace BitFlyerDotNet.Historical
 
         public void ClearCache()
         {
+            _ctxManage.Dispose();
+            _ctxExec.Dispose();
+            _ctxMarker.Dispose();
+            CreateContext();
         }
 
         //
@@ -149,9 +168,14 @@ namespace BitFlyerDotNet.Historical
         //
         // Executions
         //
+        public IEnumerable<IBfExecution> GetBackwardExecutions()
+        {
+            return _ctxExec.Instance.AsNoTracking();
+        }
+
         public IEnumerable<IBfExecution> GetBackwardExecutions(int before, int after)
         {
-            return _ctxExec.Instance
+            return _ctxExec.Instance.AsNoTracking()
                 .Where(exec => exec.ExecutionId < before && exec.ExecutionId > after)
                 .OrderByDescending(exec => exec.ExecutedTime)
                 .ThenByDescending(exec => exec.ExecutionId);
@@ -175,7 +199,10 @@ namespace BitFlyerDotNet.Historical
 
             var ctx = _ohlcs.GetOrAdd(frameSpan, _ =>
             {
-                return new OhlcSqliteDbContext(ProductCode, _cacheFolderBasePath, string.Format("OHLC_{0}", Convert.ToInt32(frameSpan.TotalMinutes)));
+                var dbFolderPath = Path.Combine(_cacheFolderBasePath, ProductCode.ToString());
+                Directory.CreateDirectory(dbFolderPath);
+                var dbFileName = string.Format("OHLC_{0}.db3", Convert.ToInt32(frameSpan.TotalMinutes));
+                return new OhlcSqliteDbContext("data source=" + Path.Combine(dbFolderPath, dbFileName));
             });
 
             return ctx.Instance;
@@ -184,7 +211,7 @@ namespace BitFlyerDotNet.Historical
         public IEnumerable<IBfOhlc> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span)
         {
             var end = endFrom - span + frameSpan;
-            return GetOhlc(frameSpan).Where(e => e.Start <= endFrom && e.Start >= end).OrderByDescending(e => e.Start);
+            return GetOhlc(frameSpan).AsNoTracking().Where(e => e.Start <= endFrom && e.Start >= end).OrderByDescending(e => e.Start);
         }
 
         public void AddOhlc(TimeSpan frameSpan, IBfOhlc ohlc)

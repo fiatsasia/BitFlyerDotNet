@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+//==============================================================================
+// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
+// http://www.fiats.asia/
+//
+-->
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:SFDTicker"
+             x:Class="SFDTicker.MainPage"
+             BackgroundColor="{Binding ExchangeStatusColor}">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <x:Double x:Key="labelFontSize">24</x:Double>
+            <x:Double x:Key="textFontSize">48</x:Double>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <StackLayout>
+        <Label Text="FXBTCJPY price" FontSize="{StaticResource labelFontSize}" />
+        <Label x:Name="priceFXBTCJPY" FontSize="{StaticResource textFontSize}" Text="{Binding PriceFXBTCJPY, StringFormat='{}{0:0,0}'}" HorizontalTextAlignment="Center" />
+
+        <Label Text="FXBTCJPY/BTCJPY difference" FontSize="{StaticResource labelFontSize}" />
+        <Label x:Name="sFDDifference" FontSize="{StaticResource textFontSize}" Text="{Binding SFDDifference, StringFormat='{}{0:0.000000%}'}" HorizontalTextAlignment="Center" />
+
+        <Label Text="BTCJPY Price:" FontSize="{StaticResource labelFontSize}" />
+        <Label x:Name="priceBTCJPY" FontSize="{StaticResource textFontSize}" Text="{Binding PriceBTCJPY, StringFormat='{}{0:0,0}'}" HorizontalTextAlignment="Center" />
+
+        <Label Text="SFD Rate:" FontSize="{StaticResource labelFontSize}" />
+        <Label x:Name="sFDRate" FontSize="{StaticResource textFontSize}" Text="{Binding SFDRate, StringFormat='{}{0:0.00%}'}" HorizontalTextAlignment="Center" />
+
+        <Label Text="Exchange status:" FontSize="{StaticResource labelFontSize}" />
+        <Label x:Name="exchangeStatus" FontSize="{StaticResource textFontSize}" Text="{Binding ExchangeStatus}" HorizontalTextAlignment="Center" />
+    </StackLayout>
+
+</ContentPage>

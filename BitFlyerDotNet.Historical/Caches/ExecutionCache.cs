@@ -15,6 +15,7 @@ namespace BitFlyerDotNet.Historical
 {
     class ExecutionCache : IExecutionCache
     {
+        public int CommitCount { get; set; } = 10000;
         readonly ICacheDbContext _ctx;
 
         public ExecutionCache(ICacheDbContext ctx)
@@ -23,6 +24,12 @@ namespace BitFlyerDotNet.Historical
             OptimizeManageTable();
         }
 
+        public void Dispose()
+        {
+            _ctx.Dispose();
+        }
+
+        public IEnumerable<IBfExecution> GetBackwardExecutions() { return _ctx.GetBackwardExecutions(); }
         public IEnumerable<IBfExecution> GetBackwardExecutions(int before, int after) { return _ctx.GetBackwardExecutions(before, after); }
         public List<IManageRecord> GetManageTable() { return _ctx.GetManageTable(); }
 
@@ -84,10 +91,19 @@ namespace BitFlyerDotNet.Historical
 
         public IObservable<IBfExecution> FillGaps(BitFlyerClient client)
         {
-            return _ctx.GetManageTable().Buffer(2, 1).SkipLast(1).Select(b =>
+            return _ctx.GetManageTable().Buffer(2, 1).SkipLast(1).Select(rec =>
             {
-                return new HistoricalExecutionSource(client, _ctx.ProductCode, b[0].StartExecutionId, b[1].EndExecutionId).Finally(() => SaveChanges());
-            }).Merge().Select(exec =>
+                var count = 0;
+                return new HistoricalExecutionSource(client, _ctx.ProductCode, rec[0].StartExecutionId, rec[1].EndExecutionId)
+                .Select(exec => { count++; return exec; })
+                .Finally(() =>
+                {
+                    if (count == 0)
+                    {
+                        InsertGap(rec[0].StartExecutionId, rec[1].EndExecutionId);
+                    }
+                });
+            }).Concat().Select(exec =>
             {
                 Add(exec);
                 return exec;
@@ -95,7 +111,6 @@ namespace BitFlyerDotNet.Historical
             .Finally(() =>
             {
                 SaveChanges();
-                OptimizeManageTable();
             });
         }
 
@@ -117,7 +132,6 @@ namespace BitFlyerDotNet.Historical
             .Finally(() =>
             {
                 SaveChanges();
-                OptimizeManageTable();
             });
         }
 
@@ -137,6 +151,7 @@ namespace BitFlyerDotNet.Historical
             if (_manageRec.ExecutionCount >= CommitCount)
             {
                 SaveChanges();
+                _ctx.ClearCache();
             }
         }
 
@@ -180,12 +195,6 @@ namespace BitFlyerDotNet.Historical
             _lastExec = exec;
         }
 
-        const int CommitCount = 10000;
-        public void ClearCache()
-        {
-            _ctx.ClearCache();
-        }
-
         public void SaveChanges()
         {
             _ctx.SaveExecutionChanges();
@@ -198,7 +207,6 @@ namespace BitFlyerDotNet.Historical
             Debug.WriteLine("HistoricalCache committing executions... {0} - {1}", _manageRec.StartExecutedTime.ToLocalTime(), _manageRec.EndExecutedTime.ToLocalTime());
             _ctx.AddManageRecord(_manageRec);
             _ctx.SaveExecutionChanges();
-            _ctx.ClearCache();
             _manageRec = null;
             Debug.WriteLine("HistoricalCache committed.");
         }
@@ -215,7 +223,6 @@ namespace BitFlyerDotNet.Historical
             blockRow.TransactionKind = "I";
             _ctx.AddManageRecord(blockRow);
             _ctx.SaveExecutionChanges();
-            _ctx.ClearCache();
 
             Debug.WriteLine("HistoricalCache committed.");
         }

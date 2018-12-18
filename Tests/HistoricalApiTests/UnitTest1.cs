@@ -61,7 +61,7 @@ namespace HistoricalApiTests
         }
 
         [TestMethod]
-        public void CacheFillGapsTest()
+        public void CacheUpdateRecentTest()
         {
             var client = new BitFlyerClient();
             var cacheFactory = new SqlServerCacheFactory(@"server=(local);Initial Catalog=bitflyer;Integrated Security=True");
@@ -69,6 +69,29 @@ namespace HistoricalApiTests
             var completed = new ManualResetEvent(false);
             var recentTime = DateTime.UtcNow;
             cache.UpdateRecents(client).Subscribe(exec =>
+            {
+                if (exec.ExecutedTime.Day != recentTime.Day)
+                {
+                    recentTime = exec.ExecutedTime;
+                    Console.WriteLine("{0} Completed", recentTime.ToLocalTime().Date);
+                }
+            },
+            () =>
+            {
+                completed.Set();
+            });
+            completed.WaitOne();
+        }
+
+        [TestMethod]
+        public void CacheFillGapTest()
+        {
+            var client = new BitFlyerClient();
+            var cacheFactory = new SqlServerCacheFactory(@"server=(local);Initial Catalog=bitflyer;Integrated Security=True");
+            var cache = cacheFactory.GetExecutionCache(BfProductCode.FXBTCJPY);
+            var completed = new ManualResetEvent(false);
+            var recentTime = DateTime.UtcNow;
+            cache.FillGaps(client).Subscribe(exec =>
             {
                 if (exec.ExecutedTime.Day != recentTime.Day)
                 {

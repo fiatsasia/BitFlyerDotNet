@@ -105,10 +105,6 @@ namespace BitFlyerDotNet.Historical
                     last = tick.ExecutionId;
 #endif
                     ticks++;
-                    if (ticks % 10000 == 0)
-                    {
-                        _cache.ClearCache();
-                    }
                     observer.OnNext(tick);
                 }
 #if DEBUG

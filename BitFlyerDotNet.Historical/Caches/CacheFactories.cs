@@ -4,7 +4,6 @@
 //
 
 using System;
-using System.Collections.Concurrent;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -18,7 +17,6 @@ namespace BitFlyerDotNet.Historical
     public class SqliteCacheFactory : ICacheFactory
     {
         string _cacheFolderPath;
-        ConcurrentDictionary<BfProductCode, SqliteCacheDbContext> _cacheContext = new ConcurrentDictionary<BfProductCode, SqliteCacheDbContext>();
 
         public SqliteCacheFactory(string cacheFolderPath)
         {
@@ -27,19 +25,18 @@ namespace BitFlyerDotNet.Historical
 
         public IExecutionCache GetExecutionCache(BfProductCode productCode)
         {
-            return new ExecutionCache(_cacheContext.GetOrAdd(productCode, _ => { return new SqliteCacheDbContext(_cacheFolderPath, productCode); }));
+            return new ExecutionCache(new SqliteCacheDbContext(_cacheFolderPath, productCode));
         }
 
         public IOhlcCache GetOhlcCache(BfProductCode productCode, TimeSpan frameSpan)
         {
-            return new OhlcCache(_cacheContext.GetOrAdd(productCode, _ => { return new SqliteCacheDbContext(_cacheFolderPath, productCode); }), frameSpan);
+            return new OhlcCache(new SqliteCacheDbContext(_cacheFolderPath, productCode), frameSpan);
         }
     }
 
     public class SqlServerCacheFactory : ICacheFactory
     {
         readonly string _connStr;
-        ConcurrentDictionary<BfProductCode, SqlServerCacheDbContext> _cacheContext = new ConcurrentDictionary<BfProductCode, SqlServerCacheDbContext>();
 
         public SqlServerCacheFactory(string connStr)
         {
@@ -48,12 +45,12 @@ namespace BitFlyerDotNet.Historical
 
         public IExecutionCache GetExecutionCache(BfProductCode productCode)
         {
-            return new ExecutionCache(_cacheContext.GetOrAdd(productCode, _ => { return new SqlServerCacheDbContext(_connStr, productCode); }));
+            return new ExecutionCache(new SqlServerCacheDbContext(_connStr, productCode));
         }
 
         public IOhlcCache GetOhlcCache(BfProductCode productCode, TimeSpan frameSpan)
         {
-            return new OhlcCache(_cacheContext.GetOrAdd(productCode, _ => { return new SqlServerCacheDbContext(_connStr, productCode); }), frameSpan);
+            return new OhlcCache(new SqlServerCacheDbContext(_connStr, productCode), frameSpan);
         }
     }
 }

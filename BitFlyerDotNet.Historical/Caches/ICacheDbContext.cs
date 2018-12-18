@@ -10,7 +10,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    interface ICacheDbContext
+    interface ICacheDbContext : IDisposable
     {
         BfProductCode ProductCode { get; }
 
@@ -20,6 +20,7 @@ namespace BitFlyerDotNet.Historical
         void UpdateManageTable(IEnumerable<IManageRecord> manageRecs);
 
         // Executions
+        IEnumerable<IBfExecution> GetBackwardExecutions();
         IEnumerable<IBfExecution> GetBackwardExecutions(int before, int after);
         void AddExecution(IBfExecution exec);
 
