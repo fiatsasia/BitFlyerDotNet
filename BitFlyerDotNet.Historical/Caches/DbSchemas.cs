@@ -230,6 +230,7 @@ namespace BitFlyerDotNet.Historical
             Low = ohlc.Low;
             Close = ohlc.Close;
             Volume = ohlc.Volume;
+            VWAP = ohlc.VWAP;
             FrameSpan = frameSpan;
         }
 

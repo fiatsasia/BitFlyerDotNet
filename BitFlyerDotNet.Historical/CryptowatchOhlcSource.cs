@@ -67,6 +67,7 @@ namespace BitFlyerDotNet.Historical
             public double Low { get; set; }
             public double Close { get; set; }
             public double Volume { get; set; }
+            public double VWAP { get; set; }
         }
 
         static readonly Ohlc[] _errorResult = new Ohlc[0];
@@ -83,6 +84,7 @@ namespace BitFlyerDotNet.Historical
                 ohlc.Low = double.Parse((string)element[3]);
                 ohlc.Close = double.Parse((string)element[4]);
                 ohlc.Volume = double.Parse((string)element[5]);
+                ohlc.VWAP = Convert.ToDouble(decimal.Parse((string)element[6]) / Convert.ToDecimal(ohlc.Volume));
                 ohlc.Start = closeTime - frameSpan;
                 ohlcs.Add(ohlc);
             }

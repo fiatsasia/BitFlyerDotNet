@@ -15,6 +15,7 @@ namespace BitFlyerDotNet.LightningApi
         double Low { get; }
         double Close { get; }
         double Volume { get; }
+        double VWAP { get; }
     }
 
     public class BfOhlc : IBfOhlc
@@ -25,12 +26,12 @@ namespace BitFlyerDotNet.LightningApi
         public double Low { get; }
         public double Close { get; }
         public double Volume { get; }
+        public double VWAP { get; }
     }
 
     public interface IBfOhlcEx : IBfOhlc
     {
         int ExecutionCount { get; }
-        double VWAP { get; }
         double BuyVolume { get; }
         double SellVolume { get; }
         double ExecutedVolume { get; }

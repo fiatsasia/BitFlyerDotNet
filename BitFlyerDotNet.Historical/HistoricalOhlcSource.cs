@@ -45,8 +45,7 @@ namespace BitFlyerDotNet.Historical
                     _cache.SaveChanges();
                 }
                 observer.OnCompleted();
-                return () => 
-                { };
+                return () => { };
             });
 
             // Cryptowatchの取得リミットに到達していた場合の対処
