@@ -31,6 +31,9 @@ namespace BitFlyerDotNet.Trading
         string[] _permissions;
         ConcurrentBag<BfPosition> _positions = new ConcurrentBag<BfPosition>();
         public IEnumerable<BfPosition> Positions { get { return _positions; } }
+        public ConcurrentBag<ParentOrder> ActiveParentOrders { get; private set; }
+        public ConcurrentBag<ChildOrder> ActiveChildOrders { get; private set; }
+
         CompositeDisposable _disposables = new CompositeDisposable();
 
         // Realtime resources
@@ -98,6 +101,35 @@ namespace BitFlyerDotNet.Trading
                 }
 
                 resp.GetResult().ForEach(e => _positions.Add(e));
+            }
+
+            // Get active orders
+            {
+                var resp = Client.GetParentOrders(ProductCode, BfOrderState.Active);
+                if (resp.IsError)
+                {
+                    throw new ApplicationException(resp.ErrorMessage);
+                }
+
+                resp.GetResult().ForEach(e =>
+                {
+                    var resp2 = Client.GetParentOrder(ProductCode, e.ParentOrderId);
+                    if (resp2.IsError)
+                    {
+                        throw new ApplicationException(resp.ErrorMessage);
+                    }
+
+                    ActiveParentOrders.Add(new ParentOrder(ProductCode, resp2.GetResult()));
+                });
+            }
+            {
+                var resp = Client.GetChildOrders(ProductCode, BfOrderState.Active);
+                if (resp.IsError)
+                {
+                    throw new ApplicationException(resp.ErrorMessage);
+                }
+
+                resp.GetResult().ForEach(e => ActiveChildOrders.Add(new ChildOrder(ProductCode, e)));
             }
         }
 

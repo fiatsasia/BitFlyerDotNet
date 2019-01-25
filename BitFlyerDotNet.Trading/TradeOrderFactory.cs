@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
 // http://www.fiats.asia/
 //
 
@@ -7,46 +7,46 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public partial class TradingAccount : ITradingAccount
+    public static class TradeOrderFactory
     {
-        public IChildOrderTransaction CreateMarketPriceOrder(BfTradeSide side, double size)
+        public static IChildOrderTransaction CreateMarketPriceOrder(TradingAccount account, BfTradeSide side, double size)
         {
-            return new ChildOrderTransaction(this, BfOrderType.Market, side, size);
+            return new ChildOrderTransaction(account, BfOrderType.Market, side, size);
         }
 
-        public IChildOrderTransaction CreateLimitPriceOrder(BfTradeSide side, double size, double price)
+        public static IChildOrderTransaction CreateLimitPriceOrder(TradingAccount account, BfTradeSide side, double size, double price)
         {
-            return new ChildOrderTransaction(this, BfOrderType.Limit, side, size, price);
+            return new ChildOrderTransaction(account, BfOrderType.Limit, side, size, price);
         }
 
-        public IParentOrderTransaction CreateStopOrder(BfTradeSide side, double size, double stopTriggerPrice)
+        public static IParentOrderTransaction CreateStopOrder(TradingAccount account, BfTradeSide side, double size, double stopTriggerPrice)
         {
-            return new ParentOrderTransaction(this, BfOrderType.Simple, new IChildOrder[] { new StopOrder(this.ProductCode, side, size, stopTriggerPrice) });
+            return new ParentOrderTransaction(account, BfOrderType.Simple, new IChildOrder[] { new StopOrder(account.ProductCode, side, size, stopTriggerPrice) });
         }
 
-        public IParentOrderTransaction CreateStopLimitOrder(BfTradeSide side, double size, double price, double stopTriggerPrice)
+        public static IParentOrderTransaction CreateStopLimitOrder(TradingAccount account, BfTradeSide side, double size, double price, double stopTriggerPrice)
         {
-            return new ParentOrderTransaction(this, BfOrderType.Simple, new IChildOrder[] { new StopLimitOrder(this.ProductCode, side, size, price, stopTriggerPrice) });
+            return new ParentOrderTransaction(account, BfOrderType.Simple, new IChildOrder[] { new StopLimitOrder(account.ProductCode, side, size, price, stopTriggerPrice) });
         }
 
-        public IParentOrderTransaction CreateTrailOrder(BfTradeSide side, double size, double trailingStopPriceOffset)
+        public static IParentOrderTransaction CreateTrailOrder(TradingAccount account, BfTradeSide side, double size, double trailingStopPriceOffset)
         {
-            return new ParentOrderTransaction(this, BfOrderType.Simple, new IChildOrder[] { new TrailingStopOrder(this.ProductCode, side, size, trailingStopPriceOffset) });
+            return new ParentOrderTransaction(account, BfOrderType.Simple, new IChildOrder[] { new TrailingStopOrder(account.ProductCode, side, size, trailingStopPriceOffset) });
         }
 
-        public IParentOrderTransaction CreateIFD(IChildOrder first, IChildOrder second)
+        public static IParentOrderTransaction CreateIFD(TradingAccount account, IChildOrder first, IChildOrder second)
         {
-            return new ParentOrderTransaction(this, BfOrderType.IFD, new IChildOrder[] { first, second });
+            return new ParentOrderTransaction(account, BfOrderType.IFD, new IChildOrder[] { first, second });
         }
 
-        public IParentOrderTransaction CreateOCO(IChildOrder first, IChildOrder second)
+        public static IParentOrderTransaction CreateOCO(TradingAccount account, IChildOrder first, IChildOrder second)
         {
-            return new ParentOrderTransaction(this, BfOrderType.OCO, new IChildOrder[] { first, second });
+            return new ParentOrderTransaction(account, BfOrderType.OCO, new IChildOrder[] { first, second });
         }
 
-        public IParentOrderTransaction CreateIFDOCO(IChildOrder ifdone, IChildOrder ocoFirst, IChildOrder ocoSecond)
+        public static IParentOrderTransaction CreateIFDOCO(TradingAccount account, IChildOrder ifdone, IChildOrder ocoFirst, IChildOrder ocoSecond)
         {
-            return new ParentOrderTransaction(this, BfOrderType.IFDOCO, new IChildOrder[] { ifdone, ocoFirst, ocoSecond });
+            return new ParentOrderTransaction(account, BfOrderType.IFDOCO, new IChildOrder[] { ifdone, ocoFirst, ocoSecond });
         }
     }
 }

@@ -39,6 +39,26 @@ namespace BitFlyerDotNet.Trading
             StopTriggerPrice = stopTriggerPrice;
             TrailingStopPriceOffset = trailingStopPriceOffset;
         }
+
+        public ChildOrder(BfProductCode productCode, BfChildOrder order)
+        {
+            ProductCode = productCode; // need parsed enum for future aliases
+            OrderType = order.ChildOrderType;
+            Side = order.Side;
+            OrderSize = order.Size;
+            OrderPrice = (order.Price == 0.0) ? double.NaN : order.Price;
+        }
+
+        public ChildOrder(BfProductCode productCode, BfChildOrderElement order)
+        {
+            ProductCode = productCode; // need parsed enum for future aliases
+            OrderType = order.ConditionType;
+            Side = order.Side;
+            OrderSize = order.Size;
+            OrderPrice = (order.Price == 0.0) ? double.NaN : order.Price;
+            StopTriggerPrice = (order.TriggerPrice == 0.0) ? double.NaN : order.TriggerPrice;
+            TrailingStopPriceOffset = (order.Offset == 0.0) ? double.NaN : order.Offset;
+        }
     }
 
     public class LimitPriceOrder : ChildOrder
