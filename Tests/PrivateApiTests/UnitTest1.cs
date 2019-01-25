@@ -374,6 +374,31 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
+        public void GetActiveParentOrders()
+        {
+            var resp = _client.GetParentOrders(_productCode, BfOrderState.Active);
+            if (CheckUnauthorized(resp))
+            {
+                return;
+            }
+            Assert.IsFalse(resp.IsError);
+            DumpJson(resp);
+
+            var orders = resp.GetResult();
+            orders.ForEach(order =>
+            {
+                Console.WriteLine("{0} {1} {2} {3} {4} {5}",
+                    order.ParentOrderAcceptanceId,
+                    order.ParentOrderId,
+                    order.Side,
+                    order.ParentOrderType,
+                    order.ParentOrderState,
+                    order.ParentOrderDate.ToLocalTime()
+                );
+            });
+        }
+
+        [TestMethod]
         public void GetPermissions()
         {
             var resp = _client.GetPermissions();

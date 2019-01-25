@@ -29,7 +29,7 @@ namespace TradingApiTests
         [TestMethod]
         public async void MarketPriceOrderTest1()
         {
-            var order = _account.CreateMarketPriceOrder(BfTradeSide.Buy, Volume);
+            var order = TradeOrderFactory.CreateMarketPriceOrder(_account, BfTradeSide.Buy, Volume);
 
             if (!await _account.PlaceOrder(order))
             {
@@ -49,7 +49,7 @@ namespace TradingApiTests
         {
             var firstOrder = new MarketPriceOrder(ProductCode, BfTradeSide.Buy, Volume);
             var secondOrder = new TrailingStopOrder(ProductCode, BfTradeSide.Sell, Volume, 10000.0);
-            var order = _account.CreateIFD(firstOrder, secondOrder);
+            var order = TradeOrderFactory.CreateIFD(_account, firstOrder, secondOrder);
             if (!await _account.PlaceOrder(order, RetryMax, RetryInterval))
             {
                 switch (order.TransactionStatus)

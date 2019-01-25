@@ -3,29 +3,36 @@
 BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) wrapper and libraries for .NET Standard 2.0.
 
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
-### Install
-```
-PM> Install-Package BitFlyerDotNet.LightningApi
-```
 
 ### Environment 
 - Solution and Projects are for Visual Studio 2017 and 2017 for Mac.
 - .NET Standard 2.0 for libraries.
-- .NET Framework 4.71, .NET Core 2.1 and Xamarin Forms for sample applications.
+- .NET Framework 4.72, .NET Core 2.1 and Xamarin Forms for sample applications.
 - Sample applications are tested on iOS, Android, MacOS and Windows desktop. 
 - [Reactive Extensions (Rx.NET)](http://reactivex.io/)
 - [JSON.NET](https://www.newtonsoft.com/json)
 - Entity Framework Core and SQLite
 
-#### BitFlyerDotNet.LightningAPI
+### BitFlyerDotNet.LightningAPI
+```
+PM> Install-Package BitFlyerDotNet.LightningApi
+```
 - bitFlyer Lightning API wrapper class library
 - Supports all of Public/Private/Realtime APIs
 - Realtime APIs are wrapped by Reactive Extensions
-#### BitFlyerDotNet.Trading
+### BitFlyerDotNet.Trading
+- BitFlyerDotNet.Trading contains BitFlyer.DotNet.LightningAPI
+```
+PM> Install-Package BitFlyerDotNet.Trading
+```
 - Class library for trading applications
 - Quick confirm executed order
 - Error retry, safe cancel, prevent order duplication 
-#### BitFlyerDotNet.Historical
+### BitFlyerDotNet.Historical
+- BitFlyerDotNet.Historical contains BitFlyer.DotNet.LightningAPI
+```
+PM> Install-Package BitFlyerDotNet.Historical
+```
 - Class library for charting applications
 - Smart cache mechanism with Reactive Extensions and Entity Framework Core
 - Realtime updating OHLC stream with execution cache
@@ -79,7 +86,8 @@ client.SendChildOrder(BfProductCode.FXBTCJPY, BfOrderType.Limit, BfTradeSide.Buy
 ## Sample applications
 
 ### SFDTicker
-- WPF/UWP/MacOS/iOS/Android application
+- Xamarin.Forms application.
+- Supports WPF/UWP/MacOS/iOS/Android environments.
 - Displays FX_BTC_JPY/BTC_JPY rate of variance, SFD rate.
 - Displays server health and indicates background color.
 ![SFDTickerScreen](https://i.gyazo.com/74f3e351c2ab5d75785b25db902b81ff.png)
