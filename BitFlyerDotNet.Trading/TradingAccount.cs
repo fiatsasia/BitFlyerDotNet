@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
 // http://www.fiats.asia/
 //
 
@@ -30,9 +30,11 @@ namespace BitFlyerDotNet.Trading
         public BitFlyerClient Client { get; private set; }
         string[] _permissions;
         ConcurrentBag<BfPosition> _positions = new ConcurrentBag<BfPosition>();
-        public IEnumerable<BfPosition> Positions { get { return _positions; } }
-        public ConcurrentBag<ParentOrder> ActiveParentOrders { get; private set; }
-        public ConcurrentBag<ChildOrder> ActiveChildOrders { get; private set; }
+        public IReadOnlyCollection<BfPosition> Positions { get { return _positions; } }
+        ConcurrentBag<ParentOrder> _parentOrders = new ConcurrentBag<ParentOrder>();
+        public IReadOnlyCollection<ParentOrder> ActiveParentOrders { get { return _parentOrders; } }
+        ConcurrentBag<ChildOrder> _childOrders = new ConcurrentBag<ChildOrder>();
+        public IReadOnlyCollection<ChildOrder> ActiveChildOrders { get { return _childOrders; } }
 
         CompositeDisposable _disposables = new CompositeDisposable();
 
@@ -47,7 +49,10 @@ namespace BitFlyerDotNet.Trading
         public event PositionStatusChangedCallback PositionStatusChanged;
 
         public IObservable<BfTicker> TickerSource { get; private set; }
+        public event TickerCallback TickerReceived;
+
         public IObservable<IBfExecution> ExecutionSource { get; private set; }
+        public event ExecutionCallback ExecutionReceived;
 
         public TradingAccount(BfProductCode productCode)
         {
@@ -56,20 +61,24 @@ namespace BitFlyerDotNet.Trading
             // FXBTCJPY の場合は、SFDがあるので、現物も同時に受ける必要がある。
             var factory = new RealtimeSourceFactory();
             TickerSource = factory.GetTickerSource(ProductCode);
-            TickerSource.Subscribe(ticker => { Ticker = ticker; }).AddTo(_disposables);
+            TickerSource.Subscribe(ticker => { Ticker = ticker; TickerReceived?.Invoke(ticker); }).AddTo(_disposables);
             ExecutionSource = factory.GetExecutionSource(ProductCode);
-            ExecutionSource.Subscribe(execution => { _execution = execution; }).AddTo(_disposables);
+            ExecutionSource.Subscribe(execution => { _execution = execution; ExecutionReceived?.Invoke(execution); }).AddTo(_disposables);
             factory.StartExecutionSource(ProductCode);
         }
 
         public void Login(string apiKey, string apiSecret)
         {
-            Client = new BitFlyerClient(apiKey, apiSecret);
-
             if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiSecret))
             {
-                return;
+                throw new ArgumentException("Invalid API ket or secret.");
             }
+
+            if (Client != null)
+            {
+                throw new InvalidOperationException("Already logged-in");
+            }
+            Client = new BitFlyerClient(apiKey, apiSecret);
 
             // Check API permissions
             {
@@ -119,7 +128,7 @@ namespace BitFlyerDotNet.Trading
                         throw new ApplicationException(resp.ErrorMessage);
                     }
 
-                    ActiveParentOrders.Add(new ParentOrder(ProductCode, resp2.GetResult()));
+                    _parentOrders.Add(new ParentOrder(ProductCode, resp2.GetResult()));
                 });
             }
             {
@@ -129,7 +138,18 @@ namespace BitFlyerDotNet.Trading
                     throw new ApplicationException(resp.ErrorMessage);
                 }
 
-                resp.GetResult().ForEach(e => ActiveChildOrders.Add(new ChildOrder(ProductCode, e)));
+                resp.GetResult().ForEach(e => _childOrders.Add(new ChildOrder(ProductCode, e)));
+            }
+        }
+
+        public void Logout()
+        {
+            if (Client != null)
+            {
+                while (!_positions.IsEmpty) _positions.TryTake(out BfPosition pos);
+                while (!_parentOrders.IsEmpty) _parentOrders.TryTake(out ParentOrder po);
+                while (!_childOrders.IsEmpty) _childOrders.TryTake(out ChildOrder co);
+                Client = null;
             }
         }
 

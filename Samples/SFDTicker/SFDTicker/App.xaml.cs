@@ -1,4 +1,8 @@
-﻿using System;
+﻿//==============================================================================
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// http://www.fiats.asia/
+//
+
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 

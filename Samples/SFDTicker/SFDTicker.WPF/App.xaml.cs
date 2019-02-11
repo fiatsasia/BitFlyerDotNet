@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
+﻿//==============================================================================
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// http://www.fiats.asia/
+//
+
 using System.Windows;
 
 namespace SFDTicker.WPF

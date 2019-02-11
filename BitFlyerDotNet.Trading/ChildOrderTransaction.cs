@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
 // http://www.fiats.asia/
 //
 
@@ -183,7 +183,7 @@ namespace BitFlyerDotNet.Trading
 
                     OrderAcceptedTime = _account.ServerTime;
                     UpdateStatus(OrderTransactionState.OrderAccepted);
-                    _orderConfirmPollingTimer = new Timer(OnConfirmPollingTimerExired, this, TimeSpan.Zero, OrderConfirmPollingInterval).AddTo(_disposables);
+                    _orderConfirmPollingTimer = new Timer(OnConfirmPollingTimerExpired, this, TimeSpan.Zero, OrderConfirmPollingInterval).AddTo(_disposables);
                     DebugEx.Trace();
                     return true;
                 }
@@ -240,7 +240,7 @@ namespace BitFlyerDotNet.Trading
             DebugEx.ExitMethod();
         }
 
-        void OnConfirmPollingTimerExired(object _)
+        void OnConfirmPollingTimerExpired(object _)
         {
             DebugEx.EnterMethod();
             _orderConfirmPollingTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop timer

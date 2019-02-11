@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
 // http://www.fiats.asia/
 //
 
@@ -92,6 +92,8 @@ namespace BitFlyerDotNet.Trading
 
     public delegate void OrderTransactionStatusChangedCallback(OrderTransactionState status, IOrderTransaction transaction);
     public delegate void PositionStatusChangedCallback(BfPosition position, bool openedOrClosed);
+    public delegate void ExecutionCallback(IBfExecution execution);
+    public delegate void TickerCallback(BfTicker ticker);
 
     public interface IChildOrder
     {

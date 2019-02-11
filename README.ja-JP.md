@@ -44,7 +44,7 @@ PM> Install-Package BitFlyerDotNet.Historical
 - Xamarin.Forms アプリケーション
 - WPF/UWP/MacOS/iOS/Android をサポート
 - FX_BTC_JPY/BTC_JPY の乖離率、SFD レートを表示します。
-- サーバーのビジー状態を背景色で表示します。
+- サーバーのビジー状態を背景色で表示します。  
 ![SFDTickerScreen](https://i.gyazo.com/74f3e351c2ab5d75785b25db902b81ff.png)
 
 ## 既知の問題

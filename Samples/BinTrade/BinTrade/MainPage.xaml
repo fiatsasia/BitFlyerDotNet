@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:BinTrade;assembly=BinTrade"
+             x:Class="BinTrade.MainPage"
+             
+             BackgroundColor="Black">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <local:PriceEmptyConverter x:Key="priceEmpty" />
+            
+            <Style x:Key="defaultButtonStyle" TargetType="Button">
+                <Setter Property="TextColor" Value="White" />
+                <Setter Property="FontSize" Value="48" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="BorderRadius" Value="20" />
+                <Setter Property="BorderWidth" Value="2" />
+            </Style>
+            <Style x:Key="defaultLabelStyle" TargetType="Label">
+                <Setter Property="TextColor" Value="White" />
+                <Setter Property="FontSize" Value="36" />
+            </Style>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="200" />
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <Button Grid.Row="0" Text="Call ⤴" BackgroundColor="LimeGreen" Style="{StaticResource defaultButtonStyle}"
+                    IsEnabled="{Binding IsOrderPlaceable}"
+                    x:Name="_callButton" Clicked="OnCallClicked" />
+            <Button Grid.Row="1" Text="Put ⤵" BackgroundColor="OrangeRed" Style="{StaticResource defaultButtonStyle}"
+                    IsEnabled="{Binding IsOrderPlaceable}"
+                    x:Name="_putButton" Clicked="OnPutClicked" />
+            <Button Grid.Row="2" Text="Close" BackgroundColor="DarkCyan" Style="{StaticResource defaultButtonStyle}"
+                    IsEnabled="{Binding IsPositionCloseable}"
+                    x:Name="_closeButton" Clicked="OnCloseClicked" />
+        </Grid>
+
+        <Grid Grid.Column="0" VerticalOptions="Center" Margin="10,0,10,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Label Grid.Column="0" Grid.Row="0" HorizontalOptions="Start"
+                   Style="{StaticResource defaultLabelStyle}"
+                   Text="LTP" />
+            <Label Grid.Column="1" Grid.Row="0" HorizontalOptions="End"
+                   Style="{StaticResource defaultLabelStyle}"
+                   Text="{Binding LastTradedPrice, StringFormat='{}{0:0,0}'}" />
+
+            <Label Grid.Column="0" Grid.Row="1" Text="Entry" HorizontalOptions="Start" Style="{StaticResource defaultLabelStyle}" />
+            <Label Grid.Column="1" Grid.Row="1" HorizontalOptions="End" Style="{StaticResource defaultLabelStyle}"
+                   Text="{Binding EntryPrice, Converter={StaticResource priceEmpty}, ConverterParameter='{}{0:0,0}'}" />
+
+            <Label Grid.Column="0" Grid.Row="2" Text="Target" HorizontalOptions="Start" Style="{StaticResource defaultLabelStyle}" />
+            <Label Grid.Column="1" Grid.Row="2" HorizontalOptions="End" Style="{StaticResource defaultLabelStyle}"
+                   Text="{Binding TargetPrice, Converter={StaticResource priceEmpty}, ConverterParameter='{}{0:0,0}'}" />
+
+            <Label Grid.Column="0" Grid.Row="3" Text="Loss cut" HorizontalOptions="Start" Style="{StaticResource defaultLabelStyle}" />
+            <Label Grid.Column="1" Grid.Row="3" HorizontalOptions="End" Style="{StaticResource defaultLabelStyle}"
+                   Text="{Binding LossCutPrice, Converter={StaticResource priceEmpty}, ConverterParameter='{}{0:0,0}'}" />
+
+            <Label Grid.Column="0" Grid.Row="4" Text="To Go" HorizontalOptions="Start" Style="{StaticResource defaultLabelStyle}" />
+            <Label Grid.Column="1" Grid.Row="4" HorizontalOptions="End" Style="{StaticResource defaultLabelStyle}"
+                   Text="{Binding TargetDifference, Converter={StaticResource priceEmpty}, ConverterParameter='{}{0:0,0}'}" />
+
+            <Label Grid.Column="0" Grid.Row="5" Grid.ColumnSpan="2"
+                   TextColor="White" FontSize="16"
+                   Text="{Binding LogMessage}" />
+        </Grid>
+    </Grid>
+
+</ContentPage>
