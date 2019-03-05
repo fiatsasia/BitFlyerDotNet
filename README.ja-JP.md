@@ -8,7 +8,7 @@ BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/
 ### 環境
 - Visual Studio 2017 / for Mac 2017 用ソリューション、プロジェクト
 - .NET Standard 2.0 (ライブラリで使用)
-- .NET Framework 4.72, .NET Core 2.1, Xamarin Forms (サンプルで使用)
+- .NET Framework 4.71, .NET Core 2.1, Xamarin Forms (サンプルで使用)
 - Xamrin Forms サンプルは iOS, Android, MacOS, Windows で動作確認済み。 
 - [Reactive Extensions (Rx.NET)](http://reactivex.io/)
 - [JSON.NET](https://www.newtonsoft.com/json)

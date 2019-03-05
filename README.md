@@ -7,7 +7,7 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 ### Environment 
 - Solution and Projects are for Visual Studio 2017 and 2017 for Mac.
 - .NET Standard 2.0 for libraries.
-- .NET Framework 4.72, .NET Core 2.1 and Xamarin Forms for sample applications.
+- .NET Framework 4.71, .NET Core 2.1 and Xamarin Forms for sample applications.
 - Sample applications are tested on iOS, Android, MacOS and Windows desktop. 
 - [Reactive Extensions (Rx.NET)](http://reactivex.io/)
 - [JSON.NET](https://www.newtonsoft.com/json)

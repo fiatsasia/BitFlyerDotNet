@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All right reserved.
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
