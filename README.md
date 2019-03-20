@@ -4,6 +4,9 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
+### Updates
+- 2019/03/21 Added BTCUSD and BTCEUR support in realtime ticker API. 
+
 ### Environment 
 - Solution and Projects are for Visual Studio 2017 and 2017 for Mac.
 - .NET Standard 2.0 for libraries.

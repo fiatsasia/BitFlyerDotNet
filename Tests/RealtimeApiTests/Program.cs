@@ -13,15 +13,31 @@ namespace RealtimeApiTests
         static void Main(string[] args)
         {
             var factory = new RealtimeSourceFactory();
-            var source = factory.GetTickerSource(BfProductCode.BTCEUR);
-            var disp = source.Subscribe(ticker =>
+            //var disp = SubscribeTickerSource(factory, BfProductCode.BTCUSD);
+            var disp = SubscribeExecutionSource(factory, BfProductCode.BTCUSD);
+            Console.ReadLine();
+            disp.Dispose();
+            Console.ReadLine();
+        }
+
+        static IDisposable SubscribeTickerSource(RealtimeSourceFactory factory, BfProductCode productCode)
+        {
+            var source = factory.GetTickerSource(productCode);
+            return source.Subscribe(ticker =>
             {
                 Console.WriteLine($"{ticker.Timestamp} P:{ticker.LastTradedPrice} A:{ticker.BestAsk} B:{ticker.BestBid}");
             });
 
-            Console.ReadLine();
-            disp.Dispose();
-            Console.ReadLine();
+        }
+
+        static IDisposable SubscribeExecutionSource(RealtimeSourceFactory factory, BfProductCode productCode)
+        {
+            var source = factory.GetExecutionSource(productCode);
+            return source.Subscribe(exec =>
+            {
+                Console.WriteLine($"{exec.ExecutedTime} P:{exec.Price} A:{exec.Side} B:{exec.Size}");
+            });
+
         }
     }
 }
