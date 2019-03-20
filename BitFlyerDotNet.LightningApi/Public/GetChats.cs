@@ -31,5 +31,25 @@ namespace BitFlyerDotNet.LightningApi
         {
             return Get<BfChat[]>(nameof(GetChats), "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
         }
+
+        public BitFlyerResponse<BfChat[]> GetChatsUsa()
+        {
+            return Get<BfChat[]>(nameof(GetChats) + _usaMarket);
+        }
+
+        public BitFlyerResponse<BfChat[]> GetChatsUsa(DateTime fromDate)
+        {
+            return Get<BfChat[]>(nameof(GetChats) + _usaMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
+        }
+
+        public BitFlyerResponse<BfChat[]> GetChatsEu()
+        {
+            return Get<BfChat[]>(nameof(GetChats) + _euMarket);
+        }
+
+        public BitFlyerResponse<BfChat[]> GetChatsEu(DateTime fromDate)
+        {
+            return Get<BfChat[]>(nameof(GetChats) + _euMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
+        }
     }
 }

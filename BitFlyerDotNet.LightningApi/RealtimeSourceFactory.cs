@@ -111,9 +111,8 @@ namespace BitFlyerDotNet.LightningApi
                     error.Message = ex.Message;
                 }
 
-                if (ex is SocketException) // Server disconnects during daily maintenance.
+                if (ex is SocketException socketEx) // Server disconnects during daily maintenance.
                 {
-                    var socketEx = ex as SocketException;
                     Debug.WriteLine("{0} WebSocket socket error({1})", DateTime.Now, socketEx.SocketErrorCode);
                     Debug.WriteLine("{0} WebSocket caused exception. Will be closed.", DateTime.Now, e.Exception.Message);
                     error.SocketError = socketEx.SocketErrorCode;
@@ -145,27 +144,30 @@ namespace BitFlyerDotNet.LightningApi
             }
 
             // Convert from future product code alias to real product code
-            var resp = _client.GetMarkets();
-            if (resp.IsError)
+            var resps = _client.GetMarketsAll();
+            foreach (var resp in resps)
             {
-                if (resp.Exception != null)
+                if (resp.IsError)
                 {
-                    throw resp.Exception;
+                    if (resp.Exception != null)
+                    {
+                        throw resp.Exception;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(resp.ErrorMessage);
+                    }
                 }
-                else
+                foreach (var market in resp.GetResult())
                 {
-                    throw new InvalidOperationException(resp.ErrorMessage);
-                }
-            }
-            foreach (var market in resp.GetResult())
-            {
-                if (!string.IsNullOrEmpty(market.Alias))
-                {
-                    _productCodeAliases[market.Alias] = market.ProductCode;
-                }
-                else
-                {
-                    _productCodeAliases[market.ProductCode] = market.ProductCode;
+                    if (!string.IsNullOrEmpty(market.Alias))
+                    {
+                        _productCodeAliases[market.Alias] = market.ProductCode;
+                    }
+                    else
+                    {
+                        _productCodeAliases[market.ProductCode] = market.ProductCode;
+                    }
                 }
             }
         }
@@ -190,8 +192,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public void StartExecutionSource(BfProductCode productCode)
         {
-            IConnectableObservable<BfExecution> source;
-            if (_executionSources.TryGetValue(productCode, out source))
+            if (_executionSources.TryGetValue(productCode, out IConnectableObservable<BfExecution> source))
             {
                 source.Connect().AddTo(_disposables);
             }

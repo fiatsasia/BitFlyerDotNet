@@ -90,11 +90,27 @@ namespace PublicApiTests
         [TestMethod]
         public void GetMarkets()
         {
-            var resp = _client.GetMarkets();
-            Assert.IsFalse(resp.IsErrorOrEmpty);
+            {
+                var resp = _client.GetMarkets();
+                Assert.IsFalse(resp.IsErrorOrEmpty);
 
-            var markets = resp.GetResult();
-            markets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
+                var markets = resp.GetResult();
+                markets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
+            }
+            {
+                var resp = _client.GetMarketsUsa();
+                Assert.IsFalse(resp.IsErrorOrEmpty);
+
+                var markets = resp.GetResult();
+                markets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
+            }
+            {
+                var resp = _client.GetMarketsEu();
+                Assert.IsFalse(resp.IsErrorOrEmpty);
+
+                var markets = resp.GetResult();
+                markets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
+            }
         }
 
         [TestMethod]

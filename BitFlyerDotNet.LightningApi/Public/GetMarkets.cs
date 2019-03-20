@@ -22,5 +22,25 @@ namespace BitFlyerDotNet.LightningApi
         {
             return Get<BfMarket[]>(nameof(GetMarkets));
         }
+
+        public BitFlyerResponse<BfMarket[]> GetMarketsUsa()
+        {
+            return Get<BfMarket[]>(nameof(GetMarkets) + _usaMarket);
+        }
+
+        public BitFlyerResponse<BfMarket[]> GetMarketsEu()
+        {
+            return Get<BfMarket[]>(nameof(GetMarkets) + _euMarket);
+        }
+
+        public BitFlyerResponse<BfMarket[]>[] GetMarketsAll()
+        {
+            return new BitFlyerResponse<BfMarket[]>[]
+            {
+                GetMarkets(),
+                GetMarketsUsa(),
+                GetMarketsEu()
+            };
+        }
     }
 }

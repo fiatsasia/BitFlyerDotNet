@@ -169,19 +169,22 @@ namespace BitFlyerDotNet.LightningApi
 
         private static bool IsWholeValue(object value)
         {
-            if (value is decimal)
+            switch (value)
             {
-                decimal decimalValue = (decimal)value;
-                int precision = (Decimal.GetBits(decimalValue)[3] >> 16) & 0x000000FF;
-                return precision == 0;
-            }
-            else if (value is float || value is double)
-            {
-                double doubleValue = (double)value;
-                return doubleValue == Math.Truncate(doubleValue);
-            }
+                case decimal dec:
+                    int precision = (Decimal.GetBits(dec)[3] >> 16) & 0x000000FF;
+                    return precision == 0;
 
-            return false;
+                case double d:
+                    return d == Math.Truncate(d);
+
+                case float f:
+                    double df = (double)f;
+                    return df == Math.Truncate(df);
+
+                default:
+                    return false;
+            }
         }
     }
 

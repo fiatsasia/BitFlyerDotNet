@@ -154,6 +154,8 @@ namespace BitFlyerDotNet.LightningApi
         const string _baseUri = "https://api.bitflyer.jp";
         const string _publicBasePath = "/v1/";
         const string _privateBasePath = "/v1/me/";
+        const string _usaMarket = "/usa";
+        const string _euMarket = "/eu";
 
         HttpClient _client;
         string _apiKey;
