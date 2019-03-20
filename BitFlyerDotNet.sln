@@ -56,7 +56,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BinTrade.iOS", "Samples\Bin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BinTrade.WPF", "Samples\BinTrade\BinTrade.WPF\BinTrade.WPF.csproj", "{CAA82CD3-54AE-48F5-9360-F0DD92E26FED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RealtimeApiTests", "Tests\RealtimeApiTests\RealtimeApiTests.csproj", "{E8395CC2-6C70-48DE-98F2-833C80490B2C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RealtimeApiTests", "Tests\RealtimeApiTests\RealtimeApiTests.csproj", "{E8395CC2-6C70-48DE-98F2-833C80490B2C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -729,7 +729,6 @@ Global
 		{70FE19B7-0DCE-48FC-A9D4-6A3DD6441E3B}.Debug|x86.Build.0 = Debug|Any CPU
 		{70FE19B7-0DCE-48FC-A9D4-6A3DD6441E3B}.Debug|x86.Deploy.0 = Debug|Any CPU
 		{70FE19B7-0DCE-48FC-A9D4-6A3DD6441E3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{70FE19B7-0DCE-48FC-A9D4-6A3DD6441E3B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{70FE19B7-0DCE-48FC-A9D4-6A3DD6441E3B}.Release|Any CPU.Deploy.0 = Release|Any CPU
 		{70FE19B7-0DCE-48FC-A9D4-6A3DD6441E3B}.Release|ARM.ActiveCfg = Release|Any CPU
 		{70FE19B7-0DCE-48FC-A9D4-6A3DD6441E3B}.Release|ARM.Build.0 = Release|Any CPU
@@ -941,7 +940,6 @@ Global
 		{3FBAEBCD-49E5-4506-9395-2C8AD3598A11}.Debug|x86.Build.0 = Debug|Any CPU
 		{3FBAEBCD-49E5-4506-9395-2C8AD3598A11}.Debug|x86.Deploy.0 = Debug|Any CPU
 		{3FBAEBCD-49E5-4506-9395-2C8AD3598A11}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3FBAEBCD-49E5-4506-9395-2C8AD3598A11}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3FBAEBCD-49E5-4506-9395-2C8AD3598A11}.Release|Any CPU.Deploy.0 = Release|Any CPU
 		{3FBAEBCD-49E5-4506-9395-2C8AD3598A11}.Release|ARM.ActiveCfg = Release|Any CPU
 		{3FBAEBCD-49E5-4506-9395-2C8AD3598A11}.Release|ARM.Build.0 = Release|Any CPU
