@@ -98,7 +98,7 @@ namespace BitFlyerDotNet.LightningApi
             {
                 var subscriptionResult = JObject.Parse(e.Message)["params"];
                 var channel = subscriptionResult["channel"].Value<string>();
-                _webSocketSources[channel].OnWebSocketSubscribe(subscriptionResult["message"]);
+                _webSocketSources[channel].OnSubscribe(subscriptionResult["message"]);
             };
 
             _webSocket.Error += (_, e) =>
