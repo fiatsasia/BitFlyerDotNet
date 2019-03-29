@@ -46,7 +46,7 @@ PM> Install-Package BitFlyerDotNet.Historical
 ### Realtime API
 ```
 // Display realtime executions from WebSocket
-var factory = new BitFlyerRealtimeSourceFactory();
+var factory = new RealtimeSourceFactory();
 factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(exec =>
 {
     Console.WriteLine("{0} {1} {2} {3} {4} {5}",
