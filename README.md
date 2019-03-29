@@ -45,6 +45,8 @@ PM> Install-Package BitFlyerDotNet.Historical
 
 ### Realtime API
 ```
+using BitFlyerDotNet.LightningApi;
+
 // Display realtime executions from WebSocket
 var factory = new RealtimeSourceFactory();
 factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(exec =>
@@ -57,10 +59,13 @@ factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(exec =>
         exec.ExecutedTime.ToLocalTime(),
         exec.ChildOrderAcceptanceId);
 });
+factory.StartAllExecutionSources();
 Console.ReadLine();
 ```
 ### Public API
 ```
+using BitFlyerDotNet.LightningApi;
+
 // Get supported currency pairs and aliases
 var client = new BitFlyerClient();
 var resp = client.GetMarkets();
@@ -78,6 +83,8 @@ else
 ```
 ### Private API  
 ```
+using BitFlyerDotNet.LightningApi;
+
 // Buy order
 Console.Write("Key:"); var key = Console.ReadLine();
 Console.Write("Secret:"); var secret = Console.ReadLine();
