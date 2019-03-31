@@ -21,7 +21,7 @@ namespace BitFlyerDotNet.Historical
 
         public IObservable<RealtimeOhlc> GetRealtimeOhlcSource(BfProductCode productCode, TimeSpan frameSpan)
         {
-            return new RealtimeOhlcSource(_historicalFactory, productCode, frameSpan, _realtimeFactory.GetExecutionSource(productCode));
+            return new RealtimeOhlcSource(_historicalFactory, productCode, frameSpan, _realtimeFactory.GetExecutionSource(productCode, true));
         }
     }
 }

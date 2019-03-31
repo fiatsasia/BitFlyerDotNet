@@ -62,7 +62,7 @@ namespace BitFlyerDotNet.Trading
             var factory = new RealtimeSourceFactory();
             TickerSource = factory.GetTickerSource(ProductCode);
             TickerSource.Subscribe(ticker => { Ticker = ticker; TickerReceived?.Invoke(ticker); }).AddTo(_disposables);
-            ExecutionSource = factory.GetExecutionSource(ProductCode);
+            ExecutionSource = factory.GetExecutionSource(ProductCode, true);
             ExecutionSource.Subscribe(execution => { _execution = execution; ExecutionReceived?.Invoke(execution); }).AddTo(_disposables);
             factory.StartExecutionSource(ProductCode);
         }

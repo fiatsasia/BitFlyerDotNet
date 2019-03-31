@@ -14,10 +14,9 @@ namespace RealtimeApiTests
         {
             var factory = new RealtimeSourceFactory();
             //var disp = SubscribeTickerSource(factory, BfProductCode.BTCUSD);
-            var disp = SubscribeExecutionSource(factory, BfProductCode.BTCUSD);
+            var disp = SubscribeExecutionSource(factory, BfProductCode.FXBTCJPY);
             Console.ReadLine();
             disp.Dispose();
-            Console.ReadLine();
         }
 
         static IDisposable SubscribeTickerSource(RealtimeSourceFactory factory, BfProductCode productCode)

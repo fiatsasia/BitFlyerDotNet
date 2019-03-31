@@ -6,6 +6,7 @@ BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/
 **BitFlyerDotNet は bitFlyer Lightning API の公式ライブラリではありません。**
 
 ### 更新履歴
+- 2019/03/31 RealtimeExecutionSourceにhot/coldオプションを追加し、デフォルトをhot(Subscribeと同時に開始)に変更しました。
 - 2019/03/21 Realtime Ticker API に、BTCUSD、BTCEUR 対応を追加しました。
 
 ### 環境

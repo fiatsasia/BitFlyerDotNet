@@ -44,8 +44,6 @@ namespace RealTimeApiSample
                     tick.ExecutedTime.ToLocalTime(),
                     tick.ChildOrderAcceptanceId);
             });
-
-            factory.StartAllExecutionSources();
         }
 
         static void RealtimeTickerSample(RealtimeSourceFactory factory)

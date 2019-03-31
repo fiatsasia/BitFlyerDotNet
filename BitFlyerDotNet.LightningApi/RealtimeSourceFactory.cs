@@ -177,10 +177,10 @@ namespace BitFlyerDotNet.LightningApi
             _disposables.Dispose();
         }
 
-        ConcurrentDictionary<BfProductCode, IConnectableObservable<BfExecution>> _executionSources = new ConcurrentDictionary<BfProductCode, IConnectableObservable<BfExecution>>();
-        public IObservable<BfExecution> GetExecutionSource(BfProductCode productCode)
+        ConcurrentDictionary<BfProductCode, IConnectableObservable<BfExecution>> _executionColdSources = new ConcurrentDictionary<BfProductCode, IConnectableObservable<BfExecution>>();
+        public IObservable<BfExecution> GetExecutionSource(BfProductCode productCode, bool coldStart = false)
         {
-            return _executionSources.GetOrAdd(productCode, _ =>
+            var result = _executionColdSources.GetOrAdd(productCode, _ =>
             {
                 InitProductCodeAliases();
                 var realProductCode = _productCodeAliases[productCode.ToEnumString()];
@@ -188,11 +188,13 @@ namespace BitFlyerDotNet.LightningApi
                 _webSocketSources[source.Channel] = source;
                 return source.SkipWhile(tick => tick.ExecutionId == 0).Publish();
             });
+
+            return coldStart ? result : result.RefCount();
         }
 
         public void StartExecutionSource(BfProductCode productCode)
         {
-            if (_executionSources.TryGetValue(productCode, out IConnectableObservable<BfExecution> source))
+            if (_executionColdSources.TryGetValue(productCode, out IConnectableObservable<BfExecution> source))
             {
                 source.Connect().AddTo(_disposables);
             }
@@ -200,7 +202,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public void StartAllExecutionSources()
         {
-            foreach (var source in _executionSources.Values)
+            foreach (var source in _executionColdSources.Values)
             {
                 source.Connect().AddTo(_disposables);
             }

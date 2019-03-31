@@ -5,6 +5,7 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
 ### Updates
+- 2019/03/31 Added hot/cold start option to RealtimeExecutionSource and chaged default to hot (hot start on subscribe).
 - 2019/03/21 Added BTCUSD and BTCEUR support in realtime ticker API. 
 
 ### Environment 
@@ -59,7 +60,6 @@ factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(exec =>
         exec.ExecutedTime.ToLocalTime(),
         exec.ChildOrderAcceptanceId);
 });
-factory.StartAllExecutionSources();
 Console.ReadLine();
 ```
 ### Public API
