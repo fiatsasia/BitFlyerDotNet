@@ -44,9 +44,9 @@ namespace BitFlyerDotNet.LightningApi
         {
             var query = string.Format("product_code={0}{1}{2}{3}{4}{5}",
                 productCode.ToEnumString(),
-                (count > 0) ? string.Format("&count={0}", count) : "",
-                (before > 0) ? string.Format("&before={0}", before) : "",
-                (after > 0) ? string.Format("&after={0}", after) : "",
+                (count > 0)  ? $"&count={count}"   : "",
+                (before > 0) ? $"&before={before}" : "",
+                (after > 0)  ? $"&after={after}"   : "",
                 !string.IsNullOrEmpty(childOrderId) ? "&child_order_id=" + childOrderId : "",
                 !string.IsNullOrEmpty(childOrderAcceptanceId) ? "&child_order_acceptance_id=" + childOrderAcceptanceId : ""
             );

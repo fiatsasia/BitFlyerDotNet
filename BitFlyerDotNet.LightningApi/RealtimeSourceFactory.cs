@@ -107,8 +107,14 @@ namespace BitFlyerDotNet.LightningApi
                 var ex = e.Exception;
                 if (ex is IOException)
                 {
-                    ex = ex.InnerException;
-                    error.Message = ex.Message;
+                    if (ex.InnerException != null)
+                    {
+                        error.Message = ex.InnerException.Message;
+                    }
+                    else
+                    {
+                        error.Message = ex.Message;
+                    }
                 }
 
                 if (ex is SocketException socketEx) // Server disconnects during daily maintenance.
@@ -131,9 +137,17 @@ namespace BitFlyerDotNet.LightningApi
                 Debug.WriteLine("{0} WebSocket connection closed. Will be reopening...", DateTime.Now);
                 _wsReconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite);
             };
+        }
 
-            _webSocket.Open();
-            _openedEvent.WaitOne(10000);
+        bool _opened = false;
+        void TryOpen()
+        {
+            if (!_opened)
+            {
+                _opened = true;
+                _webSocket.Open();
+                _openedEvent.WaitOne(10000);
+            }
         }
 
         void InitProductCodeAliases()
@@ -180,6 +194,7 @@ namespace BitFlyerDotNet.LightningApi
         ConcurrentDictionary<BfProductCode, IConnectableObservable<BfExecution>> _executionColdSources = new ConcurrentDictionary<BfProductCode, IConnectableObservable<BfExecution>>();
         public IObservable<BfExecution> GetExecutionSource(BfProductCode productCode, bool coldStart = false)
         {
+            TryOpen();
             var result = _executionColdSources.GetOrAdd(productCode, _ =>
             {
                 InitProductCodeAliases();
@@ -211,6 +226,7 @@ namespace BitFlyerDotNet.LightningApi
         ConcurrentDictionary<BfProductCode, IObservable<BfTicker>> _tickSources = new ConcurrentDictionary<BfProductCode, IObservable<BfTicker>>();
         public IObservable<BfTicker> GetTickerSource(BfProductCode productCode)
         {
+            TryOpen();
             return _tickSources.GetOrAdd(productCode, _ =>
             {
                 InitProductCodeAliases();
@@ -224,6 +240,7 @@ namespace BitFlyerDotNet.LightningApi
         ConcurrentDictionary<BfProductCode, IObservable<BfBoard>> _boardSources = new ConcurrentDictionary<BfProductCode, IObservable<BfBoard>>();
         public IObservable<BfBoard> GetBoardSource(BfProductCode productCode)
         {
+            TryOpen();
             return _boardSources.GetOrAdd(productCode, _ =>
             {
                 InitProductCodeAliases();
@@ -237,6 +254,7 @@ namespace BitFlyerDotNet.LightningApi
         ConcurrentDictionary<BfProductCode, IObservable<BfBoard>> _boardSnapshotSources = new ConcurrentDictionary<BfProductCode, IObservable<BfBoard>>();
         public IObservable<BfBoard> GetBoardSnapshotSource(BfProductCode productCode)
         {
+            TryOpen();
             return _boardSnapshotSources.GetOrAdd(productCode, _ =>
             {
                 InitProductCodeAliases();

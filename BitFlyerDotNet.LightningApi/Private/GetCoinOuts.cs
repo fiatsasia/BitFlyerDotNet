@@ -49,9 +49,9 @@ namespace BitFlyerDotNet.LightningApi
         public BitFlyerResponse<BfCoinOut[]> GetCoinOuts(int count = 0, int before = 0, int after = 0)
         {
             var query = string.Format("{0}{1}{2}",
-                (count > 0) ? string.Format("&count={0}", count) : "",
-                (before > 0) ? string.Format("&before={0}", before) : "",
-                (after > 0) ? string.Format("&after={0}", after) : ""
+                (count > 0)  ? $"&count={count}"   : "",
+                (before > 0) ? $"&before={before}" : "",
+                (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
             return PrivateGet<BfCoinOut[]>(nameof(GetCoinOuts), query);

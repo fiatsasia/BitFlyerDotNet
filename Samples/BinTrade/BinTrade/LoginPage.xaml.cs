@@ -1,12 +1,12 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// https://www.fiats.asia/
 //
 
 using System;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
-using PCLStorage;
+//using PCLStorage;
 
 namespace BinTrade
 {
@@ -23,6 +23,7 @@ namespace BinTrade
 
         bool LoadKeySecret()
         {
+#if fasle
             var folder = FileSystem.Current.LocalStorage;
             if (folder.CheckExistsAsync(KeySecretFileName).Result != ExistenceCheckResult.FileExists)
             {
@@ -34,11 +35,13 @@ namespace BinTrade
             var keyAndSecret = text.Split(';');
             _apiKey.Text = keyAndSecret[0];
             _apiSecret.Text = keyAndSecret[1];
+#endif
             return true;
         }
 
         void SaveKeySecret()
         {
+#if false
             var folder = FileSystem.Current.LocalStorage;
             var file = default(IFile);
             if (folder.CheckExistsAsync(KeySecretFileName).Result == ExistenceCheckResult.FileExists)
@@ -58,6 +61,7 @@ namespace BinTrade
             {
                 file.WriteAllTextAsync(_apiKey.Text + ";" + _apiSecret.Text);
             }
+#endif
         }
 
         private void OnLoginClicked(object sender, EventArgs e)

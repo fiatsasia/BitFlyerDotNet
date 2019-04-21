@@ -74,7 +74,7 @@ namespace Fiats.Utils
             var fileName = Path.GetFileName(sf.GetFileName());
             var lineNum = sf.GetFileLineNumber();
             var threadId = Thread.CurrentThread.ManagedThreadId;
-            return string.Format("{0}({1}):{2}({3}) ", fileName, lineNum, methodname, threadId);
+            return $"{fileName}({lineNum}):{methodname}({threadId}) ";
         }
     }
 }
