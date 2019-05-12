@@ -1,6 +1,6 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using Newtonsoft.Json;
@@ -11,7 +11,7 @@ namespace BitFlyerDotNet.LightningApi
     public class BfTradingCommission
     {
         [JsonProperty(PropertyName = "commission_rate")]
-        public double CommissionRate { get; private set; }
+        public decimal CommissionRate { get; private set; }
     }
 
     public partial class BitFlyerClient

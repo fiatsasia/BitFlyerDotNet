@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -10,7 +10,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
-
 using Newtonsoft.Json;
 
 namespace BitFlyerDotNet.LightningApi
@@ -60,7 +59,20 @@ namespace BitFlyerDotNet.LightningApi
 
     public class BitFlyerResponse<T> : IBitFlyerResponse
     {
-        const string JsonArrayEmpty = "[]";
+        string JsonEmpty
+        {
+            get
+            {
+                if (typeof(T) != typeof(string) && typeof(T).IsArray)
+                {
+                    return "[]";
+                }
+                else
+                {
+                    return "{}";
+                }
+            }
+        }
 
         static readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
         {
@@ -102,7 +114,7 @@ namespace BitFlyerDotNet.LightningApi
         public bool IsNetworkError { get { return StatusCode != HttpStatusCode.OK; } }
         public bool IsApplicationError { get { return ErrorResponse != BfErrorResponse.Default; } }
         public bool IsError { get { return StatusCode != HttpStatusCode.OK || ErrorResponse != BfErrorResponse.Default; } }
-        public bool IsEmpty { get { return string.IsNullOrEmpty(_json) || _json == JsonArrayEmpty; } }
+        public bool IsEmpty { get { return string.IsNullOrEmpty(_json) || _json == JsonEmpty; } }
         public bool IsErrorOrEmpty { get { return IsError || IsEmpty; } }
         public Exception Exception { get; internal set; }
 
@@ -116,7 +128,7 @@ namespace BitFlyerDotNet.LightningApi
             return _result;
         }
 
-        string _json = string.Empty;
+        string _json;
         public string Json
         {
             get { return _json; }
@@ -125,7 +137,6 @@ namespace BitFlyerDotNet.LightningApi
                 if (value.Contains("error_message"))
                 {
                     ErrorResponse = JsonConvert.DeserializeObject<BfErrorResponse>(value, _jsonSettings);
-                    _json = string.Empty;
                 }
                 else
                 {
@@ -136,10 +147,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public BitFlyerResponse()
         {
-            if (typeof(T) != typeof(string) && typeof(T).IsArray)
-            {
-                _json = JsonArrayEmpty;
-            }
+            _json = JsonEmpty;
         }
     }
 

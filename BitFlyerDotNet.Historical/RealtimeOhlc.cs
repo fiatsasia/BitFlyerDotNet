@@ -14,18 +14,18 @@ namespace BitFlyerDotNet.Historical
     {
         // IBfOhlc
         public DateTime Start { get; private set; } = DateTime.MaxValue;
-        public double Open { get; private set; }
-        public double High { get; private set; } = double.MinValue;
-        public double Low { get; private set; } = double.MaxValue;
-        public double Close { get; private set; }
-        public double Volume { get { return BuyVolume + SellVolume + ExecutedVolume; } }
+        public decimal Open { get; private set; }
+        public decimal High { get; private set; } = decimal.MinValue;
+        public decimal Low { get; private set; } = decimal.MaxValue;
+        public decimal Close { get; private set; }
+        public decimal Volume { get { return BuyVolume + SellVolume + ExecutedVolume; } }
 
         // IBfOhlcEx
         public int ExecutionCount { get; private set; }
-        public double VWAP { get; private set; }
-        public double BuyVolume { get; private set; }
-        public double SellVolume { get; private set; }
-        public double ExecutedVolume { get; private set; }
+        public decimal VWAP { get; private set; }
+        public decimal BuyVolume { get; private set; }
+        public decimal SellVolume { get; private set; }
+        public decimal ExecutedVolume { get; private set; }
 
         public object Tag { get; set; }
         public event RealtimeOhlcUpdateEventCallback UpdateEvent;
@@ -70,10 +70,10 @@ namespace BitFlyerDotNet.Historical
                     break;
             }
 
-            _amount += Convert.ToDecimal(exec.Price * exec.Size);
+            _amount += exec.Price * exec.Size;
             try
             {
-                VWAP = Convert.ToDouble(_amount / Convert.ToDecimal(Volume));
+                VWAP = _amount / Volume;
             }
             catch (DivideByZeroException)
             {

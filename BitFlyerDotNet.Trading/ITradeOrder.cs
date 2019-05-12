@@ -1,6 +1,6 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// https://www.fiats.asia/
 //
 
 using System;
@@ -100,10 +100,10 @@ namespace BitFlyerDotNet.Trading
         BfProductCode ProductCode { get; }
         BfOrderType OrderType { get; }
         BfTradeSide Side { get; }
-        double OrderSize { get; }
-        double OrderPrice { get; }
-        double StopTriggerPrice { get; }
-        double TrailingStopPriceOffset { get; }
+        decimal OrderSize { get; }
+        decimal OrderPrice { get; }
+        decimal StopTriggerPrice { get; }
+        decimal TrailingStopPriceOffset { get; }
     }
 
     public interface IParentOrder
@@ -119,7 +119,7 @@ namespace BitFlyerDotNet.Trading
         DateTime OrderCreatedTime { get; }
         DateTime OrderRequestedTime { get; }
         DateTime OrderAcceptedTime { get; }
-        double ReferencePrice { get; }
+        decimal ReferencePrice { get; }
         BfOrderState OrderStatus { get; }
 
         int MinuteToExpire { get; }
@@ -146,8 +146,8 @@ namespace BitFlyerDotNet.Trading
     {
         string ChildOrderAcceptanceId { get; }
         string ChildOrderId { get; }
-        double ExecutedPrice { get; }
-        double ExecutedSize { get; }
+        decimal ExecutedPrice { get; }
+        decimal ExecutedSize { get; }
     }
 
     public interface IParentOrderTransaction : IParentOrder, IOrderTransaction

@@ -5,6 +5,8 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
 ### Updates
+- 2019/05/12 All of price and size are changed definition type from double to decimal.
+             Changed build environment isual Studio from 2017 to 2019.
 - 2019/03/31 Added hot/cold start option to RealtimeExecutionSource and chaged default to hot (hot start on subscribe).
 - 2019/03/21 Added BTCUSD and BTCEUR support in realtime ticker API. 
 
@@ -90,7 +92,7 @@ Console.Write("Key:"); var key = Console.ReadLine();
 Console.Write("Secret:"); var secret = Console.ReadLine();
 var client = new BitFlyerClient(key, secret);
 
-Console.Write("Price:"); var price = double.Parse(Console.ReadLine());
+Console.Write("Price:"); var price = decimal.Parse(Console.ReadLine());
 client.SendChildOrder(BfProductCode.FXBTCJPY, BfOrderType.Limit, BfTradeSide.Buy, price, 0.001);
 ```
 ## Sample applications

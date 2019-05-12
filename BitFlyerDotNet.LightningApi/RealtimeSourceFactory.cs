@@ -11,7 +11,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
-
 using System.Reactive.Subjects;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
@@ -103,32 +102,33 @@ namespace BitFlyerDotNet.LightningApi
 
             _webSocket.Error += (_, e) =>
             {
+                // Classifies expected or unexpexted
                 var error = new ErrorStatus();
-                var ex = e.Exception;
-                if (ex is IOException)
+                switch (e.Exception)
                 {
-                    if (ex.InnerException != null)
-                    {
-                        error.Message = ex.InnerException.Message;
-                    }
-                    else
-                    {
-                        error.Message = ex.Message;
-                    }
-                }
+                    case IOException ioex:
+                        error.Message = (ioex.InnerException != null) ? ioex.InnerException.Message : ioex.Message;
+                        break;
 
-                if (ex is SocketException socketEx) // Server disconnects during daily maintenance.
-                {
-                    Debug.WriteLine("{0} WebSocket socket error({1})", DateTime.Now, socketEx.SocketErrorCode);
-                    Debug.WriteLine("{0} WebSocket caused exception. Will be closed.", DateTime.Now, e.Exception.Message);
-                    error.SocketError = socketEx.SocketErrorCode;
-                    error.Message = e.Exception.Message;
-                }
-                else
-                {
-                    throw e.Exception;
-                }
+                    case SocketException sockex:
+                        Debug.WriteLine("{0} WebSocket socket error({1})", DateTime.Now, sockex.SocketErrorCode);
+                        Debug.WriteLine("{0} WebSocket caused exception. Will be closed.", DateTime.Now, sockex.Message);
+                        error.SocketError = sockex.SocketErrorCode;
+                        error.Message = sockex.Message;
+                        break;
 
+                    default:
+                        switch ((uint)e.Exception.HResult)
+                        {
+                            case 0x80131500: // Bad gateway - probably terminated from host
+                                error.Message = e.Exception.Message;
+                                break;
+
+                            default: // Unexpected exception
+                                throw e.Exception;
+                        }
+                        break;
+                }
                 ErrorHandlers?.Invoke(error);
             };
 

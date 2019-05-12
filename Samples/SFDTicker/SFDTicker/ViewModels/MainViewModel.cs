@@ -1,6 +1,6 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// https://www.fiats.asia/
 //
 
 using System;
@@ -25,10 +25,10 @@ namespace SFDTicker.ViewModels
         Timer _serverStatusTimer;
 
         public event PropertyChangedEventHandler PropertyChanged;
-        public double PriceFXBTCJPY { get; private set; }
-        public double PriceBTCJPY { get; private set; }
-        public double SFDDifference { get; private set; }
-        public double SFDRate { get; private set; }
+        public decimal PriceFXBTCJPY { get; private set; }
+        public decimal PriceBTCJPY { get; private set; }
+        public decimal SFDDifference { get; private set; }
+        public decimal SFDRate { get; private set; }
 
         public BfBoardHealth ExchangeStatus { get; private set; }
         public Color ExchangeStatusColor
@@ -107,28 +107,28 @@ namespace SFDTicker.ViewModels
             }, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
         }
 
-        double CalculateSfdRate(double variance)
+        decimal CalculateSfdRate(decimal variance)
         {
-            var sfd = 0.0;
-            if (Math.Abs(variance) < 0.05)
+            var sfd = decimal.Zero;
+            if (Math.Abs(variance) < 0.05m)
             {
-                return 0.0; // SFD is none
+                return decimal.Zero; // SFD is none
             }
-            else if (Math.Abs(variance) < 0.1) // 5% <= variance < 10%
+            else if (Math.Abs(variance) < 0.1m) // 5% <= variance < 10%
             {
-                sfd = 0.0025;
+                sfd = 0.0025m;
             }
-            else if (Math.Abs(variance) < 0.15) // 10% <= variance < 15%
+            else if (Math.Abs(variance) < 0.15m) // 10% <= variance < 15%
             {
-                sfd = 0.005;
+                sfd = 0.005m;
             }
-            else if (Math.Abs(variance) < 0.20) // 15% <= variance < 20%
+            else if (Math.Abs(variance) < 0.20m) // 15% <= variance < 20%
             {
-                sfd = 0.01;
+                sfd = 0.01m;
             }
             else // variance >= 20%
             {
-                sfd = 0.02;
+                sfd = 0.02m;
             }
 
             return sfd;

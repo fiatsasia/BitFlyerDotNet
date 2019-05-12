@@ -1,6 +1,6 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// https://www.fiats.asia/
 //
 
 using BitFlyerDotNet.LightningApi;
@@ -9,27 +9,27 @@ namespace BitFlyerDotNet.Trading
 {
     public static class TradeOrderFactory
     {
-        public static IChildOrderTransaction CreateMarketPriceOrder(TradingAccount account, BfTradeSide side, double size)
+        public static IChildOrderTransaction CreateMarketPriceOrder(TradingAccount account, BfTradeSide side, decimal size)
         {
             return new ChildOrderTransaction(account, BfOrderType.Market, side, size);
         }
 
-        public static IChildOrderTransaction CreateLimitPriceOrder(TradingAccount account, BfTradeSide side, double size, double price)
+        public static IChildOrderTransaction CreateLimitPriceOrder(TradingAccount account, BfTradeSide side, decimal size, decimal price)
         {
             return new ChildOrderTransaction(account, BfOrderType.Limit, side, size, price);
         }
 
-        public static IParentOrderTransaction CreateStopOrder(TradingAccount account, BfTradeSide side, double size, double stopTriggerPrice)
+        public static IParentOrderTransaction CreateStopOrder(TradingAccount account, BfTradeSide side, decimal size, decimal stopTriggerPrice)
         {
             return new ParentOrderTransaction(account, BfOrderType.Simple, new IChildOrder[] { new StopOrder(account.ProductCode, side, size, stopTriggerPrice) });
         }
 
-        public static IParentOrderTransaction CreateStopLimitOrder(TradingAccount account, BfTradeSide side, double size, double price, double stopTriggerPrice)
+        public static IParentOrderTransaction CreateStopLimitOrder(TradingAccount account, BfTradeSide side, decimal size, decimal price, decimal stopTriggerPrice)
         {
             return new ParentOrderTransaction(account, BfOrderType.Simple, new IChildOrder[] { new StopLimitOrder(account.ProductCode, side, size, price, stopTriggerPrice) });
         }
 
-        public static IParentOrderTransaction CreateTrailOrder(TradingAccount account, BfTradeSide side, double size, double trailingStopPriceOffset)
+        public static IParentOrderTransaction CreateTrailOrder(TradingAccount account, BfTradeSide side, decimal size, decimal trailingStopPriceOffset)
         {
             return new ParentOrderTransaction(account, BfOrderType.Simple, new IChildOrder[] { new TrailingStopOrder(account.ProductCode, side, size, trailingStopPriceOffset) });
         }

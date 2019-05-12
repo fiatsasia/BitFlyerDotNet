@@ -1,6 +1,6 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using System;
@@ -21,33 +21,33 @@ namespace BitFlyerDotNet.LightningApi
         public int TickId { get; private set; }
 
         [JsonProperty(PropertyName = "best_bid")]
-        public double BestBid { get; private set; }
+        public decimal BestBid { get; private set; }
 
         [JsonProperty(PropertyName = "best_ask")]
-        public double BestAsk { get; private set; }
+        public decimal BestAsk { get; private set; }
 
         [JsonProperty(PropertyName = "best_bid_size")]
-        public double BestBidSize { get; private set; }
+        public decimal BestBidSize { get; private set; }
 
         [JsonProperty(PropertyName = "best_ask_size")]
-        public double BestAskSize { get; private set; }
+        public decimal BestAskSize { get; private set; }
 
         [JsonProperty(PropertyName = "total_bid_depth")]
-        public double TotalBidDepth { get; private set; }
+        public decimal TotalBidDepth { get; private set; }
 
         [JsonProperty(PropertyName = "total_ask_depth")]
-        public double TotalAskDepth { get; private set; }
+        public decimal TotalAskDepth { get; private set; }
 
         [JsonProperty(PropertyName = "ltp")]
-        public double LastTradedPrice { get; private set; }
+        public decimal LastTradedPrice { get; private set; }
 
         [JsonProperty(PropertyName = "volume")]
-        public double Last24HoursVolume { get; private set; }
+        public decimal Last24HoursVolume { get; private set; }
 
         [JsonProperty(PropertyName = "volume_by_product")]
-        public double VolumeByProduct { get; private set; }
+        public decimal VolumeByProduct { get; private set; }
 
-        public double MidPrice { get { return (BestAsk + BestBid) / 2.0; } }
+        public decimal MidPrice { get { return (BestAsk + BestBid) / 2.0m; } }
     }
 
     public partial class BitFlyerClient

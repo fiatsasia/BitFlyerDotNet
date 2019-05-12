@@ -1,6 +1,6 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using BitFlyerDotNet.LightningApi;
@@ -12,10 +12,10 @@ namespace BitFlyerDotNet.Trading
         public virtual BfProductCode ProductCode { get; set; }
         public virtual BfOrderType OrderType { get; set; }
         public virtual BfTradeSide Side { get; set; }
-        public virtual double OrderSize { get; set; }
-        public virtual double OrderPrice { get; set; }
-        public virtual double StopTriggerPrice { get; set; }
-        public virtual double TrailingStopPriceOffset { get; set; }
+        public virtual decimal OrderSize { get; set; }
+        public virtual decimal OrderPrice { get; set; }
+        public virtual decimal StopTriggerPrice { get; set; }
+        public virtual decimal TrailingStopPriceOffset { get; set; }
 
         public ChildOrder()
         {
@@ -25,10 +25,10 @@ namespace BitFlyerDotNet.Trading
             BfProductCode productCode,
             BfOrderType orderType,
             BfTradeSide side,
-            double size,
-            double price = double.NaN,
-            double stopTriggerPrice = double.NaN,
-            double trailingStopPriceOffset = double.NaN
+            decimal size,
+            decimal price = decimal.Zero,
+            decimal stopTriggerPrice = decimal.Zero,
+            decimal trailingStopPriceOffset = decimal.Zero
         )
         {
             ProductCode = productCode;
@@ -46,7 +46,7 @@ namespace BitFlyerDotNet.Trading
             OrderType = order.ChildOrderType;
             Side = order.Side;
             OrderSize = order.Size;
-            OrderPrice = (order.Price == 0.0) ? double.NaN : order.Price;
+            OrderPrice = order.Price;
         }
 
         public ChildOrder(BfProductCode productCode, BfChildOrderElement order)
@@ -55,15 +55,15 @@ namespace BitFlyerDotNet.Trading
             OrderType = order.ConditionType;
             Side = order.Side;
             OrderSize = order.Size;
-            OrderPrice = (order.Price == 0.0) ? double.NaN : order.Price;
-            StopTriggerPrice = (order.TriggerPrice == 0.0) ? double.NaN : order.TriggerPrice;
-            TrailingStopPriceOffset = (order.Offset == 0.0) ? double.NaN : order.Offset;
+            OrderPrice = order.Price;
+            StopTriggerPrice = order.TriggerPrice;
+            TrailingStopPriceOffset = order.Offset;
         }
     }
 
     public class LimitPriceOrder : ChildOrder
     {
-        public LimitPriceOrder(BfProductCode productCode, BfTradeSide side, double size, double price)
+        public LimitPriceOrder(BfProductCode productCode, BfTradeSide side, decimal size, decimal price)
             : base(productCode, BfOrderType.Limit, side, size, price: price)
         {
         }
@@ -71,7 +71,7 @@ namespace BitFlyerDotNet.Trading
 
     public class MarketPriceOrder : ChildOrder
     {
-        public MarketPriceOrder(BfProductCode productCode, BfTradeSide side, double size)
+        public MarketPriceOrder(BfProductCode productCode, BfTradeSide side, decimal size)
             : base(productCode, BfOrderType.Market, side, size)
         {
         }
@@ -79,7 +79,7 @@ namespace BitFlyerDotNet.Trading
 
     public class StopOrder : ChildOrder
     {
-        public StopOrder(BfProductCode productCode, BfTradeSide side, double size, double stopTriggerPrice)
+        public StopOrder(BfProductCode productCode, BfTradeSide side, decimal size, decimal stopTriggerPrice)
             : base(productCode, BfOrderType.Stop, side, size, stopTriggerPrice: stopTriggerPrice)
         {
         }
@@ -87,7 +87,7 @@ namespace BitFlyerDotNet.Trading
 
     public class StopLimitOrder : ChildOrder
     {
-        public StopLimitOrder(BfProductCode productCode, BfTradeSide side, double size, double price, double stopTriggerPrice)
+        public StopLimitOrder(BfProductCode productCode, BfTradeSide side, decimal size, decimal price, decimal stopTriggerPrice)
             : base(productCode, BfOrderType.StopLimit, side, size, price: price, stopTriggerPrice: stopTriggerPrice)
         {
         }
@@ -95,7 +95,7 @@ namespace BitFlyerDotNet.Trading
 
     public class TrailingStopOrder : ChildOrder
     {
-        public TrailingStopOrder(BfProductCode productCode, BfTradeSide side, double size, double trailingStopPriceOffset)
+        public TrailingStopOrder(BfProductCode productCode, BfTradeSide side, decimal size, decimal trailingStopPriceOffset)
             : base(productCode, BfOrderType.Trail, side, size, trailingStopPriceOffset: trailingStopPriceOffset)
         {
         }

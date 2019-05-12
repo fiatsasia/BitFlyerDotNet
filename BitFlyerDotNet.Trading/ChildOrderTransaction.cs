@@ -1,6 +1,6 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// https://www.fiats.asia/
 //
 
 using System;
@@ -19,10 +19,10 @@ namespace BitFlyerDotNet.Trading
         public BfProductCode ProductCode { get { return _request.ProductCode; } }
         public BfOrderType OrderType { get { return _request.OrderType; } }
         public BfTradeSide Side { get { return _request.Side; } }
-        public double OrderSize { get { return _request.Size; } }
-        public double OrderPrice { get { return _request.Price == 0.0 ? double.NaN : _request.Price; } }
-        public double StopTriggerPrice { get { throw new NotSupportedException(); } }
-        public double TrailingStopPriceOffset { get { throw new NotSupportedException(); } }
+        public decimal OrderSize { get { return _request.Size; } }
+        public decimal OrderPrice { get { return _request.Price; } }
+        public decimal StopTriggerPrice { get { throw new NotSupportedException(); } }
+        public decimal TrailingStopPriceOffset { get { throw new NotSupportedException(); } }
 
         // IOrderTransaction
         public BfOrderState OrderStatus { get { return (_order == null) ? BfOrderState.Unknown : _order.ChildOrderState; } }
@@ -30,13 +30,13 @@ namespace BitFlyerDotNet.Trading
         public DateTime OrderCreatedTime { get; private set; }
         public DateTime OrderRequestedTime { get; private set; }
         public DateTime OrderAcceptedTime { get; private set; }
-        public double ReferencePrice { get { return _ticker.MidPrice; } }
+        public decimal ReferencePrice { get { return _ticker.MidPrice; } }
 
         // IChildOrderTransaction
         public string ChildOrderAcceptanceId { get { return _response.GetResult().ChildOrderAcceptanceId; } }
         public string ChildOrderId { get { return (_order == null) ? string.Empty : _order.ChildOrderId; } }
-        public double ExecutedPrice { get { return _execs.IsEmpty() ? double.NaN : _execs.Sum(e => e.Price * e.Size) / _execs.Sum(e => e.Size); } }
-        public double ExecutedSize { get { return _execs.Sum(e => e.Size); } }
+        public decimal ExecutedPrice { get { return _execs.IsEmpty() ? decimal.Zero : _execs.Sum(e => e.Price * e.Size) / _execs.Sum(e => e.Size); } }
+        public decimal ExecutedSize { get { return _execs.Sum(e => e.Size); } }
         public DateTime ExecutedTime { get { return _execs.Select(e => e.ExecutedTime).DefaultIfEmpty().Max(); } }
 
         public int MinuteToExpire { get { return _request.MinuteToExpire; } }
@@ -101,7 +101,7 @@ namespace BitFlyerDotNet.Trading
         public TimeSpan OrderConfirmPollingInterval { get; set; } = TimeSpan.FromSeconds(3);
         public static bool MonitorExecution { get; set; } = true;
 
-        public ChildOrderTransaction(ITradingAccount account, BfOrderType orderType, BfTradeSide side, double size, double price)
+        public ChildOrderTransaction(ITradingAccount account, BfOrderType orderType, BfTradeSide side, decimal size, decimal price)
         {
             DebugEx.EnterMethod();
             _account = account;
@@ -124,7 +124,7 @@ namespace BitFlyerDotNet.Trading
             UpdateStatus(OrderTransactionState.Created);
         }
 
-        public ChildOrderTransaction(ITradingAccount account, BfOrderType orderType, BfTradeSide side, double size)
+        public ChildOrderTransaction(ITradingAccount account, BfOrderType orderType, BfTradeSide side, decimal size)
         {
             DebugEx.EnterMethod();
             _account = account;

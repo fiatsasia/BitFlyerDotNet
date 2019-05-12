@@ -42,8 +42,8 @@ namespace BitFlyerDotNet.Trading
         public BfTicker Ticker { get; private set; }
         IBfExecution _execution;
         public DateTime ServerTime { get { return Ticker.Timestamp; } }
-        public double AskPrice { get { return Ticker.BestAsk; } }
-        public double BidPrice { get { return Ticker.BestBid; } }
+        public decimal AskPrice { get { return Ticker.BestAsk; } }
+        public decimal BidPrice { get { return Ticker.BestBid; } }
 
         public event OrderTransactionStatusChangedCallback OrderStatusChanged;
         public event PositionStatusChangedCallback PositionStatusChanged;

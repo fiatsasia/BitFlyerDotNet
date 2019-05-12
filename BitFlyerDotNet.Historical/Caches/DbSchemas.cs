@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -86,11 +86,11 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 1)]
-        public double Price { get; set; }
+        public decimal Price { get; set; }
 
         [Required]
         [Column(Order = 2)]
-        public double Size { get; set; }
+        public decimal Size { get; set; }
 
         [Required]
         [Column(Order = 3)]
@@ -176,34 +176,34 @@ namespace BitFlyerDotNet.Historical
         public DateTime Start { get; set; }
 
         [Column(Order = 2)]
-        public double Open { get; set; }
+        public decimal Open { get; set; }
 
         [Column(Order = 3)]
-        public double High { get; set; }
+        public decimal High { get; set; }
 
         [Column(Order = 4)]
-        public double Low { get; set; }
+        public decimal Low { get; set; }
 
         [Column(Order = 5)]
-        public double Close { get; set; }
+        public decimal Close { get; set; }
 
         [NotMapped]
-        public double Volume { get { return BuyVolume + SellVolume + ExecutedVolume; } set { ExecutedVolume = value; } }
+        public decimal Volume { get { return BuyVolume + SellVolume + ExecutedVolume; } set { ExecutedVolume = value; } }
 
         [Column(Order = 6)]
         public int ExecutionCount { get; set; }
 
         [Column(Order = 7)]
-        public double VWAP { get; set; }
+        public decimal VWAP { get; set; }
 
         [Column(Order = 8)]
-        public double BuyVolume { get; set; }
+        public decimal BuyVolume { get; set; }
 
         [Column(Order = 9)]
-        public double SellVolume { get; set; }
+        public decimal SellVolume { get; set; }
 
         [Column(Order = 10)]
-        public double ExecutedVolume { get; set; }
+        public decimal ExecutedVolume { get; set; }
 
         // SQL Server maps TimeSpan to time but SqlDbType.Time supports on less than a day.
         [NotMapped]

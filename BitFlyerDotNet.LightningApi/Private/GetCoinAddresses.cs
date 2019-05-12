@@ -1,6 +1,6 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using Newtonsoft.Json;

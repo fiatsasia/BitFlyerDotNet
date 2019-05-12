@@ -1,6 +1,6 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using Newtonsoft.Json;
@@ -11,16 +11,16 @@ namespace BitFlyerDotNet.LightningApi
     public class BfBoardOrder
     {
         [JsonProperty(PropertyName = "price")]
-        public double Price { get; private set; }
+        public decimal Price { get; private set; }
 
         [JsonProperty(PropertyName = "size")]
-        public double Size { get; private set; }
+        public decimal Size { get; private set; }
     }
 
     public class BfBoard
     {
         [JsonProperty(PropertyName = "mid_price")]
-        public double MidPrice { get; private set; }
+        public decimal MidPrice { get; private set; }
 
         [JsonProperty(PropertyName = "bids")]
         public BfBoardOrder[] Bids { get; private set; }

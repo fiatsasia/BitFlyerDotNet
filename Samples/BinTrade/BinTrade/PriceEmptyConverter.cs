@@ -1,6 +1,6 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// https://www.fiats.asia/
 //
 
 using System;
@@ -13,9 +13,9 @@ namespace BinTrade
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var d = (double)value;
+            var d = (decimal)value;
             var f = ((string)parameter).Replace("{}", "");
-            return double.IsNaN(d) ? "" : string.Format(f, d);
+            return decimal.Zero == d ? "" : string.Format(f, d);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

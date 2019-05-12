@@ -1,6 +1,6 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using Newtonsoft.Json;
@@ -23,11 +23,11 @@ namespace BitFlyerDotNet.LightningApi
         public BfTradeSide Side { get; set; }
 
         [JsonProperty(PropertyName = "size")]
-        public double Size { get; set; }
+        public decimal Size { get; set; }
 
         [JsonProperty(PropertyName = "price")]
         [JsonConverter(typeof(DecimalJsonConverter))]
-        public double Price { get; set; }
+        public decimal Price { get; set; }
         public bool ShouldSerializePrice() { return OrderType == BfOrderType.Limit; }
 
         [JsonProperty(PropertyName = "minute_to_expire")]
@@ -58,8 +58,8 @@ namespace BitFlyerDotNet.LightningApi
             BfProductCode productCode,
             BfOrderType orderType,
             BfTradeSide side,
-            double price,
-            double size,
+            decimal price,
+            decimal size,
             int minuteToExpire = 0,
             BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {

@@ -1,6 +1,6 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using System;
@@ -22,7 +22,7 @@ namespace BitFlyerDotNet.LightningApi
         public BfCurrencyCode CurrencyCode { get; private set; }
 
         [JsonProperty(PropertyName = "amount")]
-        public double Amount { get; private set; }
+        public decimal Amount { get; private set; }
 
         [JsonProperty(PropertyName = "address")]
         public string CoinAddress { get; private set; }

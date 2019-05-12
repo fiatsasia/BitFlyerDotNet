@@ -62,12 +62,12 @@ namespace BitFlyerDotNet.Historical
         class Ohlc : IBfOhlc
         {
             public DateTime Start { get; set; }
-            public double Open { get; set; }
-            public double High { get; set; }
-            public double Low { get; set; }
-            public double Close { get; set; }
-            public double Volume { get; set; }
-            public double VWAP { get; set; }
+            public decimal Open { get; set; }
+            public decimal High { get; set; }
+            public decimal Low { get; set; }
+            public decimal Close { get; set; }
+            public decimal Volume { get; set; }
+            public decimal VWAP { get; set; }
         }
 
         static readonly Ohlc[] _errorResult = new Ohlc[0];
@@ -79,12 +79,12 @@ namespace BitFlyerDotNet.Historical
             {
                 var ohlc = new Ohlc();
                 var closeTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse((string)element[0])).UtcDateTime;
-                ohlc.Open = double.Parse((string)element[1]);
-                ohlc.High = double.Parse((string)element[2]);
-                ohlc.Low = double.Parse((string)element[3]);
-                ohlc.Close = double.Parse((string)element[4]);
-                ohlc.Volume = double.Parse((string)element[5]);
-                ohlc.VWAP = Convert.ToDouble(decimal.Parse((string)element[6]) / Convert.ToDecimal(ohlc.Volume));
+                ohlc.Open = decimal.Parse((string)element[1]);
+                ohlc.High = decimal.Parse((string)element[2]);
+                ohlc.Low = decimal.Parse((string)element[3]);
+                ohlc.Close = decimal.Parse((string)element[4]);
+                ohlc.Volume = decimal.Parse((string)element[5]);
+                ohlc.VWAP = decimal.Parse((string)element[6]) / ohlc.Volume;
                 ohlc.Start = closeTime - frameSpan;
                 ohlcs.Add(ohlc);
             }

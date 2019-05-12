@@ -1,6 +1,6 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using System;
@@ -30,13 +30,13 @@ namespace BitFlyerDotNet.LightningApi
         public BfOrderType ParentOrderType { get; private set; }
 
         [JsonProperty(PropertyName = "price")]
-        public double Price { get; private set; } // value is 0 when executed by market price
+        public decimal Price { get; private set; } // value is 0 when executed by market price
 
         [JsonProperty(PropertyName = "average_price")]
-        public double AveragePrice { get; private set; }
+        public decimal AveragePrice { get; private set; }
 
         [JsonProperty(PropertyName = "size")]
-        public double Size { get; private set; }
+        public decimal Size { get; private set; }
 
         [JsonProperty(PropertyName = "parent_order_state")]
         [JsonConverter(typeof(StringEnumConverter))]
@@ -52,16 +52,16 @@ namespace BitFlyerDotNet.LightningApi
         public string ParentOrderAcceptanceId { get; private set; }
 
         [JsonProperty(PropertyName = "outstanding_size")]
-        public double OutstandingSize { get; private set; }
+        public decimal OutstandingSize { get; private set; }
 
         [JsonProperty(PropertyName = "cancel_size")]
-        public double CancelSize { get; private set; }
+        public decimal CancelSize { get; private set; }
 
         [JsonProperty(PropertyName = "executed_size")]
-        public double ExecutedSize { get; private set; }
+        public decimal ExecutedSize { get; private set; }
 
         [JsonProperty(PropertyName = "total_commission")]
-        public double TotalCommission { get; private set; }
+        public decimal TotalCommission { get; private set; }
     }
 
     public partial class BitFlyerClient

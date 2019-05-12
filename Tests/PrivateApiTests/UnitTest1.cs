@@ -1,6 +1,6 @@
 //==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using System;
@@ -507,7 +507,7 @@ namespace PrivateApiTests
         [Ignore]
         public void SendChildOrder()
         {
-            var resp = _client.SendChildOrder(_productCode, BfOrderType.Limit, BfTradeSide.Buy, 0.0, 0.0);
+            var resp = _client.SendChildOrder(_productCode, BfOrderType.Limit, BfTradeSide.Buy, 0.0m, 0.0m);
             if (CheckUnauthorized(resp))
             {
                 return;

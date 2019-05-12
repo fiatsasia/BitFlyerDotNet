@@ -1,6 +1,6 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using Newtonsoft.Json;
@@ -18,7 +18,7 @@ namespace BitFlyerDotNet.LightningApi
         public int BankAccountId { get; set; }
 
         [JsonProperty(PropertyName = "amount")]
-        public double Amount { get; set; }
+        public decimal Amount { get; set; }
 
         [JsonProperty(PropertyName = "code")]
         public string AuthenticationCode { get; set; }
@@ -39,7 +39,7 @@ namespace BitFlyerDotNet.LightningApi
             return PrivatePost<BfWithdrawResponse>(nameof(Withdraw), jsonRequest);
         }
 
-        public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfCurrencyCode currencyCode, int bankAccountId, double amount, string authenticationCode)
+        public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode)
         {
             return Withdraw(new BfWithdrawRequest
             {

@@ -32,7 +32,7 @@ namespace BitFlyerDotNet.Historical
             _productCode = productCode;
             _cache = cache;
 
-            Debug.WriteLine("HistoricalExecutionSource constructed Before={0}", before);
+            Debug.WriteLine($"{nameof(ExecutionCachedSource)} constructed Before={before}");
 
             var manageRecords = _cache.GetManageTable();
             _source = (manageRecords.Count == 0) ? CreateSimpleCopySource(before, 0) : CreateMergedSource(manageRecords, before);
@@ -76,7 +76,7 @@ namespace BitFlyerDotNet.Historical
 
         IObservable<IBfExecution> CreateReaderSource(int before, int after)
         {
-            Debug.WriteLine("CreateReaderSource entered Before={0} After={1}", before, after);
+            Debug.WriteLine($"{nameof(ExecutionCachedSource)}.CreateReaderSource entered Before={before} After={after}");
             if (before == 0 || after == 0)
             {
                 throw new ArgumentException();
@@ -84,7 +84,7 @@ namespace BitFlyerDotNet.Historical
 
             return Observable.Create<IBfExecution>(observer => { return Task.Run(() =>
             {
-                Debug.WriteLine("CreateReaderSource subscribed Before={0} After={1}", before, after);
+                Debug.WriteLine($"{nameof(ExecutionCachedSource)}.CreateReaderSource subscribed Before={before} After={after}");
 
                 var ticks = 0;
 #if DEBUG
@@ -96,7 +96,7 @@ namespace BitFlyerDotNet.Historical
                     if (_cancel.IsCancellationRequested)
                     {
 #if DEBUG
-                        Debug.WriteLine("CreateReaderSource unsubscribed and completed Before={0} Last={1} Ticks={2}", before, last, ticks);
+                        Debug.WriteLine($"{nameof(ExecutionCachedSource)}.CreateReaderSource unsubscribed and completed Before={before} Last={last} Ticks={ticks}");
 #endif
                         observer.OnCompleted();
                         return;
@@ -108,7 +108,7 @@ namespace BitFlyerDotNet.Historical
                     observer.OnNext(tick);
                 }
 #if DEBUG
-                Debug.WriteLine("CreateReaderSource reached to end and completed Before={0} Last={1} Ticks={2}", before, last, ticks);
+                Debug.WriteLine($"{nameof(ExecutionCachedSource)}.CreateReaderSource reached to end and completed Before={before} Last={last} Ticks={ticks}");
 #endif
                 observer.OnCompleted();
             });});
@@ -116,10 +116,10 @@ namespace BitFlyerDotNet.Historical
 
         IObservable<IBfExecution> CreateSimpleCopySource(int before, int after)
         {
-            Debug.WriteLine("CreateSimpleCopySource entered Before={0} After={1}", before, after);
+            Debug.WriteLine($"{nameof(ExecutionCachedSource)}.CreateSimpleCopySource entered Before={before} After={after}");
             return Observable.Create<IBfExecution>(observer =>
             {
-                Debug.WriteLine("CreateSimpleCopySource subscribed Before={0} After={1}", before, after);
+                Debug.WriteLine($"{nameof(ExecutionCachedSource)}.CreateSimpleCopySource subscribed Before={before} After={after}");
 #if DEBUG
                 var last = 0;
 #endif
@@ -147,7 +147,7 @@ namespace BitFlyerDotNet.Historical
                             _cache.SaveChanges();
                         }
 #if DEBUG
-                        Debug.WriteLine("CreateSimpleCopySource completed Before={0} Last={1} Ticks={2}", before, last, _cache.CurrentBlockTicks);
+                        Debug.WriteLine($"{nameof(ExecutionCachedSource)}.CreateSimpleCopySource completed Before={before} Last={last} Ticks={_cache.CurrentBlockTicks}");
 #endif
                         observer.OnCompleted();
                     }
@@ -157,7 +157,7 @@ namespace BitFlyerDotNet.Historical
 
         IObservable<IBfExecution> CreateMergedSource(List<IManageRecord> manageRecords, int before)
         {
-            Debug.WriteLine("CreateMergedSource entered Before={0}", before);
+            Debug.WriteLine($"{nameof(ExecutionCachedSource)}.CreateMergedSource entered Before={before}");
             var histObservables = new List<IObservable<IBfExecution>>();
             int skipCount = 0;
             if (before == 0)
@@ -202,7 +202,7 @@ namespace BitFlyerDotNet.Historical
 
         public IDisposable Subscribe(IObserver<IBfExecution> observer)
         {
-            Debug.WriteLine("HistoricalExecutionSource subscribed.");
+            Debug.WriteLine($"{nameof(ExecutionCachedSource)} subscribed.");
 #if DEBUG
             var last = 0;
 #endif
@@ -220,9 +220,9 @@ namespace BitFlyerDotNet.Historical
                 {
                     _cache.SaveChanges();
 #if DEBUG
-                    Debug.WriteLine("HistoricalExecutionSource Last tick ID={0}", last);
+                    Debug.WriteLine($"{nameof(ExecutionCachedSource)} Last tick ID={last}");
 #endif
-                    Debug.WriteLine("HistoricalExecutionSource completed.");
+                    Debug.WriteLine($"{nameof(ExecutionCachedSource)} completed.");
                     observer.OnCompleted();
                 }
             ).AddTo(_disposable);

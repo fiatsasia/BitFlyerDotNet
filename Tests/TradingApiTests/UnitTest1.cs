@@ -14,7 +14,7 @@ namespace TradingApiTests
         BitFlyerClient _client;
         TradingAccount _account;
 
-        const double Volume = 0.01;
+        const decimal Volume = 0.01m;
         const int RetryMax = 3;
         static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(3);
 
@@ -48,7 +48,7 @@ namespace TradingApiTests
         public async void IFDOrderTest1()
         {
             var firstOrder = new MarketPriceOrder(ProductCode, BfTradeSide.Buy, Volume);
-            var secondOrder = new TrailingStopOrder(ProductCode, BfTradeSide.Sell, Volume, 10000.0);
+            var secondOrder = new TrailingStopOrder(ProductCode, BfTradeSide.Sell, Volume, 10000.0m);
             var order = TradeOrderFactory.CreateIFD(_account, firstOrder, secondOrder);
             if (!await _account.PlaceOrder(order, RetryMax, RetryInterval))
             {

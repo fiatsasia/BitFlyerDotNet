@@ -1,6 +1,6 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// https://www.fiats.asia/
 //
 
 using System;
@@ -25,7 +25,7 @@ namespace BitFlyerDotNet.Trading
         public DateTime OrderCreatedTime { get; private set; }
         public DateTime OrderRequestedTime { get; private set; }
         public DateTime OrderAcceptedTime { get; private set; }
-        public double ReferencePrice { get { return _ticker.MidPrice; } }
+        public decimal ReferencePrice { get { return _ticker.MidPrice; } }
         public BfOrderState OrderStatus { get { return (_parentOrder == null) ? BfOrderState.Unknown : _parentOrder.ParentOrderState; } }
         public int MinuteToExpire { get { return _request.MinuteToExpire; } }
         public BfTimeInForce TimeInForce { get { return _request.TimeInForce; } }
@@ -92,11 +92,11 @@ namespace BitFlyerDotNet.Trading
 
         // Prooperties
         public virtual BfTradeSide Side { get { return _parentOrder.Side; } }
-        public virtual double OrderSize { get { return _parentOrder.Size; } }
-        public virtual double OrderPrice { get { return _parentOrder.Price; } }
+        public virtual decimal OrderSize { get { return _parentOrder.Size; } }
+        public virtual decimal OrderPrice { get { return _parentOrder.Price; } }
 
-        public double ExecutedPrice { get; }
-        public double ExecutedSize { get; }
+        public decimal ExecutedPrice { get; }
+        public decimal ExecutedSize { get; }
 
 
         Timer _orderConfirmPollingTimer;

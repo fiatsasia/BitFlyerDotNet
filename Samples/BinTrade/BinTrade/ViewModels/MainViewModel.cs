@@ -1,6 +1,6 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// https://www.fiats.asia/
 //
 
 using System;
@@ -18,17 +18,17 @@ namespace BinTrade.ViewModels
         SynchronizationContext _ctx;
         TradingAccount _account;
 
-        double _bedAmount = 100.0;
-        double _size = 0.01;
+        decimal _bedAmount = 100.0m;
+        decimal _size = 0.01m;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public double LastTradedPrice { get; private set; }
+        public decimal LastTradedPrice { get; private set; }
 
-        public double EntryPrice { get; private set; } = double.NaN;
-        public double TargetPrice { get; private set; } = double.NaN;
-        public double LossCutPrice { get; private set; } = double.NaN;
-        public double TargetDifference { get { return Math.Abs(TargetPrice - EntryPrice); } }
+        public decimal EntryPrice { get; private set; } = decimal.Zero;
+        public decimal TargetPrice { get; private set; } = decimal.Zero;
+        public decimal LossCutPrice { get; private set; } = decimal.Zero;
+        public decimal TargetDifference { get { return Math.Abs(TargetPrice - EntryPrice); } }
 
         public string LogMessage { get; private set; } = "Initializing...";
 
@@ -61,9 +61,9 @@ namespace BinTrade.ViewModels
             switch (status)
             {
                 case OrderTransactionState.Executed: // All of IFDOCO child orders are done
-                    EntryPrice = double.NaN;
-                    TargetPrice = double.NaN;
-                    LossCutPrice = double.NaN;
+                    EntryPrice = decimal.Zero;
+                    TargetPrice = decimal.Zero;
+                    LossCutPrice = decimal.Zero;
 
                     IsOrderPlaceable = true;
                     IsPositionCloseable = false;

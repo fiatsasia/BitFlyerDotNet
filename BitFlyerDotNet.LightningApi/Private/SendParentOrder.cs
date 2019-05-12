@@ -1,6 +1,6 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
-// http://www.fiats.asia/
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
 //
 
 using System.Collections.Generic;
@@ -24,20 +24,20 @@ namespace BitFlyerDotNet.LightningApi
         public BfTradeSide Side { get; set; }
 
         [JsonProperty(PropertyName = "size")]
-        public double Size { get; set; }
+        public decimal Size { get; set; }
 
         [JsonProperty(PropertyName = "price")]
         [JsonConverter(typeof(DecimalJsonConverter))]
-        public double Price { get; set; }
+        public decimal Price { get; set; }
         public bool ShouldSerializePrice() { return ConditionType == BfOrderType.Limit || ConditionType == BfOrderType.StopLimit; }
 
         [JsonProperty(PropertyName = "trigger_price")]
-        public double TriggerPrice { get; set; }
+        public decimal TriggerPrice { get; set; }
         public bool ShouldSerializeTriggerPrice() { return ConditionType == BfOrderType.Stop || ConditionType == BfOrderType.StopLimit; }
 
         [JsonProperty(PropertyName = "offset")]
         [JsonConverter(typeof(DecimalJsonConverter))]
-        public double Offset { get; set; }
+        public decimal Offset { get; set; }
         public bool ShouldSerializeOffset() { return ConditionType == BfOrderType.Trail; }
     }
 
