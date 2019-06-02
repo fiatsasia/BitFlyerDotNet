@@ -7,7 +7,7 @@ BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/
 
 ### 更新履歴
 - 2019/06/02
-  - RealtimeSourceにGetOrderBookSource()を追加しました。これにより、Realtime APIのBoardSnapshotとBoardを統合した板情報をリアルタイムに取得することができます。[→サンプルコード](Samples/RealTimeApiSample/Program.cs)
+  - RealtimeSourceにGetOrderBookSource()を追加しました。これにより、Realtime APIのBoardSnapshotとBoardを統合した板情報をリアルタイムに取得することができます。[→サンプルコード](Samples/RealtimeApiSample/Program.cs)
   - プロパティの一部定義名称を変更しました(例:Status → State)。
   - BitFlyerDotNet.Tradingを改訂しました。改訂内容は[サンプルコード](Samples/TradingApiSample/Program.cs)をご確認下さい。
   - 基本機能の定義やユーティリティ関数を[Financial.Extensions](https://github.com/fiatsasia/Financial.Extensions)に移行しました。
@@ -57,7 +57,7 @@ PM> Install-Package BitFlyerDotNet.Historical
 
 ### Realtime API サンプル
 - .NET Core console application.
-[サンプルコード→](Samples/RealTimeApiSample/Program.cs)
+[サンプルコード→](Samples/RealtimeApiSample/Program.cs)
 
 ### Trading API サンプル
 - .NET Core console application.

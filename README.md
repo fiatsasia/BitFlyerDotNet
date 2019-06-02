@@ -6,7 +6,7 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 
 ### Updates
 - 2019/06/02
-  - Added GetOrderBookSource() to RealtimeSource. This functionality provides order book feed which integrates by BoardSnapshot and Board realtime APIs. [See sample code.](Samples/RealTimeApiSample/Program.cs)
+  - Added GetOrderBookSource() to RealtimeSource. This functionality provides order book feed which integrates by BoardSnapshot and Board realtime APIs. [See sample code.](Samples/RealtimeApiSample/Program.cs)
   - Some of property definitions are changed. (ex. Status -> State)
   - BitflyerDotNet.Trading is revised. [Check changes from here](Samples/TradingApiSample/Program.cs)
   - Some of functionality was moved to [Financial.Extensions](https://github.com/fiatsasia/Financial.Extensions).
@@ -109,7 +109,7 @@ client.SendChildOrder(BfProductCode.FXBTCJPY, BfOrderType.Limit, BfTradeSide.Buy
 
 ### Realtime API Sample
 - .NET Core console application.
-[To see sample application from here.](Samples/RealTimeApiSample/Program.cs)
+[To see sample application from here.](Samples/RealtimeApiSample/Program.cs)
 
 ### Trading API Sample
 - .NET Core console application.
