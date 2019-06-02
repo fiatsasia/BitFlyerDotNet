@@ -5,13 +5,22 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
 ### Updates
-- 2019/05/12 All of price and size are changed definition type from double to decimal.
-             Changed build environment isual Studio from 2017 to 2019.
-- 2019/03/31 Added hot/cold start option to RealtimeExecutionSource and chaged default to hot (hot start on subscribe).
-- 2019/03/21 Added BTCUSD and BTCEUR support in realtime ticker API. 
+- 2019/06/02
+  - Added GetOrderBookSource() to RealtimeSource. This functionality provides order book feed which integrates by BoardSnapshot and Board realtime APIs. [See sample code.](Samples/RealtimeApiSample/Program.cs)
+  - Some of property definitions are changed. (ex. Status -> State)
+  - BitflyerDotNet.Trading is revised. [Check changes from here](Samples/TradingApiSample/Program.cs)
+  - Some of functionality was moved to [Financial.Extensions](https://github.com/fiatsasia/Financial.Extensions).
+  - Xamarin application samples are removed to shorten time of build solution.
+- 2019/05/12
+  - All of prices and sizes are changed definition type from double to decimal.
+  - Changed build environment Visual Studio from 2017 to 2019.
+- 2019/03/31
+  - Added hot/cold start option to RealtimeExecutionSource and chaged default to hot (hot start on subscribe).
+- 2019/03/21
+  - Added BTCUSD and BTCEUR support in realtime ticker API. 
 
 ### Environment 
-- Solution and Projects are for Visual Studio 2017 and 2017 for Mac.
+- Solution and Projects are for Visual Studio 2019 and 2019 for Mac.
 - .NET Standard 2.0 for libraries.
 - .NET Framework 4.71, .NET Core 2.1 and Xamarin Forms for sample applications.
 - Sample applications are tested on iOS, Android, MacOS and Windows desktop. 
@@ -47,6 +56,7 @@ PM> Install-Package BitFlyerDotNet.Historical
 ## Sample code
 
 ### Realtime API
+[To see sample console application from here.](Samples/RealtimeApiSample/Program.cs)
 ```
 using BitFlyerDotNet.LightningApi;
 
@@ -97,12 +107,13 @@ client.SendChildOrder(BfProductCode.FXBTCJPY, BfOrderType.Limit, BfTradeSide.Buy
 ```
 ## Sample applications
 
-### SFDTicker
-- Xamarin.Forms application.
-- Supports WPF/UWP/MacOS/iOS/Android environments.
-- Displays FX_BTC_JPY/BTC_JPY rate of variance, SFD rate.
-- Displays server health and indicates background color.
-![SFDTickerScreen](https://i.gyazo.com/74f3e351c2ab5d75785b25db902b81ff.png)
+### Realtime API Sample
+- .NET Core console application.
+[To see sample application from here.](Samples/RealtimeApiSample/Program.cs)
+
+### Trading API Sample
+- .NET Core console application.
+[To see sample application from here.](Samples/TradingApiSample/Program.cs)
 
 ## Known issues
 

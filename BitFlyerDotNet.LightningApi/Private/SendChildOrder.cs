@@ -3,12 +3,22 @@
 // https://www.fiats.asia/
 //
 
+using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfChildOrderRequest
+    public interface IBfChildOrderRequest
+    {
+        BfProductCode ProductCode { get; }
+        BfOrderType OrderType { get; }
+        BfTradeSide Side { get; }
+        decimal Size { get; }
+        decimal Price { get; }
+    }
+
+    public class BfChildOrderRequest : IBfChildOrderRequest
     {
         [JsonProperty(PropertyName = "product_code")]
         [JsonConverter(typeof(StringEnumConverter))]
@@ -31,13 +41,17 @@ namespace BitFlyerDotNet.LightningApi
         public bool ShouldSerializePrice() { return OrderType == BfOrderType.Limit; }
 
         [JsonProperty(PropertyName = "minute_to_expire")]
-        public int MinuteToExpire { get; set; }
-        public bool ShouldSerializeMinuteToExpire() { return MinuteToExpire > 0; } // default = 43200 (30 days)
+        public int MinuteToExpire { get; set; } = BitFlyerClientConfig.MinuteToExpireDefault;
+        public bool ShouldSerializeMinuteToExpire()
+            { return MinuteToExpire != BitFlyerClientConfig.MinuteToExpireDefault && MinuteToExpire > 0; } // default = 43200 (30 days)
 
         [JsonProperty(PropertyName = "time_in_force")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfTimeInForce TimeInForce { get; set; }
-        public bool ShouldSerializeTimeInForce() { return TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
+        public BfTimeInForce TimeInForce { get; set; } = BitFlyerClientConfig.TimeInForceDefault;
+        public bool ShouldSerializeTimeInForce()
+            { return TimeInForce != BitFlyerClientConfig.TimeInForceDefault && TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
+
+        public TimeSpan MinuteToExpireSpan { get => TimeSpan.FromMinutes(MinuteToExpire); set => MinuteToExpire = (int)value.TotalMinutes; }
     }
 
     public class BfChildOrderResponse
@@ -50,6 +64,16 @@ namespace BitFlyerDotNet.LightningApi
     {
         public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(BfChildOrderRequest request)
         {
+            if (request.MinuteToExpire == BitFlyerClientConfig.MinuteToExpireDefault && Config.MinuteToExpire != BitFlyerClientConfig.MinuteToExpireDefault)
+            {
+                request.MinuteToExpire = Config.MinuteToExpire;
+            }
+
+            if (request.TimeInForce == BitFlyerClientConfig.TimeInForceDefault && Config.TimeInForce != BitFlyerClientConfig.TimeInForceDefault)
+            {
+                request.TimeInForce = Config.TimeInForce;
+            }
+
             var jsonRequest = JsonConvert.SerializeObject(request, _jsonSettings);
             return PrivatePost<BfChildOrderResponse>(nameof(SendChildOrder), jsonRequest);
         }
@@ -60,8 +84,8 @@ namespace BitFlyerDotNet.LightningApi
             BfTradeSide side,
             decimal price,
             decimal size,
-            int minuteToExpire = 0,
-            BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+            int minuteToExpire = BitFlyerClientConfig.MinuteToExpireDefault,
+            BfTimeInForce timeInForce = BitFlyerClientConfig.TimeInForceDefault)
         {
             return SendChildOrder(new BfChildOrderRequest
             {

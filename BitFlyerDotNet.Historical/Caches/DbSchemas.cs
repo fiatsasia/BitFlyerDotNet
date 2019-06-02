@@ -6,6 +6,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -165,7 +166,7 @@ namespace BitFlyerDotNet.Historical
         }
     }
 
-    class DbHistoricalOhlc : IBfOhlcEx
+    class DbHistoricalOhlc : IFxOhlcvv
     {
         [Key]
         [Column(Order = 0)]
@@ -188,22 +189,22 @@ namespace BitFlyerDotNet.Historical
         public decimal Close { get; set; }
 
         [NotMapped]
-        public decimal Volume { get { return BuyVolume + SellVolume + ExecutedVolume; } set { ExecutedVolume = value; } }
+        public double Volume { get { return BuyVolume + SellVolume + ExecutedVolume; } set { ExecutedVolume = value; } }
 
         [Column(Order = 6)]
         public int ExecutionCount { get; set; }
 
         [Column(Order = 7)]
-        public decimal VWAP { get; set; }
+        public double VWAP { get; set; }
 
         [Column(Order = 8)]
-        public decimal BuyVolume { get; set; }
+        public double BuyVolume { get; set; }
 
         [Column(Order = 9)]
-        public decimal SellVolume { get; set; }
+        public double SellVolume { get; set; }
 
         [Column(Order = 10)]
-        public decimal ExecutedVolume { get; set; }
+        public double ExecutedVolume { get; set; }
 
         // SQL Server maps TimeSpan to time but SqlDbType.Time supports on less than a day.
         [NotMapped]
@@ -215,14 +216,14 @@ namespace BitFlyerDotNet.Historical
 
         public Type GetBaseType()
         {
-            return ExecutionCount == 0 ? typeof(IBfOhlc) : typeof(IBfOhlcEx);
+            return ExecutionCount == 0 ? typeof(IFxOhlcvv) : typeof(IBfOhlcEx);
         }
 
         public DbHistoricalOhlc()
         {
         }
 
-        public DbHistoricalOhlc(IBfOhlc ohlc, TimeSpan frameSpan)
+        public DbHistoricalOhlc(IFxOhlcvv ohlc, TimeSpan frameSpan)
         {
             Start = ohlc.Start;
             Open = ohlc.Open;

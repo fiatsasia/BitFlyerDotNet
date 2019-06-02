@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -25,8 +26,8 @@ namespace BitFlyerDotNet.Historical
         void AddExecution(IBfExecution exec);
 
         // OHLCs
-        IEnumerable<IBfOhlc> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span);
-        void AddOhlc(TimeSpan frameSpan, IBfOhlc ohlc);
+        IEnumerable<IFxOhlcvv> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span);
+        void AddOhlc(TimeSpan frameSpan, IFxOhlcvv ohlc);
 
         DbSet<DbMinuteMarker> Marker { get; }
 

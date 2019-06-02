@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 using System.Reactive.Linq;
-using Fiats.Utils;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical

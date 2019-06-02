@@ -6,7 +6,6 @@
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Fiats.Utils;
 
 namespace BitFlyerDotNet.LightningApi
 {
@@ -45,11 +44,6 @@ namespace BitFlyerDotNet.LightningApi
 
         [JsonProperty(PropertyName = "sfd")]
         public decimal SwapForDifference { get; private set; }
-
-        public override int GetHashCode()
-        {
-            return ProductCode.GetHashCode() ^ Side.GetHashCode() ^ OpenDate.GetHashCode() ^ Price.GetHashCode() ^ Size.GetHashCode();
-        }
     }
 
     public partial class BitFlyerClient

@@ -7,8 +7,8 @@ using System;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
-using Fiats.Utils;
 
 namespace BitFlyerDotNet.Historical
 {

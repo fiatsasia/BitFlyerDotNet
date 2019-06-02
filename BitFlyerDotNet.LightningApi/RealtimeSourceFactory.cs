@@ -17,7 +17,7 @@ using System.Reactive.Disposables;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using WebSocket4Net;
-using Fiats.Utils;
+using Financial.Extensions;
 
 namespace BitFlyerDotNet.LightningApi
 {
@@ -44,11 +44,16 @@ namespace BitFlyerDotNet.LightningApi
         Timer _wsReconnectionTimer;
         const int WebSocketReconnectionIntervalMs = 5000;
 
-        BitFlyerClient _client = new BitFlyerClient();
-        Dictionary<string, string> _productCodeAliases = new Dictionary<string, string>();
+        BitFlyerClient _client;
 
-        public RealtimeSourceFactory()
+        public RealtimeSourceFactory(BitFlyerClient client = null)
         {
+            _client = (client == null) ? new BitFlyerClient().AddTo(_disposables) : client;
+            if (client != null)
+            {
+                GetAvailableMarkets();
+            }
+
             _webSocket = new WebSocket("wss://ws.lightstream.bitflyer.com/json-rpc");
             _webSocket.Security.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
             _wsReconnectionTimer = new Timer((_) =>
@@ -79,7 +84,7 @@ namespace BitFlyerDotNet.LightningApi
                         break;
                 }
             });
-                            
+
             _openedEvent.Reset();
             _webSocket.Opened += (_, __) =>
             {
@@ -90,6 +95,7 @@ namespace BitFlyerDotNet.LightningApi
                     Debug.WriteLine("{0} WebSocket recover subscriptions.", DateTime.Now);
                     _webSocketSources.Values.ForEach(source => { source.Subscribe(); }); // resubscribe
                 }
+                OnWebSocketOpened();
                 _openedEvent.Set();
             };
 
@@ -145,61 +151,58 @@ namespace BitFlyerDotNet.LightningApi
             if (!_opened)
             {
                 _opened = true;
+
                 _webSocket.Open();
                 _openedEvent.WaitOne(10000);
             }
         }
 
-        void InitProductCodeAliases()
+        void OnWebSocketOpened()
         {
-            if (_productCodeAliases.Count > 0)
-            {
-                return; // Already initialized
-            }
-
-            // Convert from future product code alias to real product code
-            var resps = _client.GetMarketsAll();
-            foreach (var resp in resps)
-            {
-                if (resp.IsError)
-                {
-                    if (resp.Exception != null)
-                    {
-                        throw resp.Exception;
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException(resp.ErrorMessage);
-                    }
-                }
-                foreach (var market in resp.GetResult())
-                {
-                    if (!string.IsNullOrEmpty(market.Alias))
-                    {
-                        _productCodeAliases[market.Alias] = market.ProductCode;
-                    }
-                    else
-                    {
-                        _productCodeAliases[market.ProductCode] = market.ProductCode;
-                    }
-                }
-            }
+            GetAvailableMarkets();
         }
 
         public void Dispose()
         {
             _disposables.Dispose();
+            if (_opened)
+            {
+                _webSocket.Close();
+            }
         }
 
-        ConcurrentDictionary<BfProductCode, IConnectableObservable<BfExecution>> _executionColdSources = new ConcurrentDictionary<BfProductCode, IConnectableObservable<BfExecution>>();
+        // Convert BfProdcutCode (inc. futures) to native product codes
+        Dictionary<BfProductCode, string> _availableMarkets = new Dictionary<BfProductCode, string>();
+        public IEnumerable<BfProductCode> AvailableMarkets => _availableMarkets.Keys;
+        public BfProductCode ParseProductCode(string productCode) => _availableMarkets.Where(kvs => kvs.Value == productCode).Select(kvs => kvs.Key).Single();
+        void GetAvailableMarkets()
+        {
+            _availableMarkets.Clear();
+            foreach (var market in _client.GetMarketsAll().SelectMany(e => e.GetResult()))
+            {
+                if (market.ProductCode.StartsWith("BTCJPY"))
+                {
+                    if (string.IsNullOrEmpty(market.Alias))
+                    {
+                        continue; // ******** BTCJPY future somtimes missing alias, skip it ********
+                    }
+                    _availableMarkets.Add((BfProductCode)Enum.Parse(typeof(BfProductCode), market.Alias.Replace("_", "")), market.ProductCode);
+                }
+                else
+                {
+                    _availableMarkets.Add((BfProductCode)Enum.Parse(typeof(BfProductCode), market.ProductCode.Replace("_", "")), market.ProductCode);
+                }
+            }
+        }
+
+        ConcurrentDictionary<string, IConnectableObservable<BfExecution>> _executionColdSources = new ConcurrentDictionary<string, IConnectableObservable<BfExecution>>();
         public IObservable<BfExecution> GetExecutionSource(BfProductCode productCode, bool coldStart = false)
         {
             TryOpen();
-            var result = _executionColdSources.GetOrAdd(productCode, _ =>
+            var symbol = _availableMarkets[productCode];
+            var result = _executionColdSources.GetOrAdd(symbol, _ =>
             {
-                InitProductCodeAliases();
-                var realProductCode = _productCodeAliases[productCode.ToEnumString()];
-                var source = new RealtimeExecutionSource(_webSocket, _jsonSettings, realProductCode);
+                var source = new RealtimeExecutionSource(_webSocket, _jsonSettings, symbol);
                 _webSocketSources[source.Channel] = source;
                 return source.SkipWhile(tick => tick.ExecutionId == 0).Publish();
             });
@@ -209,7 +212,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public void StartExecutionSource(BfProductCode productCode)
         {
-            if (_executionColdSources.TryGetValue(productCode, out IConnectableObservable<BfExecution> source))
+            if (_executionColdSources.TryGetValue(_availableMarkets[productCode], out IConnectableObservable<BfExecution> source))
             {
                 source.Connect().AddTo(_disposables);
             }
@@ -223,44 +226,61 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        ConcurrentDictionary<BfProductCode, IObservable<BfTicker>> _tickSources = new ConcurrentDictionary<BfProductCode, IObservable<BfTicker>>();
+        ConcurrentDictionary<string, IObservable<BfTicker>> _tickSources = new ConcurrentDictionary<string, IObservable<BfTicker>>();
         public IObservable<BfTicker> GetTickerSource(BfProductCode productCode)
         {
             TryOpen();
-            return _tickSources.GetOrAdd(productCode, _ =>
+            var symbol = _availableMarkets[productCode];
+            return _tickSources.GetOrAdd(symbol, _ =>
             {
-                InitProductCodeAliases();
-                var realProductCode = _productCodeAliases[productCode.ToEnumString()];
-                var source = new RealtimeTickerSource(_webSocket, _jsonSettings, realProductCode);
+                var source = new RealtimeTickerSource(_webSocket, _jsonSettings, symbol);
                 _webSocketSources[source.Channel] = source;
                 return source.Publish().RefCount();
             });
         }
 
-        ConcurrentDictionary<BfProductCode, IObservable<BfBoard>> _boardSources = new ConcurrentDictionary<BfProductCode, IObservable<BfBoard>>();
+#if true // Will be obsoleted
+        ConcurrentDictionary<string, IObservable<BfBoard>> _boardSources = new ConcurrentDictionary<string, IObservable<BfBoard>>();
+        [Obsolete("This API will be deprecated. Please use GetOrderBookSource() instead of this.")]
         public IObservable<BfBoard> GetBoardSource(BfProductCode productCode)
         {
             TryOpen();
-            return _boardSources.GetOrAdd(productCode, _ =>
+            var symbol = _availableMarkets[productCode];
+            return _boardSources.GetOrAdd(symbol, _ =>
             {
-                InitProductCodeAliases();
-                var realProductCode = _productCodeAliases[productCode.ToEnumString()];
-                var source = new RealtimeBoardSource(_webSocket, _jsonSettings, realProductCode);
+                var source = new RealtimeBoardSource(_webSocket, _jsonSettings, symbol);
                 _webSocketSources[source.Channel] = source;
                 return source.Publish().RefCount();
             });
         }
 
-        ConcurrentDictionary<BfProductCode, IObservable<BfBoard>> _boardSnapshotSources = new ConcurrentDictionary<BfProductCode, IObservable<BfBoard>>();
+        ConcurrentDictionary<string, IObservable<BfBoard>> _boardSnapshotSources = new ConcurrentDictionary<string, IObservable<BfBoard>>();
+        [Obsolete("This API will be deprecated. Please use GetOrderBookSource() instead of this.")]
         public IObservable<BfBoard> GetBoardSnapshotSource(BfProductCode productCode)
         {
             TryOpen();
-            return _boardSnapshotSources.GetOrAdd(productCode, _ =>
+            var symbol = _availableMarkets[productCode];
+            return _boardSnapshotSources.GetOrAdd(symbol, _ =>
             {
-                InitProductCodeAliases();
-                var realProductCode = _productCodeAliases[productCode.ToEnumString()];
-                var source = new RealtimeBoardSnapshotSource(_webSocket, _jsonSettings, realProductCode);
+                var source = new RealtimeBoardSnapshotSource(_webSocket, _jsonSettings, symbol);
                 _webSocketSources[source.Channel] = source;
+                return source.Publish().RefCount();
+            });
+        }
+#endif
+
+        ConcurrentDictionary<string, IObservable<BfOrderBook>> _orderBookSnapshotSources = new ConcurrentDictionary<string, IObservable<BfOrderBook>>();
+        public IObservable<BfOrderBook> GetOrderBookSource(BfProductCode productCode)
+        {
+            TryOpen();
+            var symbol = _availableMarkets[productCode];
+            return _orderBookSnapshotSources.GetOrAdd(symbol, _ =>
+            {
+                var snapshot = new RealtimeBoardSnapshotSource(_webSocket, _jsonSettings, symbol);
+                var update = new RealtimeBoardSource(_webSocket, _jsonSettings, symbol);
+                _webSocketSources[snapshot.Channel] = snapshot;
+                _webSocketSources[update.Channel] = update;
+                var source = new BfOrderBookStream(snapshot, update);
                 return source.Publish().RefCount();
             });
         }

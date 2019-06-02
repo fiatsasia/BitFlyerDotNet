@@ -6,7 +6,6 @@
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Fiats.Utils;
 
 namespace BitFlyerDotNet.LightningApi
 {
@@ -45,6 +44,7 @@ namespace BitFlyerDotNet.LightningApi
         [JsonProperty(PropertyName = "sell_child_order_acceptance_id")]
         public string SellChildOrderAcceptanceId { get; private set; }
 
+        // Compatobility for BfPrivateExecution
         public string ChildOrderAcceptanceId { get { return Side == BfTradeSide.Buy ? BuyChildOrderAcceptanceId : SellChildOrderAcceptanceId; } }
     }
 
@@ -54,9 +54,9 @@ namespace BitFlyerDotNet.LightningApi
         {
             var query = string.Format("product_code={0}{1}{2}{3}",
                 productCode.ToEnumString(),
-                (count > 0)  ? $"&count={count}"   : "",
+                (count > 0) ? $"&count={count}" : "",
                 (before > 0) ? $"&before={before}" : "",
-                (after > 0)  ? $"&after={after}"   : ""
+                (after > 0) ? $"&after={after}" : ""
             );
             return Get<BfExecution[]>(nameof(GetExecutions), query);
         }

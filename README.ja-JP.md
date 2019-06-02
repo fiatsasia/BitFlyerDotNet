@@ -6,13 +6,22 @@ BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/
 **BitFlyerDotNet は bitFlyer Lightning API の公式ライブラリではありません。**
 
 ### 更新履歴
-- 2019/05/12 価格とサイズ全般の型定義をdoubleからdecimalに変更しました。
-             ビルド環境を Visual Studio 2017 から 2019 に変更しました。
-- 2019/03/31 RealtimeExecutionSourceにhot/coldオプションを追加し、デフォルトをhot(Subscribeと同時に開始)に変更しました。
-- 2019/03/21 Realtime Ticker API に、BTCUSD、BTCEUR 対応を追加しました。
+- 2019/06/02
+  - RealtimeSourceにGetOrderBookSource()を追加しました。これにより、Realtime APIのBoardSnapshotとBoardを統合した板情報をリアルタイムに取得することができます。[→サンプルコード](Samples/RealtimeApiSample/Program.cs)
+  - プロパティの一部定義名称を変更しました(例:Status → State)。
+  - BitFlyerDotNet.Tradingを改訂しました。改訂内容は[サンプルコード](Samples/TradingApiSample/Program.cs)をご確認下さい。
+  - 基本機能の定義やユーティリティ関数を[Financial.Extensions](https://github.com/fiatsasia/Financial.Extensions)に移行しました。
+  - ソリューションビルド時間を短縮するため、Xamarin Formsアプリケーションサンプルを削除しました。
+- 2019/05/12
+  - 価格とサイズ全般の型定義をdoubleからdecimalに変更しました。
+  - ビルド環境を Visual Studio 2017 から 2019 に変更しました。
+- 2019/03/31
+  - RealtimeExecutionSourceにhot/coldオプションを追加し、デフォルトをhot(Subscribeと同時に開始)に変更しました。
+- 2019/03/21
+  - Realtime Ticker API に、BTCUSD、BTCEUR 対応を追加しました。
 
 ### 環境
-- Visual Studio 2017 / for Mac 2017 用ソリューション、プロジェクト
+- Visual Studio 2019 / for Mac 2019 用ソリューション、プロジェクト
 - .NET Standard 2.0 (ライブラリで使用)
 - .NET Framework 4.71, .NET Core 2.1, Xamarin Forms (サンプルで使用)
 - Xamrin Forms サンプルは iOS, Android, MacOS, Windows で動作確認済み。 

@@ -86,7 +86,7 @@ namespace BitFlyerDotNet.LightningApi
             Json = message.Content.ReadAsStringAsync().Result;
         }
 
-        public HttpStatusCode StatusCode { get; internal set; }
+        public HttpStatusCode StatusCode { get; internal set; } = HttpStatusCode.OK;
         public BfErrorResponse ErrorResponse { get; internal set; } = BfErrorResponse.Default;
         public bool IsUnauthorized { get { return StatusCode == HttpStatusCode.Unauthorized; } }
 
@@ -121,6 +121,18 @@ namespace BitFlyerDotNet.LightningApi
         T _result = default(T);
         public T GetResult()
         {
+            if (IsError)
+            {
+                if (Exception != null)
+                {
+                    throw Exception;
+                }
+                else
+                {
+                    throw new ApplicationException(ErrorMessage);
+                }
+            }
+
             if (object.Equals(_result, default(T)))
             {
                 _result = JsonConvert.DeserializeObject<T>(_json, _jsonSettings);
@@ -170,16 +182,25 @@ namespace BitFlyerDotNet.LightningApi
         HMACSHA256 _hmac;
 
         public bool IsPrivateApiEnabled { get { return _hmac != null; } }
+        public BitFlyerClientConfig Config { get; } = new BitFlyerClientConfig();
 
-        public BitFlyerClient()
+        public BitFlyerClient(BitFlyerClientConfig config = null)
         {
+            if (config != null)
+            {
+                Config = config;
+            }
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             _client = new HttpClient();
             _client.BaseAddress = new Uri(_baseUri);
         }
 
-        public BitFlyerClient(string apiKey, string apiSecret)
+        public BitFlyerClient(string apiKey, string apiSecret, BitFlyerClientConfig config = null)
         {
+            if (config != null)
+            {
+                Config = config;
+            }
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             _apiKey = apiKey;
             _hmac = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret));
@@ -189,8 +210,8 @@ namespace BitFlyerDotNet.LightningApi
 
         public void Dispose()
         {
-            _client.Dispose();
-            _hmac.Dispose();
+            _client?.Dispose();
+            _hmac?.Dispose();
         }
 
         internal BitFlyerResponse<T> Get<T>(string apiName, string queryParameters = "")

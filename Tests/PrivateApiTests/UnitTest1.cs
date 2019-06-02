@@ -167,7 +167,7 @@ namespace PrivateApiTests
         [TestMethod]
         public void GetChildOrders()
         {
-            var resp = _client.GetChildOrders(_productCode, count: 5);
+            var resp = _client.GetChildOrders(_productCode);
             if (CheckUnauthorized(resp))
             {
                 return;
@@ -178,12 +178,7 @@ namespace PrivateApiTests
             var orders = resp.GetResult();
             orders.ForEach(order =>
             {
-                Console.WriteLine("{0} {1} {2} {3}",
-                    order.Side,
-                    order.ChildOrderType,
-                    order.ChildOrderState,
-                    order.ChildOrderAcceptanceId
-                );
+                Console.WriteLine($"{order.Side} {order.ChildOrderType} {order.ChildOrderState} {order.ChildOrderAcceptanceId} {order.ExpireDate}");
             });
         }
 
@@ -351,7 +346,7 @@ namespace PrivateApiTests
         [TestMethod]
         public void GetParentOrders()
         {
-            var resp = _client.GetParentOrders(_productCode, count: 5);
+            var resp = _client.GetParentOrders(_productCode);
             if (CheckUnauthorized(resp))
             {
                 return;

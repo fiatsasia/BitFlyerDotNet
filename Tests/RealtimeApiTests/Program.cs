@@ -4,19 +4,27 @@
 //
 
 using System;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Disposables;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 
 namespace RealtimeApiTests
 {
     class Program
     {
+        static CompositeDisposable _disposables = new CompositeDisposable();
+
         static void Main(string[] args)
         {
             var factory = new RealtimeSourceFactory();
-            //var disp = SubscribeTickerSource(factory, BfProductCode.BTCUSD);
-            var disp = SubscribeExecutionSource(factory, BfProductCode.FXBTCJPY);
+
+            //SubscribeTickerSource(factory, BfProductCode.BTCUSD).AddTo(_disposables);
+            //SubscribeExecutionSource(factory, BfProductCode.FXBTCJPY).AddTo(_disposables);
+            SubscribeOrderbookSource(factory, BfProductCode.FXBTCJPY).AddTo(_disposables);
             Console.ReadLine();
-            disp.Dispose();
+            _disposables.Dispose();
         }
 
         static IDisposable SubscribeTickerSource(RealtimeSourceFactory factory, BfProductCode productCode)
@@ -37,6 +45,23 @@ namespace RealtimeApiTests
                 Console.WriteLine($"{exec.ExecutedTime} P:{exec.Price} A:{exec.Side} B:{exec.Size}");
             });
 
+        }
+
+        static IDisposable SubscribeOrderbookSource(RealtimeSourceFactory factory, BfProductCode productCode)
+        {
+            var source = factory.GetOrderBookSource(productCode);
+            return source.Select(orderBook => orderBook.GetSnapshot(15)).Subscribe(obs =>
+            {
+                foreach (var ask in obs.Asks.Reverse())
+                {
+                    Console.WriteLine($"Ask: P:{ask.Price} S:{ask.Size}");
+                }
+                Console.WriteLine($"Mid: P:{obs.MidPrice}");
+                foreach (var bid in obs.Bids.Reverse())
+                {
+                    Console.WriteLine($"Bid: P:{bid.Price} S:{bid.Size}");
+                }
+            });
         }
     }
 }

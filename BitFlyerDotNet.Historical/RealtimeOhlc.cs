@@ -18,14 +18,14 @@ namespace BitFlyerDotNet.Historical
         public decimal High { get; private set; } = decimal.MinValue;
         public decimal Low { get; private set; } = decimal.MaxValue;
         public decimal Close { get; private set; }
-        public decimal Volume { get { return BuyVolume + SellVolume + ExecutedVolume; } }
+        public double Volume { get { return BuyVolume + SellVolume + ExecutedVolume; } }
 
         // IBfOhlcEx
         public int ExecutionCount { get; private set; }
-        public decimal VWAP { get; private set; }
-        public decimal BuyVolume { get; private set; }
-        public decimal SellVolume { get; private set; }
-        public decimal ExecutedVolume { get; private set; }
+        public double VWAP { get; private set; }
+        public double BuyVolume { get; private set; }
+        public double SellVolume { get; private set; }
+        public double ExecutedVolume { get; private set; }
 
         public object Tag { get; set; }
         public event RealtimeOhlcUpdateEventCallback UpdateEvent;
@@ -58,22 +58,22 @@ namespace BitFlyerDotNet.Historical
             switch (exec.Side)
             {
                 case BfTradeSide.Buy:
-                    BuyVolume += exec.Size;
+                    BuyVolume += unchecked((double)exec.Size);
                     break;
 
                 case BfTradeSide.Sell:
-                    SellVolume += exec.Size;
+                    SellVolume += unchecked((double)exec.Size);
                     break;
 
                 default:
-                    ExecutedVolume += exec.Size;
+                    ExecutedVolume += unchecked((double)exec.Size);
                     break;
             }
 
             _amount += exec.Price * exec.Size;
             try
             {
-                VWAP = _amount / Volume;
+                VWAP = unchecked((double)(_amount / unchecked((decimal)Volume)));
             }
             catch (DivideByZeroException)
             {

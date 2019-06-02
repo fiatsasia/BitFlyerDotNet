@@ -4,7 +4,6 @@
 //
 
 using Newtonsoft.Json;
-using Fiats.Utils;
 
 namespace BitFlyerDotNet.LightningApi
 {

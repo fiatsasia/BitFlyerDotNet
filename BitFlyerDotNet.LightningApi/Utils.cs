@@ -9,18 +9,10 @@ using System.Diagnostics;
 using System.Threading;
 using System.IO;
 using System.Runtime.Serialization;
-using System.Reactive.Disposables;
+using Newtonsoft.Json;
 
-namespace Fiats.Utils
+namespace BitFlyerDotNet.LightningApi
 {
-    public static class DateTimeUtil
-    {
-        public static DateTime Round(this DateTime dt, TimeSpan period)
-        {
-            return new DateTime(dt.Ticks / period.Ticks * period.Ticks, dt.Kind);
-        }
-    }
-
     internal static class EnumUtil
     {
         internal static string ToEnumString<TEnum>(this TEnum type) where TEnum : struct
@@ -32,12 +24,51 @@ namespace Fiats.Utils
         }
     }
 
-    public static class RxUtil
+    class DecimalJsonConverter : JsonConverter
     {
-        public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
+        public DecimalJsonConverter() { }
+        public override bool CanRead { get { return false; } }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            disposable.Add(resource);
-            return resource;
+            throw new NotImplementedException("Unnecessary because CanRead is false. The type will skip the converter.");
+        }
+
+        public override bool CanConvert(Type objectType)
+        {
+            return (objectType == typeof(decimal) || objectType == typeof(float) || objectType == typeof(double));
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            if (DecimalJsonConverter.IsWholeValue(value))
+            {
+                writer.WriteRawValue(JsonConvert.ToString(Convert.ToInt64(value)));
+            }
+            else
+            {
+                writer.WriteRawValue(JsonConvert.ToString(value));
+            }
+        }
+
+        private static bool IsWholeValue(object value)
+        {
+            switch (value)
+            {
+                case decimal dec:
+                    int precision = (Decimal.GetBits(dec)[3] >> 16) & 0x000000FF;
+                    return precision == 0;
+
+                case double d:
+                    return d == Math.Truncate(d);
+
+                case float f:
+                    double df = (double)f;
+                    return df == Math.Truncate(df);
+
+                default:
+                    return false;
+            }
         }
     }
 

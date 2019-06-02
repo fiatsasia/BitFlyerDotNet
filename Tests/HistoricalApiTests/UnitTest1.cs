@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Historical;
-using Fiats.Utils;
 
 namespace HistoricalApiTests
 {

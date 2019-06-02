@@ -9,7 +9,7 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfParentOrderRequestParameter
+    public class BfParentOrderRequestParameter : IBfChildOrderRequest
     {
         [JsonProperty(PropertyName = "product_code")]
         [JsonConverter(typeof(StringEnumConverter))]
@@ -39,6 +39,9 @@ namespace BitFlyerDotNet.LightningApi
         [JsonConverter(typeof(DecimalJsonConverter))]
         public decimal Offset { get; set; }
         public bool ShouldSerializeOffset() { return ConditionType == BfOrderType.Trail; }
+
+        // BfChildOrderRequest compatibility
+        public BfOrderType OrderType => ConditionType;
     }
 
     public class BfParentOrderRequest
@@ -48,13 +51,15 @@ namespace BitFlyerDotNet.LightningApi
         public BfOrderType OrderMethod { get; set; }
 
         [JsonProperty(PropertyName = "minute_to_expire")]
-        public int MinuteToExpire { get; set; }
-        public bool ShouldSerializeMinuteToExpire() { return MinuteToExpire > 0; } // default = 43200 (30 days)
+        public int MinuteToExpire { get; set; } = BitFlyerClientConfig.MinuteToExpireDefault;
+        public bool ShouldSerializeMinuteToExpire()
+            { return MinuteToExpire != BitFlyerClientConfig.MinuteToExpireDefault && MinuteToExpire > 0; } // default = 43200 (30 days)
 
         [JsonProperty(PropertyName = "time_in_force")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfTimeInForce TimeInForce { get; set; }
-        public bool ShouldSerializeTimeInForce() { return TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
+        public BfTimeInForce TimeInForce { get; set; } = BitFlyerClientConfig.TimeInForceDefault;
+        public bool ShouldSerializeTimeInForce()
+            { return TimeInForce != BitFlyerClientConfig.TimeInForceDefault && TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
 
         [JsonProperty(PropertyName = "parameters")]
         public List<BfParentOrderRequestParameter> Paremters { get; } = new List<BfParentOrderRequestParameter>();
@@ -68,9 +73,36 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest order)
+        public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest request)
         {
-            var jsonRequest = JsonConvert.SerializeObject(order, _jsonSettings);
+            if (request.MinuteToExpire == BitFlyerClientConfig.MinuteToExpireDefault && Config.MinuteToExpire != BitFlyerClientConfig.MinuteToExpireDefault)
+            {
+                request.MinuteToExpire = Config.MinuteToExpire;
+            }
+
+            if (request.TimeInForce == BitFlyerClientConfig.TimeInForceDefault && Config.TimeInForce != BitFlyerClientConfig.TimeInForceDefault)
+            {
+                request.TimeInForce = Config.TimeInForce;
+            }
+
+            var jsonRequest = JsonConvert.SerializeObject(request, _jsonSettings);
+            return PrivatePost<BfParentOrderResponse>(nameof(SendParentOrder), jsonRequest);
+        }
+
+        public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest request, params BfParentOrderRequestParameter[] childOrders)
+        {
+            if (request.MinuteToExpire == BitFlyerClientConfig.MinuteToExpireDefault && Config.MinuteToExpire != BitFlyerClientConfig.MinuteToExpireDefault)
+            {
+                request.MinuteToExpire = Config.MinuteToExpire;
+            }
+
+            if (request.TimeInForce == BitFlyerClientConfig.TimeInForceDefault && Config.TimeInForce != BitFlyerClientConfig.TimeInForceDefault)
+            {
+                request.TimeInForce = Config.TimeInForce;
+            }
+
+            request.Paremters.AddRange(childOrders);
+            var jsonRequest = JsonConvert.SerializeObject(request, _jsonSettings);
             return PrivatePost<BfParentOrderResponse>(nameof(SendParentOrder), jsonRequest);
         }
     }

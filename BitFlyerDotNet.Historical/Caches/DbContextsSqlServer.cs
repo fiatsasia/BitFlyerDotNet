@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -206,13 +207,13 @@ namespace BitFlyerDotNet.Historical
         //
         // OHLCs
         //
-        public IEnumerable<IBfOhlc> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span)
+        public IEnumerable<IFxOhlcvv> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span)
         {
             var end = endFrom - span + frameSpan;
             return _ctx.GetOhlc().Where(e => e.FrameSpan == frameSpan && e.Start <= endFrom && e.Start >= end).OrderByDescending(e => e.Start);
         }
 
-        public void AddOhlc(TimeSpan frameSpan, IBfOhlc ohlc)
+        public void AddOhlc(TimeSpan frameSpan, IFxOhlcvv ohlc)
         {
             var dbOhlc = default(DbHistoricalOhlc);
             if (ohlc is DbHistoricalOhlc)

@@ -4,6 +4,7 @@
 //
 
 using System;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -19,7 +20,7 @@ namespace BitFlyerDotNet.Historical
             _cacheFolderBasePath = cacheFolderBasePath;
         }
 
-        public IObservable<IBfOhlc> GetHistoricalOhlcSource(BfProductCode productCode, TimeSpan frameSpan, DateTime endFrom, TimeSpan span)
+        public IObservable<IFxOhlcvv> GetHistoricalOhlcSource(BfProductCode productCode, TimeSpan frameSpan, DateTime endFrom, TimeSpan span)
         {
             return new HistoricalOhlcSource(_cacheFactory, productCode, frameSpan, endFrom, span, _cacheFolderBasePath);
         }

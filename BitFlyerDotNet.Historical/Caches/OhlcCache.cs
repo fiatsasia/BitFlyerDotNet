@@ -5,7 +5,7 @@
 
 using System;
 using System.Collections.Generic;
-using BitFlyerDotNet.LightningApi;
+using Financial.Extensions;
 
 namespace BitFlyerDotNet.Historical
 {
@@ -25,12 +25,12 @@ namespace BitFlyerDotNet.Historical
             _ctx.SaveOhlcChanges();
         }
 
-        public IEnumerable<IBfOhlc> GetOhlcsBackward(DateTime endFrom, TimeSpan span)
+        public IEnumerable<IFxOhlcvv> GetOhlcsBackward(DateTime endFrom, TimeSpan span)
         {
             return _ctx.GetOhlcsBackward(_frameSpan, endFrom, span);
         }
 
-        public void Add(IBfOhlc ohlc)
+        public void Add(IFxOhlcvv ohlc)
         {
             _ctx.AddOhlc(_frameSpan, ohlc);
         }

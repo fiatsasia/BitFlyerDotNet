@@ -60,7 +60,7 @@ namespace PublicApiTests
         [TestMethod]
         public void GetExchangeHealth()
         {
-            var resp = _client.GetExchangeHealth(ProductCode);
+            var resp = _client.GetMarketHealth(ProductCode);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var health = resp.GetResult();
@@ -90,27 +90,15 @@ namespace PublicApiTests
         [TestMethod]
         public void GetMarkets()
         {
-            {
-                var resp = _client.GetMarkets();
-                Assert.IsFalse(resp.IsErrorOrEmpty);
+            // If fails exception will be thrown
+            var jpMarkets = _client.GetMarkets().GetResult();
+            jpMarkets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
 
-                var markets = resp.GetResult();
-                markets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
-            }
-            {
-                var resp = _client.GetMarketsUsa();
-                Assert.IsFalse(resp.IsErrorOrEmpty);
+            var usMarkets = _client.GetMarketsUsa().GetResult();
+            usMarkets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
 
-                var markets = resp.GetResult();
-                markets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
-            }
-            {
-                var resp = _client.GetMarketsEu();
-                Assert.IsFalse(resp.IsErrorOrEmpty);
-
-                var markets = resp.GetResult();
-                markets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
-            }
+            var euMarkets = _client.GetMarketsEu().GetResult();
+            euMarkets.ForEach(market => { Console.WriteLine("{0} {1}", market.ProductCode, market.Alias); });
         }
 
         [TestMethod]

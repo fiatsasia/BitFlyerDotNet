@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2018 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -7,15 +7,15 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
-using Fiats.Utils;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    public class HistoricalOhlcSource : IObservable<IBfOhlc>
+    public class HistoricalOhlcSource : IObservable<IFxOhlcvv>
     {
         IOhlcCache _cache;
-        IObservable<IBfOhlc> _source;
+        IObservable<IFxOhlcvv> _source;
         CompositeDisposable _disposable = new CompositeDisposable();
 
         public HistoricalOhlcSource(ICacheFactory cacheFactory, BfProductCode productCode, TimeSpan frameSpan, DateTime endFrom, TimeSpan span, string cacheFolderBasePath)
@@ -27,7 +27,7 @@ namespace BitFlyerDotNet.Historical
             var startTo = endFrom - span + frameSpan;
             var end = endFrom - span + frameSpan;
 
-            _source = Observable.Create<IBfOhlc>(observer =>
+            _source = Observable.Create<IFxOhlcvv>(observer =>
             {
                 var query = _cache.GetOhlcsBackward(endFrom, span);
                 if (query.Count() == requestedCount)
@@ -51,7 +51,7 @@ namespace BitFlyerDotNet.Historical
             // Cryptowatchの取得リミットに到達していた場合の対処
         }
 
-        public IDisposable Subscribe(IObserver<IBfOhlc> observer)
+        public IDisposable Subscribe(IObserver<IFxOhlcvv> observer)
         {
             return _source.Subscribe(observer).AddTo(_disposable);
         }

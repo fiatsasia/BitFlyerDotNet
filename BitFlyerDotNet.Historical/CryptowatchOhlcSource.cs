@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -59,15 +60,15 @@ namespace BitFlyerDotNet.Historical
             _client.BaseAddress = new Uri(_baseUri);
         }
 
-        class Ohlc : IBfOhlc
+        class Ohlc : IFxOhlcvv
         {
             public DateTime Start { get; set; }
             public decimal Open { get; set; }
             public decimal High { get; set; }
             public decimal Low { get; set; }
             public decimal Close { get; set; }
-            public decimal Volume { get; set; }
-            public decimal VWAP { get; set; }
+            public double Volume { get; set; }
+            public double VWAP { get; set; }
         }
 
         static readonly Ohlc[] _errorResult = new Ohlc[0];
@@ -83,15 +84,15 @@ namespace BitFlyerDotNet.Historical
                 ohlc.High = decimal.Parse((string)element[2]);
                 ohlc.Low = decimal.Parse((string)element[3]);
                 ohlc.Close = decimal.Parse((string)element[4]);
-                ohlc.Volume = decimal.Parse((string)element[5]);
-                ohlc.VWAP = decimal.Parse((string)element[6]) / ohlc.Volume;
+                ohlc.Volume = double.Parse((string)element[5]);
+                ohlc.VWAP = double.Parse((string)element[6]) / ohlc.Volume;
                 ohlc.Start = closeTime - frameSpan;
                 ohlcs.Add(ohlc);
             }
             return ohlcs;
         }
 
-        public static IEnumerable<IBfOhlc> Get(BfProductCode productCode, TimeSpan frameSpan, DateTime beforeClose, DateTime afterClose)
+        public static IEnumerable<IFxOhlcvv> Get(BfProductCode productCode, TimeSpan frameSpan, DateTime beforeClose, DateTime afterClose)
         {
             if (!_productSymbols.ContainsKey(productCode))
             {

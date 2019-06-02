@@ -1,5 +1,13 @@
+//==============================================================================
+// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
+//
+
 using System;
+using System.Diagnostics;
+using System.Reactive.Disposables;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
 
@@ -8,62 +16,79 @@ namespace TradingApiTests
     [TestClass]
     public class UnitTest1
     {
+        CompositeDisposable _disposables = new CompositeDisposable();
+
         const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
         static string _key;
         static string _secret;
-        BitFlyerClient _client;
-        TradingAccount _account;
+        BfTradingAccount _account;
+        BfTradingMarket _market;
 
-        const decimal Volume = 0.01m;
-        const int RetryMax = 3;
-        static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(3);
+        [ClassInitialize]
+        public static void Classinitialize(TestContext context)
+        {
+            // ApiKey and ApiSecret are defined in PrivateTest.runsettings
+            // Should copy that file to any other directory such as desktop and fill them. 
+            _key = context.Properties["ApiKey"].ToString();
+            _secret = context.Properties["ApiSecret"].ToString();
+        }
 
         [TestInitialize]
         public void Initialize()
         {
-            _client = new BitFlyerClient(_key, _secret);
-            _account = new TradingAccount(BfProductCode.FXBTCJPY);
-            _account.OrderStatusChanged += OnOrderStatusChanged;
+            _account = new BfTradingAccount();
+            _account.Login(_key, _secret);
+            _market = _account.GetMarket(ProductCode);
+            _market.GetOrderBookSource();
+            //_market.ChildOrderChanged += OnChildOrderChanged;
+            _market.ChildOrderTransactionStateChanged += OnChildOrderTransactionChanged;
         }
 
         [TestMethod]
-        public async void MarketPriceOrderTest1()
+        public void TradingTickerTest()
         {
-            var order = TradeOrderFactory.CreateMarketPriceOrder(_account, BfTradeSide.Buy, Volume);
-
-            if (!await _account.PlaceOrder(order))
+            new BfTradingMarketTickerSource(_market).Subscribe(ticker =>
             {
-                switch (order.TransactionStatus)
-                {
-                    case OrderTransactionState.OrderFailed:
-                        break;
+                Trace.WriteLine($"B:{ticker.BestBidPrice} A:{ticker.BestAskPrice} LTP:{ticker.LastTradedPrice} H:{ticker.MarketStatus}");
+            }).AddTo(_disposables);
 
-                    default:
-                        break;
-                }
-            }
+            Console.ReadLine();
         }
 
         [TestMethod]
-        public async void IFDOrderTest1()
+        public void OrderCancelTest()
         {
-            var firstOrder = new MarketPriceOrder(ProductCode, BfTradeSide.Buy, Volume);
-            var secondOrder = new TrailingStopOrder(ProductCode, BfTradeSide.Sell, Volume, 10000.0m);
-            var order = TradeOrderFactory.CreateIFD(_account, firstOrder, secondOrder);
-            if (!await _account.PlaceOrder(order, RetryMax, RetryInterval))
-            {
-                switch (order.TransactionStatus)
-                {
-                    case OrderTransactionState.OrderFailed:
-                        break;
-
-                    default:
-                        break;
-                }
-            }
         }
 
-        void OnOrderStatusChanged(OrderTransactionState status, IOrderTransaction transaction)
+        void OnChildOrderChanged(BfxChildOrder order)
+        {
+            Console.WriteLine($"Order date:{order.OrderDate}");
+            Console.WriteLine($"ID:{order.AcceptanceId}");
+            Console.WriteLine("");
+        }
+
+        void OnChildOrderTransactionChanged(object sender, BfxChildOrderTransactionEventArgs args)
+        {
+            Console.WriteLine($"Requested time   :{args.State.RequestedTime}");
+            Console.WriteLine($"Accepted time    :{args.State.AcceptedTime}");
+            Console.WriteLine($"Confirmed time   :{args.State.OrderDate}");
+            Console.WriteLine($"Ordering status  :{args.State.OrderingStatus}");
+            Console.WriteLine($"Canceling status :{args.State.CancelingStatus}");
+        }
+
+        public void DifferentProductTest()
+        {
+        }
+
+        public void StopOrderTest()
+        {
+        }
+
+        public void StopLimitTest()
+        {
+        }
+
+        public void TrailingStopTest()
         {
 
         }

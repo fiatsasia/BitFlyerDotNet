@@ -5,7 +5,6 @@
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Fiats.Utils;
 
 namespace BitFlyerDotNet.LightningApi
 {
@@ -13,7 +12,7 @@ namespace BitFlyerDotNet.LightningApi
     {
         [JsonProperty(PropertyName = "health")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfBoardHealth Health { get; private set; }
+        public BfHealthState Health { get; private set; }
 
         [JsonProperty(PropertyName = "state")]
         [JsonConverter(typeof(StringEnumConverter))]
