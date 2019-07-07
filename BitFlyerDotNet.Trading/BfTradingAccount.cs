@@ -22,6 +22,28 @@ namespace BitFlyerDotNet.Trading
         {
         }
 
+        public BfTradingAccount(BitFlyerClient client, RealtimeSourceFactory realtimeSource)
+        {
+            Client = client;
+            RealtimeSource = realtimeSource;
+        }
+
+        public void Initialize()
+        {
+            if (Client == null)
+            {
+                Client = new BitFlyerClient();
+            }
+            if (RealtimeSource == null)
+            {
+                RealtimeSource = new RealtimeSourceFactory(Client);
+            }
+            RealtimeSource.AvailableMarkets.ForEach(productCode =>
+            {
+                _markets.Add(productCode, new BfTradingMarket(this, productCode));
+            });
+        }
+
         public void Login(string apiKey, string apiSecret)
         {
             if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiSecret))
@@ -29,11 +51,14 @@ namespace BitFlyerDotNet.Trading
                 throw new ArgumentException("Invalid API key or secret.");
             }
 
-            if (Client != null)
+            if (Client == null)
             {
-                throw new InvalidOperationException("Already logged-in");
+                Client = new BitFlyerClient(apiKey, apiSecret);
             }
-            Client = new BitFlyerClient(apiKey, apiSecret);
+            else
+            {
+                Client.ApplyApiKeyAndSecrets(apiKey, apiSecret);
+            }
 
             // Check API permissions
             var permissions = Client.GetPermissions().GetResult();
@@ -49,20 +74,6 @@ namespace BitFlyerDotNet.Trading
         {
             Client?.Dispose();
             Client = null;
-        }
-
-        public void Initialize()
-        {
-            if (Client == null)
-            {
-                Client = new BitFlyerClient();
-            }
-
-            RealtimeSource = new RealtimeSourceFactory(Client);
-            RealtimeSource.AvailableMarkets.ForEach(productCode =>
-            {
-                _markets.Add(productCode, new BfTradingMarket(this, productCode));
-            });
         }
 
         public BfTradingMarket GetMarket(BfProductCode productCode)

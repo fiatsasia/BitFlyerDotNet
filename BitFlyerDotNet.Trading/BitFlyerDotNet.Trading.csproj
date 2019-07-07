@@ -1,5 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup Label="Globals">
+    <SccProjectName>SAK</SccProjectName>
+    <SccProvider>SAK</SccProvider>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -7,7 +14,7 @@
     <Authors>Fiats Inc.</Authors>
     <Product>BitFlyerDotNet</Product>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>2.1.0</Version>
+    <Version>2.1.1</Version>
     <Description>BitFlyerDotNet is a bitFlyer Lightning API wrapper and libraries.</Description>
     <Copyright>Copyright (c) 2017-2019 Fiats Inc. All rights reserved.</Copyright>
     <PackageProjectUrl>https://github.com/fiatsasia/BitFlyerDotNet</PackageProjectUrl>

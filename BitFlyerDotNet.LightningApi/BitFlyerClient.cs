@@ -208,6 +208,12 @@ namespace BitFlyerDotNet.LightningApi
             _client.BaseAddress = new Uri(_baseUri);
         }
 
+        public void ApplyApiKeyAndSecrets(string apiKey, string apiSecret)
+        {
+            _apiKey = apiKey;
+            _hmac = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret));
+        }
+
         public void Dispose()
         {
             _client?.Dispose();
