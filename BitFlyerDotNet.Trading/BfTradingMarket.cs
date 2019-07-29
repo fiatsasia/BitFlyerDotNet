@@ -41,8 +41,6 @@ namespace BitFlyerDotNet.Trading
         ConcurrentBag<BfChildOrder> _childOrders = new ConcurrentBag<BfChildOrder>();
         public IEnumerable<BfChildOrder> ActiveChildOrders => _childOrders;
 
-        public BfxOrderFactory OrderFactory { get; private set; }
-
         // Events
         public event EventHandler<BfxChildOrderTransactionEventArgs> ChildOrderTransactionStateChanged;
         public event EventHandler<BfxChildOrderEventArgs> ChildOrderChanged;
@@ -58,7 +56,6 @@ namespace BitFlyerDotNet.Trading
         {
             _account = account;
             ProductCode = productCode;
-            OrderFactory = new BfxOrderFactory(this);
 
             switch (productCode)
             {

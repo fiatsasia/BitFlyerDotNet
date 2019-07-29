@@ -66,15 +66,15 @@ namespace TradingApiSample
             BfChildOrderRequest order = null;
             if (fok)
             {
-                order = _market.OrderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m, timeInForce: BfTimeInForce.FOK);
+                order = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m, timeInForce: BfTimeInForce.FOK);
             }
             else if (mte)
             {
-                order = _market.OrderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m, minuteToExpire: TimeSpan.FromMinutes(1));
+                order = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m, minuteToExpire: TimeSpan.FromMinutes(1));
             }
             else
             {
-                order = _market.OrderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m);
+                order = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m);
             }
 
             var transaction = _market.PlaceOrder(order).Result;
@@ -102,7 +102,7 @@ namespace TradingApiSample
         static void BuyBestBidPrice()
         {
             // Buy by best bid price within minimum size
-            var order = _market.OrderFactory.CreateLimitPriceOrder(BfTradeSide.Buy, _market.MinimumOrderSize, _market.BestBidPrice);
+            var order = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Buy, _market.MinimumOrderSize, _market.BestBidPrice);
             var transaction = _market.PlaceOrder(order).Result;
             if (transaction != null)
             {
@@ -118,7 +118,7 @@ namespace TradingApiSample
         static void SellBestAskPrice()
         {
             // Sell by best ask price within minimum size
-            var order = _market.OrderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice);
+            var order = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice);
             var transaction = _market.PlaceOrder(order).Result;
             if (transaction != null)
             {

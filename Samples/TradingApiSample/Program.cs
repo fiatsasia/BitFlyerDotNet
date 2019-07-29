@@ -18,6 +18,7 @@ namespace TradingApiSample
         const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
         static BfTradingAccount _account;
         static BfTradingMarket _market;
+        static BfxOrderFactory _orderFactory;
 
         // Pass key and secret from arguments.
         static void Main(string[] args)
@@ -50,6 +51,8 @@ namespace TradingApiSample
             _market.ParentOrderChanged += OnParentOrderChanged;
             _market.TickerChanged += OnTickerChanged;
             _market.PositionChanged += OnPositionChanged;
+
+            _orderFactory = new BfxOrderFactory(_market);
 
             while (true)
             {

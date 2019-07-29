@@ -23,6 +23,7 @@ namespace TradingApiTests
         static string _secret;
         BfTradingAccount _account;
         BfTradingMarket _market;
+        BfxOrderFactory _factory;
 
         [ClassInitialize]
         public static void Classinitialize(TestContext context)
@@ -39,9 +40,38 @@ namespace TradingApiTests
             _account = new BfTradingAccount();
             _account.Login(_key, _secret);
             _market = _account.GetMarket(ProductCode);
-            _market.GetOrderBookSource();
+            //_market.GetOrderBookSource();
             //_market.ChildOrderChanged += OnChildOrderChanged;
-            _market.ChildOrderTransactionStateChanged += OnChildOrderTransactionChanged;
+            //_market.ChildOrderTransactionStateChanged += OnChildOrderTransactionChanged;
+            _factory = new BfxOrderFactory(_market);
+        }
+
+        [TestMethod]
+        public void CreateMarketPriceOrder()
+        {
+            var order = _factory.CreateMarketPriceOrder(BfTradeSide.Buy, _market.MinimumOrderSize);
+        }
+
+        [TestMethod]
+        public void CreateLimitPriceOrder()
+        {
+            var order = _factory.CreateLimitPriceOrder(BfTradeSide.Buy, _market.MinimumOrderSize, 1000000m); // current price‚ª—~‚µ‚¢
+        }
+
+        [TestMethod]
+        public void CreateStopOrder()
+        {
+            var order = _factory.CreateStopOrder(BfTradeSide.Buy, _market.MinimumOrderSize, 1000000m);
+        }
+
+        [TestMethod]
+        public void CreateStopLimitOrder()
+        {
+        }
+
+        [TestMethod]
+        public void CreateTrailingStopOrder()
+        {
         }
 
         [TestMethod]
@@ -78,19 +108,6 @@ namespace TradingApiTests
 
         public void DifferentProductTest()
         {
-        }
-
-        public void StopOrderTest()
-        {
-        }
-
-        public void StopLimitTest()
-        {
-        }
-
-        public void TrailingStopTest()
-        {
-
         }
     }
 }

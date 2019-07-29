@@ -57,13 +57,13 @@ namespace TradingApiSample
 
         static void PlaceUnexecutableParentOrder(BfOrderType orderType, bool mte = false, bool fok = false)
         {
-            var childOrder1 = _market.OrderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m);
-            var childOrder2 = _market.OrderFactory.CreateLimitPriceOrder(BfTradeSide.Buy, _market.MinimumOrderSize, _market.BestBidPrice - 50000.0m);
+            var childOrder1 = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m);
+            var childOrder2 = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Buy, _market.MinimumOrderSize, _market.BestBidPrice - 50000.0m);
             BfParentOrderRequest request;
             switch (orderType)
             {
                 case BfOrderType.IFD:
-                    request = _market.OrderFactory.CreateIFD(
+                    request = _orderFactory.CreateIFD(
                         childOrder1.ToParameter(),
                         childOrder2.ToParameter(),
                         mte ? TimeSpan.FromMinutes(1) : default(TimeSpan),
@@ -72,7 +72,7 @@ namespace TradingApiSample
                     break;
 
                 case BfOrderType.OCO:
-                    request = _market.OrderFactory.CreateOCO(
+                    request = _orderFactory.CreateOCO(
                         childOrder1.ToParameter(),
                         childOrder2.ToParameter(),
                         mte ? TimeSpan.FromMinutes(1) : default(TimeSpan),

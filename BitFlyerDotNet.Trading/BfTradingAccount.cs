@@ -17,6 +17,7 @@ namespace BitFlyerDotNet.Trading
         public RealtimeSourceFactory RealtimeSource { get; private set; }
 
         Dictionary<BfProductCode, BfTradingMarket> _markets = new Dictionary<BfProductCode, BfTradingMarket>();
+        public bool IsMarketAvailable(BfProductCode code) => _markets.ContainsKey(code);
 
         public BfTradingAccount()
         {

@@ -54,7 +54,7 @@ namespace BitFlyerDotNet.Trading
             return request;
         }
 
-        public BfChildOrderRequest CreateLimitPriceOrder(BfTradeSide side, decimal size, decimal price, TimeSpan? minuteToExpire = null, BfTimeInForce? timeInForce = null)
+        public BfChildOrderRequest CreateLimitPriceOrder(BfTradeSide side, decimal size, decimal price)
         {
             var request = new BfChildOrderRequest
             {
@@ -65,14 +65,54 @@ namespace BitFlyerDotNet.Trading
                 Price = price,
             };
 
-            if (minuteToExpire.HasValue)
+            CheckChildOrderRequestValid(request);
+            return request;
+        }
+
+        public BfChildOrderRequest CreateLimitPriceOrder(BfTradeSide side, decimal size, decimal price, TimeSpan minuteToExpire)
+        {
+            var request = new BfChildOrderRequest
             {
-                request.MinuteToExpireSpan = minuteToExpire.Value;
-            }
-            if (timeInForce.HasValue)
+                ProductCode = _market.ProductCode,
+                OrderType = BfOrderType.Limit,
+                Side = side,
+                Size = size,
+                Price = price,
+            };
+            request.MinuteToExpireSpan = minuteToExpire;
+
+            CheckChildOrderRequestValid(request);
+            return request;
+        }
+
+        public BfChildOrderRequest CreateLimitPriceOrder(BfTradeSide side, decimal size, decimal price, BfTimeInForce timeInForce)
+        {
+            var request = new BfChildOrderRequest
             {
-                request.TimeInForce = timeInForce.Value;
-            }
+                ProductCode = _market.ProductCode,
+                OrderType = BfOrderType.Limit,
+                Side = side,
+                Size = size,
+                Price = price,
+            };
+            request.TimeInForce = timeInForce;
+
+            CheckChildOrderRequestValid(request);
+            return request;
+        }
+
+        public BfChildOrderRequest CreateLimitPriceOrder(BfTradeSide side, decimal size, decimal price, TimeSpan minuteToExpire, BfTimeInForce timeInForce)
+        {
+            var request = new BfChildOrderRequest
+            {
+                ProductCode = _market.ProductCode,
+                OrderType = BfOrderType.Limit,
+                Side = side,
+                Size = size,
+                Price = price,
+            };
+            request.MinuteToExpireSpan = minuteToExpire;
+            request.TimeInForce = timeInForce;
 
             CheckChildOrderRequestValid(request);
             return request;
@@ -159,7 +199,7 @@ namespace BitFlyerDotNet.Trading
 
         public void CheckChildOrderRequestValid(IBfChildOrderRequest request)
         {
-            if (request.Size > request.Price)
+            if (request.OrderType != BfOrderType.Market && request.Size > request.Price)
             {
                 throw new ArgumentException();
             }
