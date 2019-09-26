@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <Authors>Fiats Inc.</Authors>
     <Copyright>Copyright (c) 2017-2019 Fiats Inc. All rights reserved.</Copyright>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -11,7 +11,7 @@
     <Description>BitFlyerDotNet is a bitFlyer Lightning API wrapper and libraries.</Description>
     <RepositoryUrl>https://github.com/fiatsasia/BitFlyerDotNet</RepositoryUrl>
     <PackageTags>bitflyer bitflyer-lightning-apis realtime-apis</PackageTags>
-    <Version>2.1.2</Version>
+    <Version>2.1.3</Version>
     <PackageLicenseExpression></PackageLicenseExpression>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="System.Interactive" Version="3.2.0" />
+    <PackageReference Include="System.Interactive" Version="4.0.0" />
     <PackageReference Include="System.Reactive" Version="4.1.6" />
     <PackageReference Include="WebSocket4Net" Version="0.15.2" />
   </ItemGroup>
