@@ -1,13 +1,13 @@
 # BitFlyerDotNet
 [English](README.md)  
 
-BitFlyerDotNet は、.NET Standard 2.1 向け [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) ラッパーおよび周辺ライブラリです。
+BitFlyerDotNet は、.NET Standard 2.x 向け [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) ラッパーおよび周辺ライブラリです。
 
 **BitFlyerDotNet は bitFlyer Lightning API の公式ライブラリではありません。**
 
 ### 更新履歴
 - 2019/09/26
-  - .NET Standard 2.1 / Core 3.0 へプラットフォームを変更しました。
+  - .NET Standard 2.x / Core 3.0 へプラットフォームを変更しました。
 - 2019/06/02
   - RealtimeSourceにGetOrderBookSource()を追加しました。これにより、Realtime APIのBoardSnapshotとBoardを統合した板情報をリアルタイムに取得することができます。[→サンプルコード](Samples/RealtimeApiSample/Program.cs)
   - プロパティの一部定義名称を変更しました(例:Status → State)。
@@ -24,7 +24,7 @@ BitFlyerDotNet は、.NET Standard 2.1 向け [bitFlyer](https://bitflyer.com/en-jp/
 
 ### 環境
 - Visual Studio 2019 / for Mac 2019 用ソリューション、プロジェクト
-- .NET Standard 2.1 (ライブラリで使用)
+- .NET Standard 2.x (ライブラリで使用)
 - .NET Framework 4.71, .NET Core 3.0, Xamarin Forms (サンプルで使用)
 - Xamrin Forms サンプルは iOS, Android, MacOS, Windows で動作確認済み。 
 - [Reactive Extensions (Rx.NET)](http://reactivex.io/)
