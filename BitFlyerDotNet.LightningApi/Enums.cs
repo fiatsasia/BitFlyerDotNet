@@ -42,6 +42,8 @@ namespace BitFlyerDotNet.LightningApi
         BTCJPYMAT2WK,
         [EnumMember(Value = "BTCJPY_MAT3M")]
         BTCJPYMAT3M,
+        [EnumMember(Value = "ETH_JPY")]
+        ETHJPY,
     }
 
     public enum BfTradeSide

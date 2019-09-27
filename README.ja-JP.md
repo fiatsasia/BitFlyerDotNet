@@ -6,6 +6,8 @@ BitFlyerDotNet は、.NET Standard 2.x 向け [bitFlyer](https://bitflyer.com/en-jp/
 **BitFlyerDotNet は bitFlyer Lightning API の公式ライブラリではありません。**
 
 ### 更新履歴
+- 2019/09/27
+  - ETH_JPY サポートを追加しました。_ 
 - 2019/09/26
   - .NET Standard 2.x / Core 3.0 へプラットフォームを変更しました。
 - 2019/06/02

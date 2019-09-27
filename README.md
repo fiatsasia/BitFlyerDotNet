@@ -5,6 +5,8 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
 ### Updates
+- 2019/09/27
+  - Added ETH_JPY support._ 
 - 2019/09/26
   - Changed platform to .NET Standard 2.x / Core 3.0 
 - 2019/06/02
