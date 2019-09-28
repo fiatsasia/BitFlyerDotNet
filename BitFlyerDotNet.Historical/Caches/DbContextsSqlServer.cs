@@ -109,6 +109,23 @@ namespace BitFlyerDotNet.Historical
             : base(connStr, new DbContextOptionsBuilder<BfBCHBtcDbContextSqlServer>().Options) { }
     }
 
+    // ETHJPY
+    class BfEthJpyDbContextSqlServer : BfDbContextBaseSqlServer
+    {
+        public DbSet<DbManageRecord> ETHJPY_ManageTable { get; set; }
+        public DbSet<DbExecution> ETHJPY_Executions { get; set; }
+        public DbSet<DbMinuteMarker> ETHJPY_Marker { get; set; }
+        public DbSet<DbHistoricalOhlc> ETHJPY_Ohlc { get; set; }
+
+        public override DbSet<DbManageRecord> GetManageTable() { return ETHJPY_ManageTable; }
+        public override DbSet<DbExecution> GetExecutions() { return ETHJPY_Executions; }
+        public override DbSet<DbMinuteMarker> GetMarker() { return ETHJPY_Marker; }
+        public override DbSet<DbHistoricalOhlc> GetOhlc() { return ETHJPY_Ohlc; }
+
+        public BfEthJpyDbContextSqlServer(string connStr)
+            : base(connStr, new DbContextOptionsBuilder<BfEthJpyDbContextSqlServer>().Options) { }
+    }
+
     class SqlServerCacheDbContext : ICacheDbContext
     {
         public BfProductCode ProductCode { get; }
@@ -141,6 +158,10 @@ namespace BitFlyerDotNet.Historical
 
                 case BfProductCode.BCHBTC:
                     _ctx = new BfBCHBtcDbContextSqlServer(_connStr);
+                    break;
+
+                case BfProductCode.ETHJPY:
+                    _ctx = new BfEthJpyDbContextSqlServer(_connStr);
                     break;
 
                 default:

@@ -14,7 +14,7 @@
     <Authors>Fiats Inc.</Authors>
     <Product>BitFlyerDotNet</Product>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>2.1.5</Version>
+    <Version>2.1.6</Version>
     <Description>BitFlyerDotNet is a bitFlyer Lightning API wrapper and libraries.</Description>
     <Copyright>Copyright (c) 2017-2019 Fiats Inc. All rights reserved.</Copyright>
     <PackageProjectUrl>https://github.com/fiatsasia/BitFlyerDotNet</PackageProjectUrl>

@@ -30,6 +30,7 @@ namespace BitFlyerDotNet.Historical
             { BfProductCode.BTCJPYMAT1WK, "btcjpy-weekly-futures" },
             { BfProductCode.BTCJPYMAT2WK, "btcjpy-biweekly-futures" },
             { BfProductCode.BTCJPYMAT3M, "btcjpy-quarterly-futures" },
+            { BfProductCode.ETHJPY, "ethjpy" },
         };
         internal static readonly List<TimeSpan> SupportedFrameSpans = new List<TimeSpan>
         {
