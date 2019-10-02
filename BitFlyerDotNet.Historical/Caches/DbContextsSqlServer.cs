@@ -15,7 +15,7 @@ namespace BitFlyerDotNet.Historical
     abstract class BfDbContextBaseSqlServer : DbContext
     {
         readonly string _connStr;
-        static readonly TimeSpan CommandTimeout = TimeSpan.MaxValue;
+        static readonly TimeSpan CommandTimeout = TimeSpan.FromHours(1);
 
         public abstract DbSet<DbManageRecord> GetManageTable();
         public abstract DbSet<DbExecution> GetExecutions();
@@ -176,7 +176,14 @@ namespace BitFlyerDotNet.Historical
 
         public void SaveExecutionChanges()
         {
-            _ctx.SaveChanges();
+            try
+            {
+                _ctx.SaveChanges();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Skip exceptionb
+            }
         }
 
         public void ClearCache()
