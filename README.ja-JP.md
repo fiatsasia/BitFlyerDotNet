@@ -1,15 +1,15 @@
 # BitFlyerDotNet
 [English](README.md)  
 
-BitFlyerDotNet は、.NET Standard 2.x 向け [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) ラッパーおよび周辺ライブラリです。
+BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) ラッパーおよび周辺ライブラリです。
 
 **BitFlyerDotNet は bitFlyer Lightning API の公式ライブラリではありません。**
 
 ### 更新履歴
 - 2019/09/27
-  - ETH_JPY サポートを追加しました。_ 
+  - ETH_JPY サポートを追加しました。
 - 2019/09/26
-  - .NET Standard 2.x / Core 3.0 へプラットフォームを変更しました。
+  - .NET Standard 2.0 / Core 3.0 へプラットフォームを変更しました。
 - 2019/06/02
   - RealtimeSourceにGetOrderBookSource()を追加しました。これにより、Realtime APIのBoardSnapshotとBoardを統合した板情報をリアルタイムに取得することができます。[→サンプルコード](Samples/RealtimeApiSample/Program.cs)
   - プロパティの一部定義名称を変更しました(例:Status → State)。

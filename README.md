@@ -1,14 +1,14 @@
 # BitFlyerDotNet
 [日本語](README.ja-JP.md)  
-BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) wrapper and libraries for .NET Standard 2.x.
+BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) wrapper and libraries for .NET Standard 2.0.
 
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
 ### Updates
 - 2019/09/27
-  - Added ETH_JPY support._ 
+  - Added ETH_JPY support.
 - 2019/09/26
-  - Changed platform to .NET Standard 2.x / Core 3.0 
+  - Changed platform to .NET Standard 2.0 / Core 3.0 
 - 2019/06/02
   - Added GetOrderBookSource() to RealtimeSource. This functionality provides order book feed which integrates by BoardSnapshot and Board realtime APIs. [See sample code.](Samples/RealtimeApiSample/Program.cs)
   - Some of property definitions are changed. (ex. Status -> State)

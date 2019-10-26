@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <Authors>Fiats Inc.</Authors>
     <Product>BitFlyerDotNet</Product>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
