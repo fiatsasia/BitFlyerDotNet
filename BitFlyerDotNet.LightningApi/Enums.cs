@@ -163,4 +163,25 @@ namespace BitFlyerDotNet.LightningApi
         [EnumMember(Value = "REJECTED")]
         Rejected,
     }
+
+    public enum BfOrderEventType
+    {
+        Unknown,
+        [EnumMember(Value = "ORDER")]
+        Order,
+        [EnumMember(Value = "ORDER_FAILED")]
+        OrderFailed,
+        [EnumMember(Value = "CANCEL")]
+        Cancel,
+        [EnumMember(Value = "CANCEL_FAILED")]
+        CancelFailed,
+        [EnumMember(Value = "EXECUTION")]
+        Execution,
+        [EnumMember(Value = "TRIGGER")]
+        Trigger,
+        [EnumMember(Value = "COMPLETE")]
+        Complete,
+        [EnumMember(Value = "EXPIRE")]
+        Expire,
+    }
 }

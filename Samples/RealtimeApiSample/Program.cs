@@ -5,6 +5,9 @@
 
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Xml.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using Financial.Extensions;
@@ -19,8 +22,15 @@ namespace RealtimeApiSample
 
         static void Main(string[] args)
         {
+            Trace.Listeners.Add(new ConsoleTraceListener());
+
+            if (args.Length > 0)
+            {
+                LoadRunsettings(args[0]);
+            }
+
             var factory = new RealtimeSourceFactory();
-            factory.ErrorHandlers += (error) =>
+            factory.Error += (error) =>
             {
                 Console.WriteLine("Error: {0} Socket Error = {1}", error.Message, error.SocketError);
             };
@@ -28,6 +38,8 @@ namespace RealtimeApiSample
             Console.WriteLine("1) RealtimeExecution sample");
             Console.WriteLine("2) RealtimeTicker sample");
             Console.WriteLine("3) RealtimeOrderBook sample");
+            Console.WriteLine("4) RealtimeChildOrderEvents sample");
+            Console.WriteLine("5) RealtimeParentOrderEvents sample");
 
             switch (GetCh())
             {
@@ -42,11 +54,26 @@ namespace RealtimeApiSample
                 case '3':
                     RealtimeOrderBookSample(factory);
                     break;
+
+                case '4':
+                    RealtimeChildOrderEvents(factory);
+                    break;
+
+                case '5':
+                    RealtimeParentOrderEvents(factory);
+                    break;
             }
 
             Console.ReadLine();
             _disposables.Dispose();
-            Console.ReadLine();
+        }
+
+        static Dictionary<string, string> Properties;
+        static void LoadRunsettings(string filePath)
+        {
+            var xml = XDocument.Load(filePath);
+            var n = xml.Element("RunSettings").Elements("TestRunParameters");
+            Properties = xml.Element("RunSettings").Element("TestRunParameters").Elements("Parameter").ToDictionary(e => e.Attribute("name").Value, e => e.Attribute("value").Value);
         }
 
         static void RealtimeExecutionSample(RealtimeSourceFactory factory)
@@ -83,6 +110,8 @@ namespace RealtimeApiSample
             }).AddTo(_disposables);
         }
 
+        // Somtimes stopped feed without any errors.
+        // It should retry if it elapsed defined limit.
         static void RealtimeOrderBookSample(RealtimeSourceFactory factory)
         {
             var left = Console.CursorLeft;
@@ -103,6 +132,21 @@ namespace RealtimeApiSample
                     Console.WriteLine($"           {bid.Price} {bid.Size.ToString("##0.00000000#")}");
                 }
             }).AddTo(_disposables);
+        }
+
+        static void RealtimeChildOrderEvents(RealtimeSourceFactory factory)
+        {
+            var key = Properties["ApiKey"];
+            var secret = Properties["ApiSecret"];
+
+            factory.GetChildOrderEventsSource(key, secret).Subscribe(order =>
+            {
+                Console.WriteLine($"{order.ProductCode} {order.ChildOrderId} {order.EventType}");
+            }).AddTo(_disposables);
+        }
+
+        static void RealtimeParentOrderEvents(RealtimeSourceFactory factory)
+        {
         }
     }
 }

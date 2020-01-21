@@ -1,9 +1,13 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// Copyright 2017-2019 (C) By Fiats Inc.
 // https://www.fiats.asia/
 //
 
 using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Xml.Linq;
 using System.Reactive.Disposables;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
@@ -23,11 +27,14 @@ namespace TradingApiSample
         // Pass key and secret from arguments.
         static void Main(string[] args)
         {
+            Trace.Listeners.Add(new ConsoleTraceListener());
+
             // Set API ket and secret
             _account = new BfTradingAccount();
-            if (args.Length == 2)
+            if (args.Length > 0)
             {
-                _account.Login(args[0], args[1]);
+                LoadRunsettings(args[0]);
+                _account.Login(Properties["ApiKey"], Properties["ApiSecret"]);
             }
             else
             {
@@ -82,6 +89,14 @@ namespace TradingApiSample
                         return;
                 }
             }
+        }
+
+        static Dictionary<string, string> Properties;
+        static void LoadRunsettings(string filePath)
+        {
+            var xml = XDocument.Load(filePath);
+            var n = xml.Element("RunSettings").Elements("TestRunParameters");
+            Properties = xml.Element("RunSettings").Element("TestRunParameters").Elements("Parameter").ToDictionary(e => e.Attribute("name").Value, e => e.Attribute("value").Value);
         }
 
         // When open market, it starts market ticker publishing.

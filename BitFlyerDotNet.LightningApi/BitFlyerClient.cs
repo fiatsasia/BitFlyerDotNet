@@ -6,6 +6,7 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -216,8 +217,10 @@ namespace BitFlyerDotNet.LightningApi
 
         public void Dispose()
         {
+            Debug.Print($"{nameof(BitFlyerClient)}.Dispose");
             _client?.Dispose();
             _hmac?.Dispose();
+            Debug.Print($"{nameof(BitFlyerClient)}.Dispose exit");
         }
 
         internal BitFlyerResponse<T> Get<T>(string apiName, string queryParameters = "")

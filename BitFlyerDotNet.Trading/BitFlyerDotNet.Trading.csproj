@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
     <Authors>Fiats Inc.</Authors>
@@ -34,7 +34,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Reactive" Version="4.2.0" />
+    <PackageReference Include="System.Reactive" Version="4.3.2" />
   </ItemGroup>
 
   <ItemGroup>
