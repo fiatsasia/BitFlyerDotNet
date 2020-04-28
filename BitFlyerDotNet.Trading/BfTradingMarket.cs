@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -36,8 +36,10 @@ namespace BitFlyerDotNet.Trading
 
         ConcurrentBag<BfPosition> _positions = new ConcurrentBag<BfPosition>();
         public IEnumerable<BfPosition> Positions => _positions;
+
         ConcurrentBag<BfParentOrderDetail> _parentOrders = new ConcurrentBag<BfParentOrderDetail>();
         public IEnumerable<BfParentOrderDetail> ActiveParentOrders => _parentOrders;
+
         ConcurrentBag<BfChildOrder> _childOrders = new ConcurrentBag<BfChildOrder>();
         public IEnumerable<BfChildOrder> ActiveChildOrders => _childOrders;
 

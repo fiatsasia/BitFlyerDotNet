@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -26,7 +26,7 @@ namespace BitFlyerDotNet.Trading
 
         // From  child order request
         public BfProductCode ProductCode => Request?.ProductCode ?? RequestElement.ProductCode;
-        public BfOrderType OrderType => Request?.OrderType ?? RequestElement.ConditionType;
+        public new BfOrderType OrderType => Request?.OrderType ?? RequestElement.ConditionType;
         public BfTradeSide Side => Request?.Side ?? RequestElement.Side;
         public decimal Size => Request?.Size ?? RequestElement.Size;
         public decimal Price => Request?.Price ?? RequestElement.Price;

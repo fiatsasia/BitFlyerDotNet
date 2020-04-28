@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -11,8 +11,8 @@ namespace BitFlyerDotNet.Historical
 {
     public interface IOhlcCache
     {
-        IEnumerable<IFxOhlcvv> GetOhlcsBackward(DateTime endFrom, TimeSpan span);
-        void Add(IFxOhlcvv ohlc);
+        IEnumerable<IOhlcvv<decimal>> GetOhlcsBackward(DateTime endFrom, TimeSpan span);
+        void Add(IOhlcvv<decimal> ohlc);
         void SaveChanges();
     }
 }

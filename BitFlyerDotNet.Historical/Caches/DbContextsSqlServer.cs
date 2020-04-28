@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -235,13 +235,13 @@ namespace BitFlyerDotNet.Historical
         //
         // OHLCs
         //
-        public IEnumerable<IFxOhlcvv> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span)
+        public IEnumerable<IOhlcvv<decimal>> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span)
         {
             var end = endFrom - span + frameSpan;
             return _ctx.GetOhlc().Where(e => e.FrameSpan == frameSpan && e.Start <= endFrom && e.Start >= end).OrderByDescending(e => e.Start);
         }
 
-        public void AddOhlc(TimeSpan frameSpan, IFxOhlcvv ohlc)
+        public void AddOhlc(TimeSpan frameSpan, IOhlcvv<decimal> ohlc)
         {
             var dbOhlc = default(DbHistoricalOhlc);
             if (ohlc is DbHistoricalOhlc)

@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -10,9 +10,9 @@ namespace BitFlyerDotNet.Historical
 {
     public delegate void RealtimeOhlcUpdateEventCallback(RealtimeOhlc ohlc);
 
-    public class RealtimeOhlc : IBfOhlcEx
+    public class RealtimeOhlc : IBfOhlc
     {
-        // IBfOhlc
+        // IOhlcvv
         public DateTime Start { get; private set; } = DateTime.MaxValue;
         public decimal Open { get; private set; }
         public decimal High { get; private set; } = decimal.MinValue;
@@ -20,7 +20,7 @@ namespace BitFlyerDotNet.Historical
         public decimal Close { get; private set; }
         public double Volume { get { return BuyVolume + SellVolume + ExecutedVolume; } }
 
-        // IBfOhlcEx
+        // IBfOhlc
         public int ExecutionCount { get; private set; }
         public double VWAP { get; private set; }
         public double BuyVolume { get; private set; }

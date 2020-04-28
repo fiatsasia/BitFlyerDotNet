@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>Fiats Inc.</Authors>
-    <Copyright>Copyright (c) 2017-2019 Fiats Inc. All rights reserved.</Copyright>
+    <Copyright>Copyright (c) 2017-2020 Fiats Inc. All rights reserved.</Copyright>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
     <Product>BitFlyerDotNet</Product>

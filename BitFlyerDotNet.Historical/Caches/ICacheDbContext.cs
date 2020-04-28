@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -26,8 +26,8 @@ namespace BitFlyerDotNet.Historical
         void AddExecution(IBfExecution exec);
 
         // OHLCs
-        IEnumerable<IFxOhlcvv> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span);
-        void AddOhlc(TimeSpan frameSpan, IFxOhlcvv ohlc);
+        IEnumerable<IOhlcvv<decimal>> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span);
+        void AddOhlc(TimeSpan frameSpan, IOhlcvv<decimal> ohlc);
 
         DbSet<DbMinuteMarker> Marker { get; }
 

@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -166,7 +166,7 @@ namespace BitFlyerDotNet.Historical
         }
     }
 
-    class DbHistoricalOhlc : IFxOhlcvv
+    class DbHistoricalOhlc : IOhlcvv<decimal>
     {
         [Key]
         [Column(Order = 0)]
@@ -216,14 +216,14 @@ namespace BitFlyerDotNet.Historical
 
         public Type GetBaseType()
         {
-            return ExecutionCount == 0 ? typeof(IFxOhlcvv) : typeof(IBfOhlcEx);
+            return ExecutionCount == 0 ? typeof(IOhlcvv<decimal>) : typeof(IBfOhlc);
         }
 
         public DbHistoricalOhlc()
         {
         }
 
-        public DbHistoricalOhlc(IFxOhlcvv ohlc, TimeSpan frameSpan)
+        public DbHistoricalOhlc(IOhlcvv<decimal> ohlc, TimeSpan frameSpan)
         {
             Start = ohlc.Start;
             Open = ohlc.Open;
@@ -235,7 +235,7 @@ namespace BitFlyerDotNet.Historical
             FrameSpan = frameSpan;
         }
 
-        public DbHistoricalOhlc(IBfOhlcEx ohlc, TimeSpan frameSpan)
+        public DbHistoricalOhlc(IBfOhlc ohlc, TimeSpan frameSpan)
         {
             Start = ohlc.Start;
             Open = ohlc.Open;

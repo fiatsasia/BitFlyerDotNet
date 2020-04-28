@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2019 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
 // https://www.fiats.asia/
 //
 
@@ -61,7 +61,7 @@ namespace BitFlyerDotNet.Historical
             _client.BaseAddress = new Uri(_baseUri);
         }
 
-        class Ohlc : IFxOhlcvv
+        class Ohlc : IOhlcvv<decimal>
         {
             public DateTime Start { get; set; }
             public decimal Open { get; set; }
@@ -93,7 +93,7 @@ namespace BitFlyerDotNet.Historical
             return ohlcs;
         }
 
-        public static IEnumerable<IFxOhlcvv> Get(BfProductCode productCode, TimeSpan frameSpan, DateTime beforeClose, DateTime afterClose)
+        public static IEnumerable<IOhlcvv<decimal>> Get(BfProductCode productCode, TimeSpan frameSpan, DateTime beforeClose, DateTime afterClose)
         {
             if (!_productSymbols.ContainsKey(productCode))
             {
