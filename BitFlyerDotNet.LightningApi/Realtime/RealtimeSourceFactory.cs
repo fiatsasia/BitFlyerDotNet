@@ -94,7 +94,7 @@ namespace BitFlyerDotNet.LightningApi
         }
 
         ConcurrentDictionary<string, IConnectableObservable<BfExecution>> _executionColdSources = new ConcurrentDictionary<string, IConnectableObservable<BfExecution>>();
-        public IObservable<BfExecution> GetExecutionSource(BfProductCode productCode, bool coldStart = false)
+        public IObservable<BfExecution> GetExecutionSource(BfProductCode productCode, bool hotStart = false)
         {
             _channels.Open();
             var symbol = _availableMarkets[productCode];
@@ -105,7 +105,7 @@ namespace BitFlyerDotNet.LightningApi
                 return source.ObserveOn(Scheduler.Default).SkipWhile(tick => tick.ExecutionId == 0).Publish();
             });
 
-            return coldStart ? result : result.RefCount();
+            return hotStart ? result : result.RefCount();
         }
 
         public void StartExecutionSource(BfProductCode productCode)

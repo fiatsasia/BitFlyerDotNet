@@ -59,6 +59,8 @@ namespace BitFlyerDotNet.Trading
 
         public event EventHandler<BfxChildOrderEventArgs> OrderChanged;
 
+        public object Tag { get; set; }
+
         public BfxChildOrder(BfChildOrderRequest request)
         {
             Request = request;
