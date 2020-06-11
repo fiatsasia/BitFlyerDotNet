@@ -4,6 +4,7 @@
 //
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
@@ -11,6 +12,10 @@ namespace BitFlyerDotNet.LightningApi
     {
         [JsonProperty(PropertyName = "product_code")]
         public string ProductCode { get; private set; }
+
+        [JsonProperty(PropertyName = "market_type")]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public BfMarket MarketType { get; private set; }
 
         [JsonProperty(PropertyName = "alias")]
         public string Alias { get; private set; }

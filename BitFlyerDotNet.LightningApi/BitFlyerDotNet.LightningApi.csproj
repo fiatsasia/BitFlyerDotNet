@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>Latest</LangVersion>
     <Authors>Fiats Inc.</Authors>
     <Copyright>Copyright (c) 2017-2020 Fiats Inc. All rights reserved.</Copyright>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>

@@ -5,6 +5,9 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
 ### Updates
+- 2020/06/11
+  - Added support GetBalanceHistory API.
+  - Updated GetMarkets API.
 - 2019/09/27
   - Added ETH_JPY support.
 - 2019/09/26

@@ -6,6 +6,9 @@ BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/
 **BitFlyerDotNet は bitFlyer Lightning API の公式ライブラリではありません。**
 
 ### 更新履歴
+- 2020/06/11
+  - GetBalanceHistory API サポートを追加しました。
+  - GetMarkets API の変更に対応しました。
 - 2019/09/27
   - ETH_JPY サポートを追加しました。
 - 2019/09/26

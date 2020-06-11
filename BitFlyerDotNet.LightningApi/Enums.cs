@@ -46,6 +46,13 @@ namespace BitFlyerDotNet.LightningApi
         ETHJPY,
     }
 
+    public enum BfMarketType
+    {
+        Spot,
+        FX,
+        Futures,
+    }
+
     public enum BfTradeSide
     {
         [EnumMember(Value = "")]
@@ -67,6 +74,36 @@ namespace BitFlyerDotNet.LightningApi
             }
             return side == BfTradeSide.Buy ? BfTradeSide.Sell : BfTradeSide.Buy;
         }
+    }
+
+    public enum BfTradeType
+    {
+        [EnumMember(Value = "BUY")]
+        Buy,
+
+        [EnumMember(Value = "SELL")]
+        Sell,
+
+        [EnumMember(Value = "DEPOSIT")]
+        Deposit,
+
+        [EnumMember(Value = "WITHDRAW")]
+        Withdraw,
+
+        [EnumMember(Value = "FEE")]
+        Fee,
+
+        [EnumMember(Value = "POST_COLL")]
+        PostColl,
+
+        [EnumMember(Value = "CANCEL_COLL")]
+        CancelColl,
+
+        [EnumMember(Value = "PAYMENT")]
+        Payment,
+
+        [EnumMember(Value = "TRANSFER")]
+        Transfer,
     }
 
     public enum BfHealthState
