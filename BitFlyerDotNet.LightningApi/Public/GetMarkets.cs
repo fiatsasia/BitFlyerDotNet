@@ -15,7 +15,7 @@ namespace BitFlyerDotNet.LightningApi
 
         [JsonProperty(PropertyName = "market_type")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfMarket MarketType { get; private set; }
+        public BfMarketType MarketType { get; private set; }
 
         [JsonProperty(PropertyName = "alias")]
         public string Alias { get; private set; }

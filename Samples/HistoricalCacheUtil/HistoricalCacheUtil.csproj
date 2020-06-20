@@ -9,6 +9,10 @@
     <DefineConstants>TRACE;SQLSERVER</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>TRACE;SQLSERVER</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\BitFlyerDotNet.Historical\BitFlyerDotNet.Historical.csproj" />
     <ProjectReference Include="..\..\BitFlyerDotNet.LightningApi\BitFlyerDotNet.LightningApi.csproj" />
