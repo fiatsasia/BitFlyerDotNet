@@ -4,12 +4,10 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfTradingMarketConfiguration
+    public class BfxConfiguration
     {
         public TimeSpan PositionUpdateInterval { get; set; } = TimeSpan.FromSeconds(3);
         public int OrderRetryMax { get; set; } = 3;
@@ -22,5 +20,8 @@ namespace BitFlyerDotNet.Trading
         public TimeSpan ParentOrderConfirmInterval { get; set; } = TimeSpan.FromSeconds(3);
 
         public TimeSpan MarketStatusConfirmInterval { get; set; } = TimeSpan.FromSeconds(5);
+
+        public int CancelRetryMax { get; set; } = 3;
+        public TimeSpan CancelRetryInterval { get; set; } = TimeSpan.FromSeconds(3);
     }
 }

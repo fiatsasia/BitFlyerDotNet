@@ -9,49 +9,58 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public interface IBfChildOrderRequest
+    public class BfChildOrderRequest
     {
-        BfProductCode ProductCode { get; }
-        BfOrderType OrderType { get; }
-        BfTradeSide Side { get; }
-        decimal Size { get; }
-        decimal Price { get; }
-    }
-
-    public class BfChildOrderRequest : IBfChildOrderRequest
-    {
-        [JsonProperty(PropertyName = "product_code")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfProductCode ProductCode { get; set; }
 
-        [JsonProperty(PropertyName = "child_order_type")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfOrderType OrderType { get; set; }
+        public BfOrderType ChildOrderType { get; set; }
 
-        [JsonProperty(PropertyName = "side")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfTradeSide Side { get; set; }
 
-        [JsonProperty(PropertyName = "size")]
-        public decimal Size { get; set; }
-
-        [JsonProperty(PropertyName = "price")]
         [JsonConverter(typeof(DecimalJsonConverter))]
         public decimal Price { get; set; }
-        public bool ShouldSerializePrice() { return OrderType == BfOrderType.Limit; }
+        public bool ShouldSerializePrice() { return ChildOrderType == BfOrderType.Limit; }
 
-        [JsonProperty(PropertyName = "minute_to_expire")]
-        public int MinuteToExpire { get; set; } = BitFlyerClientConfig.MinuteToExpireDefault;
-        public bool ShouldSerializeMinuteToExpire()
-            { return MinuteToExpire != BitFlyerClientConfig.MinuteToExpireDefault && MinuteToExpire > 0; } // default = 43200 (30 days)
+        [JsonConverter(typeof(DecimalJsonConverter))]
+        public decimal Size { get; set; }
 
-        [JsonProperty(PropertyName = "time_in_force")]
+        public int MinuteToExpire { get; set; }
+        public bool ShouldSerializeMinuteToExpire() { return MinuteToExpire > 0; } // default = 43200 (30 days)
+
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfTimeInForce TimeInForce { get; set; } = BitFlyerClientConfig.TimeInForceDefault;
-        public bool ShouldSerializeTimeInForce()
-            { return TimeInForce != BitFlyerClientConfig.TimeInForceDefault && TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
+        public BfTimeInForce TimeInForce { get; set; }
+        public bool ShouldSerializeTimeInForce() { return TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
 
-        public TimeSpan MinuteToExpireSpan { get => TimeSpan.FromMinutes(MinuteToExpire); set => MinuteToExpire = (int)value.TotalMinutes; }
+        // Order builders
+        public static BfChildOrderRequest MarketPrice(BfProductCode productCode, BfTradeSide side, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        {
+            return new BfChildOrderRequest
+            {
+                ProductCode = productCode,
+                ChildOrderType = BfOrderType.Market,
+                Side = side,
+                Size = size,
+                MinuteToExpire = minuteToExpire,
+                TimeInForce = timeInForce,
+            };
+        }
+
+        public static BfChildOrderRequest LimitPrice(BfProductCode productCode, BfTradeSide side, decimal price, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        {
+            return new BfChildOrderRequest
+            {
+                ProductCode = productCode,
+                ChildOrderType = BfOrderType.Limit,
+                Side = side,
+                Size = size,
+                Price = price,
+                MinuteToExpire = minuteToExpire,
+                TimeInForce = timeInForce,
+            };
+        }
     }
 
     public class BfChildOrderResponse
@@ -62,35 +71,57 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Send a New Order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(BfChildOrderRequest request)
         {
-            if (request.MinuteToExpire == BitFlyerClientConfig.MinuteToExpireDefault && Config.MinuteToExpire != BitFlyerClientConfig.MinuteToExpireDefault)
+            if (!request.ChildOrderType.IsChildOrder())
+            {
+                throw new ArgumentException($"Invalid {nameof(BfChildOrderRequest.ChildOrderType)} is {request.ChildOrderType}");
+            }
+
+            if (request.MinuteToExpire == 0 && Config.MinuteToExpire != 0)
             {
                 request.MinuteToExpire = Config.MinuteToExpire;
             }
 
-            if (request.TimeInForce == BitFlyerClientConfig.TimeInForceDefault && Config.TimeInForce != BitFlyerClientConfig.TimeInForceDefault)
+            if (request.TimeInForce == BfTimeInForce.NotSpecified && Config.TimeInForce != BfTimeInForce.NotSpecified)
             {
                 request.TimeInForce = Config.TimeInForce;
             }
 
-            var jsonRequest = JsonConvert.SerializeObject(request, _jsonSettings);
-            return PrivatePost<BfChildOrderResponse>(nameof(SendChildOrder), jsonRequest);
+            return PrivatePost<BfChildOrderResponse>(nameof(SendChildOrder), request);
         }
 
+        /// <summary>
+        /// Send a New Order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="orderType"></param>
+        /// <param name="side"></param>
+        /// <param name="price"></param>
+        /// <param name="size"></param>
+        /// <param name="minuteToExpire"></param>
+        /// <param name="timeInForce"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(
             BfProductCode productCode,
             BfOrderType orderType,
             BfTradeSide side,
             decimal price,
             decimal size,
-            int minuteToExpire = BitFlyerClientConfig.MinuteToExpireDefault,
-            BfTimeInForce timeInForce = BitFlyerClientConfig.TimeInForceDefault)
+            int minuteToExpire = 0,
+            BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return SendChildOrder(new BfChildOrderRequest
             {
                 ProductCode = productCode,
-                OrderType = orderType,
+                ChildOrderType = orderType,
                 Side = side,
                 Price = price,
                 Size = size,

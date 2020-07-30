@@ -3,9 +3,9 @@
 // https://www.fiats.asia/
 //
 
-using Financial.Extensions;
+using Financier;
 
-namespace BitFlyerDotNet.LightningApi
+namespace BitFlyerDotNet.Historical
 {
     public interface IBfOhlc : IOhlcvv<decimal>
     {

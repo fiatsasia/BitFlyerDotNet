@@ -12,12 +12,12 @@
     <Description>BitFlyerDotNet is a bitFlyer Lightning API wrapper and libraries.</Description>
     <RepositoryUrl>https://github.com/fiatsasia/BitFlyerDotNet</RepositoryUrl>
     <PackageTags>bitflyer bitflyer-lightning-apis realtime-apis</PackageTags>
-    <Version>2.1.7</Version>
+    <Version>3.0.0</Version>
     <PackageLicenseExpression></PackageLicenseExpression>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
-    <AssemblyVersion>2.1.7.0</AssemblyVersion>
-    <FileVersion>2.1.7.0</FileVersion>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -43,10 +43,6 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Financial.Extensions\Financial.Extensions.Core\Financial.Extensions.Core.csproj" />
   </ItemGroup>
 
 </Project>

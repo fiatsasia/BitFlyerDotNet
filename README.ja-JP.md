@@ -5,27 +5,10 @@ BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/
 
 **BitFlyerDotNet は bitFlyer Lightning API の公式ライブラリではありません。**
 
+**[BitFlyerDotNet日本語版解説サイト](https://scrapbox.io/BitFlyerDotNet/)**
+
 ### 更新履歴
-- 2020/06/11
-  - GetBalanceHistory API サポートを追加しました。
-  - GetMarkets API の変更に対応しました。
-- 2019/09/27
-  - ETH_JPY サポートを追加しました。
-- 2019/09/26
-  - .NET Standard 2.0 / Core 3.0 へプラットフォームを変更しました。
-- 2019/06/02
-  - RealtimeSourceにGetOrderBookSource()を追加しました。これにより、Realtime APIのBoardSnapshotとBoardを統合した板情報をリアルタイムに取得することができます。[→サンプルコード](Samples/RealtimeApiSample/Program.cs)
-  - プロパティの一部定義名称を変更しました(例:Status → State)。
-  - BitFlyerDotNet.Tradingを改訂しました。改訂内容は[サンプルコード](Samples/TradingApiSample/Program.cs)をご確認下さい。
-  - 基本機能の定義やユーティリティ関数を[Financial.Extensions](https://github.com/fiatsasia/Financial.Extensions)に移行しました。
-  - ソリューションビルド時間を短縮するため、Xamarin Formsアプリケーションサンプルを削除しました。
-- 2019/05/12
-  - 価格とサイズ全般の型定義をdoubleからdecimalに変更しました。
-  - ビルド環境を Visual Studio 2017 から 2019 に変更しました。
-- 2019/03/31
-  - RealtimeExecutionSourceにhot/coldオプションを追加し、デフォルトをhot(Subscribeと同時に開始)に変更しました。
-- 2019/03/21
-  - Realtime Ticker API に、BTCUSD、BTCEUR 対応を追加しました。
+- Version 3.0.0 - [BitFlyerDotNetサイト](https://scrapbox.io/BitFlyerDotNet/更新履歴)
 
 ### 環境
 - Visual Studio 2019 / for Mac 2019 用ソリューション、プロジェクト
@@ -34,7 +17,7 @@ BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/
 - Xamrin Forms サンプルは iOS, Android, MacOS, Windows で動作確認済み。 
 - [Reactive Extensions (Rx.NET)](http://reactivex.io/)
 - [JSON.NET](https://www.newtonsoft.com/json)
-- Entity Framework Core and SQLite
+- Entity Framework Core and [SQLite](https://www.sqlite.org/index.html)
 
 ### BitFlyerDotNet.LightningAPI
 ```
@@ -42,7 +25,7 @@ PM> Install-Package BitFlyerDotNet.LightningApi
 ```
 - bitFlyer Lightning API ラッパ
 - Public/Private/Realtime 全 API をサポート
-- Realtime API は Reactive Extensions でラップ
+- [Realtime APIs](https://scrapbox.io/BitFlyerDotNet/Realtime_APIs) は Reactive Extensions 形式
 ### BitFlyerDotNet.Trading
 - BitFlyerDotNet.Trading は BitFlyer.DotNet.LightningAPI を含みます。
 ```
@@ -60,19 +43,88 @@ PM> Install-Package BitFlyerDotNet.Historical
 - Reactive Extensions と Entity Framework Core によるスマートキャッシュ
 - 四本値のリアルタイム更新とストリーミング
 - Cryptowatch API のサポート、キャッシュ
-## サンプルアプリケーション
+## サンプルコード
+### Realtime API Public Channels
+```
+using BitFlyerDotNet.LightningApi;
 
-### Realtime API サンプル
-- .NET Core console application.
-[サンプルコード→](Samples/RealtimeApiSample/Program.cs)
+// Display realtime executions from WebSocket
+using (var factory = new RealtimeSourceFactory())
+using (var source = factory.GetExecutionSource(BfProductCode.FXBTCJPY))
+{
+    source.Subscribe(exec =>
+    {
+        Console.WriteLine("{0} {1} {2} {3} {4} {5}",
+            exec.ExecutionId,
+            exec.Side,
+            exec.Price,
+            exec.Size,
+            exec.ExecutedTime.ToLocalTime(),
+            exec.ChildOrderAcceptanceId);
+    });
+    Console.ReadLine();
+}
+```
+### Realtime API Private Channels
+```
+using BitFlyerDotNet.LightningApi;
 
-### Trading API サンプル
-- .NET Core console application.
-[サンプルコード→](Samples/TradingApiSample/Program.cs)
+// Input API key and secret
+Console.Write("Key:"); var key = Console.ReadLine();
+Console.Write("Secret:"); var secret = Console.ReadLine();
+
+// Display child order event from WebSocket
+using (var factory = new RealtimeSourceFactory(key, secret))
+using (var source = factory.GetChildOrderEventsSource(BfProductCode.FXBTCJPY))
+{
+    source.Subscribe(e =>
+    {
+        Console.WriteLine($"{e.EventDate} {e.EventType}");
+    });
+    Console.ReadLine();
+}
+```
+### Public API
+```
+using BitFlyerDotNet.LightningApi;
+
+// Get supported currency pairs and aliases
+using (var client = new BitFlyerClient())
+{
+    var resp = client.GetMarkets();
+    if (resp.IsError)
+    {
+        Console.WriteLine("Error occured:{0}", resp.ErrorMessage);
+    }
+    else
+    {
+        foreach (var market in resp.GetMessage())
+        {
+            Console.WriteLine("{0} {1}", market.ProductCode, market.Alias);
+        }
+    }
+}
+```
+### Private API  
+```
+using BitFlyerDotNet.LightningApi;
+
+// Buy order
+Console.Write("Key:"); var key = Console.ReadLine();
+Console.Write("Secret:"); var secret = Console.ReadLine();
+
+using (var client = new BitFlyerClient(key, secret))
+{
+    Console.Write("Price:"); var price = decimal.Parse(Console.ReadLine());
+    client.SendChildOrder(BfProductCode.FXBTCJPY, BfOrderType.Limit, BfTradeSide.Buy, price, 0.001);
+}
+```
+[その他サンプルコードはこちら→](https://scrapbox.io/BitFlyerDotNet/Samples)
+
 
 ## 既知の問題
 
-- Private API の getcollateralhistory が常に InternalServerError を返す。
+- 2020/07/27 GetParentOrders API が、取得対象に一定以上古いレコードを含む場合、"Internal Server Error" を返したり、情報取得までに10秒以上の時間がかかる場合が確認されています。
 
 質問やリクエストがあればお気軽にお知らせください。
 

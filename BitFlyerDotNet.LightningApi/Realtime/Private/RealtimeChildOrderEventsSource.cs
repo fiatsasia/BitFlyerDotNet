@@ -3,24 +3,30 @@
 // https://www.fiats.asia/
 //
 
-using Newtonsoft.Json;
+using System;
 using Newtonsoft.Json.Linq;
-using WebSocket4Net;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    internal sealed class RealtimeChildOrderEventsSource : RealtimePrivateSourceBase<BfChildOrderEvent>
+    class RealtimeChildOrderEventsSource : RealtimeSourceBase<BfChildOrderEvent>
     {
-        const string ChannelFormat = "child_order_events";
+        Action<RealtimeChildOrderEventsSource> _dispose;
 
-        public RealtimeChildOrderEventsSource(WebSocketChannels channels, JsonSerializerSettings jsonSettings, string key, string secret)
-            : base(channels, ChannelFormat, jsonSettings, key, secret)
+        public RealtimeChildOrderEventsSource(WebSocketChannels channels, Action<RealtimeChildOrderEventsSource> dispose)
+            : base(channels, "child_order_events")
         {
+            _dispose = dispose;
         }
 
-        public override void OnSubscribe(JToken token)
+        public override object OnMessageReceived(JToken token)
         {
-            OnNextArray(token);
+            return DispatchArrayMessage(token); // Channel returns array format
+        }
+
+        protected override void OnDispose()
+        {
+            base.OnDispose();
+            _dispose(this);
         }
     }
 }

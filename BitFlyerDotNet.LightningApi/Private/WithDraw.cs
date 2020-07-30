@@ -10,14 +10,12 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BfWithdrawRequest
     {
-        [JsonProperty(PropertyName = "currency_code")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfCurrencyCode CurrencyCode { get; set; }
 
-        [JsonProperty(PropertyName = "bank_account_id")]
         public int BankAccountId { get; set; }
 
-        [JsonProperty(PropertyName = "amount")]
+        [JsonConverter(typeof(DecimalJsonConverter))]
         public decimal Amount { get; set; }
 
         [JsonProperty(PropertyName = "code")]
@@ -33,12 +31,26 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Withdrawing Funds
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/Withdraw">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfWithdrawRequest request)
         {
-            var jsonRequest = JsonConvert.SerializeObject(request, _jsonSettings);
-            return PrivatePost<BfWithdrawResponse>(nameof(Withdraw), jsonRequest);
+            return PrivatePost<BfWithdrawResponse>(nameof(Withdraw), request);
         }
 
+        /// <summary>
+        /// Withdrawing Funds
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/Withdraw">Online help</see>
+        /// </summary>
+        /// <param name="currencyCode"></param>
+        /// <param name="bankAccountId"></param>
+        /// <param name="amount"></param>
+        /// <param name="authenticationCode"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode)
         {
             return Withdraw(new BfWithdrawRequest

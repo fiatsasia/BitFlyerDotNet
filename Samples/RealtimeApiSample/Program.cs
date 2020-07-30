@@ -6,66 +6,89 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Xml.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
-using Financial.Extensions;
+using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
 
-namespace RealtimeApiSample
+namespace RealtimeApiTests
 {
     class Program
     {
         static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
         static CompositeDisposable _disposables = new CompositeDisposable();
 
+        const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
+        static RealtimeSourceFactory _factory;
+        static bool _detail;
+
         static void Main(string[] args)
         {
-            Trace.Listeners.Add(new ConsoleTraceListener());
-
             if (args.Length > 0)
             {
                 LoadRunsettings(args[0]);
+                var key = Properties["ApiKey"];
+                var secret = Properties["ApiSecret"];
+                _factory = new RealtimeSourceFactory(key, secret);
             }
-
-            var factory = new RealtimeSourceFactory();
-            factory.Error += (error) =>
+            else
             {
-                Console.WriteLine("Error: {0} Socket Error = {1}", error.Message, error.SocketError);
-            };
-
-            Console.WriteLine("1) RealtimeExecution sample");
-            Console.WriteLine("2) RealtimeTicker sample");
-            Console.WriteLine("3) RealtimeOrderBook sample");
-            Console.WriteLine("4) RealtimeChildOrderEvents sample");
-            Console.WriteLine("5) RealtimeParentOrderEvents sample");
-
-            switch (GetCh())
-            {
-                case '1':
-                    RealtimeExecutionSample(factory);
-                    break;
-
-                case '2':
-                    RealtimeTickerSample(factory);
-                    break;
-
-                case '3':
-                    RealtimeOrderBookSample(factory);
-                    break;
-
-                case '4':
-                    RealtimeChildOrderEvents(factory);
-                    break;
-
-                case '5':
-                    RealtimeParentOrderEvents(factory);
-                    break;
+                _factory = new RealtimeSourceFactory();
             }
+            _factory.MessageSent += OnRealtimeMessageSent;
+            _factory.MessageReceived += OnRealtimeMessageReceived;
+            _factory.Error += (error) => Console.WriteLine("Error: {0} Socket Error = {1}", error.Message, error.SocketError);
+            _factory.Open();
 
-            Console.ReadLine();
-            _disposables.Dispose();
+            while (true)
+            {
+                Console.WriteLine("========================================================================");
+                Console.WriteLine("E)xecution               T)icker                 O)rderBook");
+                Console.WriteLine("C)hild Order Events      P)arent Order Events");
+                Console.WriteLine();
+                Console.WriteLine("D)etail                  S)top                   Q)uit");
+                Console.WriteLine("========================================================================");
+
+                switch (GetCh())
+                {
+                    case 'E':
+                        _factory.GetExecutionSource(ProductCode).Subscribe(exec => { Console.Write("."); }).AddTo(_disposables);
+                        break;
+
+                    case 'T':
+                        _factory.GetTickerSource(ProductCode).Subscribe(ticker => { Console.Write("."); }).AddTo(_disposables);
+                        break;
+
+                    case 'O':
+                        _factory.GetOrderBookSource(ProductCode).Subscribe(ob => { Console.Write("."); }).AddTo(_disposables);
+                        break;
+
+                    case 'C': // To fire child-order-event, use bitFlyer Lightning browser operation
+                        _factory.GetChildOrderEventsSource().Subscribe(order => { Console.Write("."); }).AddTo(_disposables);
+                        break;
+
+                    case 'P': // To fire parent-order-event, use bitFlyer Lightning browser operation
+                        _factory.GetParentOrderEventsSource().Subscribe(order => { Console.Write("."); }).AddTo(_disposables);
+                        break;
+
+                    case 'B':
+                        RealtimeOrderBookSample();
+                        break;
+
+                    case 'D':
+                        _detail = !_detail;
+                        break;
+
+                    case 'S':
+                        _disposables.Clear();
+                        break;
+
+                    case 'Q':
+                        _disposables.Dispose();
+                        return;
+                }
+            }
         }
 
         static Dictionary<string, string> Properties;
@@ -76,48 +99,56 @@ namespace RealtimeApiSample
             Properties = xml.Element("RunSettings").Element("TestRunParameters").Elements("Parameter").ToDictionary(e => e.Attribute("name").Value, e => e.Attribute("value").Value);
         }
 
-        static void RealtimeExecutionSample(RealtimeSourceFactory factory)
+        static void OnRealtimeMessageSent(string json)
         {
-            factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(tick =>
-            {
-                Console.WriteLine("{0} {1} {2} {3} {4} {5}",
-                    tick.ExecutionId,
-                    tick.Side,
-                    tick.Price,
-                    tick.Size,
-                    tick.ExecutedTime.ToLocalTime(),
-                    tick.ChildOrderAcceptanceId);
-            }).AddTo(_disposables);
+            Console.WriteLine($"Message sent: {json}");
         }
 
-        static void RealtimeTickerSample(RealtimeSourceFactory factory)
+        static void OnRealtimeMessageReceived(string json, object message)
         {
-            factory.GetTickerSource(BfProductCode.FXBTCJPY).Subscribe(ticker =>
+            Console.Write("Message received: ");
+            switch (message)
             {
-                Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11}",
-                    ticker.ProductCode,
-                    ticker.Timestamp.ToLocalTime(),
-                    ticker.TickId,
-                    ticker.BestBid,
-                    ticker.BestAsk,
-                    ticker.BestBidSize,
-                    ticker.BestAskSize,
-                    ticker.TotalBidDepth,
-                    ticker.TotalAskDepth,
-                    ticker.LastTradedPrice,
-                    ticker.Last24HoursVolume,
-                    ticker.VolumeByProduct);
-            }).AddTo(_disposables);
+                case BfExecution[] execs:
+                    Console.WriteLine($"BfExecution[{execs.Length}]:");
+                    break;
+
+                case BfTicker[] ticker:
+                    break;
+
+                case BfBoard board: // OrderBook
+                    Console.WriteLine($"BfOrderBook Asks:{board.Asks.Length} Bids:{board.Bids.Length}:");
+                    break;
+
+                case BfChildOrderEvent[] coe:
+                    Console.WriteLine($"BfChildOrderEvent[{coe.Length}]:");
+                    break;
+
+                case BfParentOrderEvent[] poe:
+                    Console.WriteLine($"BfParentOrderEvent[{poe.Length}]:");
+                    break;
+
+                default:
+                    Console.WriteLine($"{message.GetType().Name}:");
+                    break;
+            }
+            if (!_detail)
+            {
+                return;
+            }
+
+            var jobject = JsonConvert.DeserializeObject(json);
+            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
         // Somtimes stopped feed without any errors.
         // It should retry if it elapsed defined limit.
-        static void RealtimeOrderBookSample(RealtimeSourceFactory factory)
+        static void RealtimeOrderBookSample()
         {
             var left = Console.CursorLeft;
             var top = Console.CursorTop;
 
-            factory.GetOrderBookSource(BfProductCode.FXBTCJPY)
+            _factory.GetOrderBookSource(BfProductCode.FXBTCJPY)
             .Select(orderBook => orderBook.GetSnapshot(15)) // Take 15 orders from 300 orders
             .Subscribe(obs =>
             {
@@ -133,20 +164,14 @@ namespace RealtimeApiSample
                 }
             }).AddTo(_disposables);
         }
+    }
 
-        static void RealtimeChildOrderEvents(RealtimeSourceFactory factory)
+    static class RxUtil
+    {
+        public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
         {
-            var key = Properties["ApiKey"];
-            var secret = Properties["ApiSecret"];
-
-            factory.GetChildOrderEventsSource(key, secret).Subscribe(order =>
-            {
-                Console.WriteLine($"{order.ProductCode} {order.ChildOrderId} {order.EventType}");
-            }).AddTo(_disposables);
-        }
-
-        static void RealtimeParentOrderEvents(RealtimeSourceFactory factory)
-        {
+            disposable.Add(resource);
+            return resource;
         }
     }
 }

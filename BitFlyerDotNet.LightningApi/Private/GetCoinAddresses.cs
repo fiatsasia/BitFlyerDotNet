@@ -3,6 +3,7 @@
 // https://www.fiats.asia/
 //
 
+using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -23,9 +24,25 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Get Crypto Assets Deposit Addresses
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetCoinAddresses">Online help</see>
+        /// </summary>
+        /// <returns></returns>
+        [Obsolete("This method is obsolete. Use GetAddresses instead.", false)]
         public BitFlyerResponse<BfCoinAddress[]> GetCoinAddresses()
         {
             return PrivateGet<BfCoinAddress[]>("getaddresses");
+        }
+
+        /// <summary>
+        /// Get Crypto Assets Deposit Addresses
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetCoinAddresses">Online help</see>
+        /// </summary>
+        /// <returns></returns>
+        public BitFlyerResponse<BfCoinAddress[]> GetAddresses()
+        {
+            return PrivateGet<BfCoinAddress[]>(nameof(GetAddresses));
         }
     }
 }

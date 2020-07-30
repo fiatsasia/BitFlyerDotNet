@@ -4,200 +4,196 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
-using System.Reactive.Linq;
-using System.Reactive.Disposables;
-using Financial.Extensions;
+using System.Diagnostics;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxChildOrderTransaction : IBfOrderTransaction, IDisposable
+    public class BfxChildOrderTransaction : IBfxOrderTransaction
     {
-        public bool IsCancelable()
+        // Public properties
+        public BfxChildOrder Order { get; private set; }
+        public IReadOnlyList<BfChildOrderEvent> EventHistory => _eventHistory;
+        public BfxParentOrderTransaction? Parent { get; }
+
+        // Events
+        public event EventHandler<BfxChildOrderTransactionEventArgs>? OrderTransactionEvent;
+
+        // Private properties
+        BfxMarket _market;
+        List<BfChildOrderEvent> _eventHistory = new List<BfChildOrderEvent>();
+
+        public BfxChildOrderTransaction(BfxMarket market, BfxChildOrder order, BfxParentOrderTransaction? parent)
         {
-            try
-            {
-                _stateLock.EnterReadLock();
-                return State.IsCancelable();
-            }
-            finally
-            {
-                _stateLock.ExitReadLock();
-            }
-        }
-
-        public bool IsOrderable()
-        {
-            try
-            {
-                _stateLock.EnterReadLock();
-                return State.IsOrderable();
-            }
-            finally
-            {
-                _stateLock.ExitReadLock();
-            }
-        }
-
-        public object Tag { get; set; }
-
-        public BfxChildOrderTransactionState State { get; private set; }
-        BfTradingMarket _market;
-        CompositeDisposable _disposables = new CompositeDisposable();
-        ReaderWriterLockSlim _stateLock = new ReaderWriterLockSlim();
-
-        BitFlyerClient Client => _market.Client;
-        RealtimeSourceFactory RealtimeSource => _market.RealtimeSource;
-        BfTradingMarketConfiguration Config => _market.Config;
-
-        public event EventHandler<BfxChildOrderTransactionEventArgs> StateChanged
-        {
-            add { State.StateChanged += value; }
-            remove { State.StateChanged -= value; }
-        }
-
-        public event EventHandler<BfxChildOrderEventArgs> OrderChanged
-        {
-            add { State.OrderChanged += value; }
-            remove { State.OrderChanged -= value; }
-        }
-
-        public BfxChildOrderTransaction(BfTradingMarket market, BfChildOrderRequest request)
-        {
-            DebugEx.EnterMethod();
             _market = market;
-            State = new BfxChildOrderTransactionState(_market, request);
+            Order = order;
+            Parent = parent;
         }
 
-        public void Dispose()
+        public BfxChildOrderTransaction(BfxMarket market, BfxChildOrder order)
         {
-            _disposables.Dispose();
+            _market = market;
+            Order = order;
         }
 
-        public bool SendOrder()
+        // - 経過時間でリトライ終了のオプション
+        // - 通信エラー以外でのリトライ終了
+        // - 送信完了からChildOrderEvent(Order)までの状態
+        public string SendOrderRequest()
         {
+            Debug.Assert(Order.Request != null);
+            Debug.Assert(Order.State == BfxOrderState.Unknown);
             DebugEx.EnterMethod();
             try
             {
-                DebugEx.Trace();
-                _stateLock.EnterWriteLock();
-
-                DebugEx.Trace();
-                if (!State.OnOrderRequested())
+                Order.TransitState(BfxOrderState.SendingOrder);
+                for (var retry = 0; retry <= _market.Config.OrderRetryMax; retry++)
                 {
                     DebugEx.Trace();
-                    return false;
+                    var resp = _market.Client.SendChildOrder(Order.Request);
+                    if (!resp.IsError)
+                    {
+                        Order.Update(resp.GetMessage());
+                        Order.TransitState(BfxOrderState.WaitingOrderAccepted);
+                        NotifyEvent(BfxOrderEventType.OrderSent, resp);
+                        return resp.GetMessage().ChildOrderAcceptanceId;
+                    }
+
+                    DebugEx.Trace("Trying retry...");
+                    Thread.Sleep(_market.Config.OrderRetryInterval);
                 }
 
-                // Start monitoring first
-                DebugEx.Trace();
-                RealtimeSource.GetExecutionSource(State.ProductCode)
-                    .Where(exec => exec.ChildOrderAcceptanceId == State.AcceptanceId)
-                    .Subscribe(OnExecutionTicked).AddTo(_disposables);
-
-                DebugEx.Trace();
-                State.OnOrderAccepted(Client.SendChildOrder(State.Request).GetResult());
-
-                DebugEx.Trace();
-                Observable.Timer(Config.ChildOrderConfirmDelay, Config.ChildOrderConfirmInterval).Subscribe(count => ConfirmOrder()).AddTo(_disposables);
-                return true;
+                DebugEx.Trace("SendOrderRequest - Retried out");
+                Order.TransitState(BfxOrderState.Unknown);
+                throw new BitFlyerDotNetException();
             }
             catch (Exception ex)
             {
                 DebugEx.Trace(ex.Message);
-                _disposables.Dispose();
-                State.OnOrderFailed(ex);
-                return false;
+                throw;
             }
             finally
             {
-                DebugEx.Trace();
-                _stateLock.ExitWriteLock();
                 DebugEx.ExitMethod();
             }
         }
 
-        void OnTransactionCompleted()
+        // - エラーリトライ(無限リトライ)
+        // - 注文執行によるキャンセルの中止 => CancelFailed受信
+        // - 注文送信リトライ中のキャンセル
+        IBitFlyerResponse SendCancelOrderRequest()
         {
-            _disposables.Dispose();
-        }
+            Debug.Assert(!string.IsNullOrEmpty(Order.ChildOrderAcceptanceId));
+            Debug.Assert(Order.State == BfxOrderState.OrderConfirmed);
 
-        void OnExecutionTicked(BfExecution exec)
-        {
+            DebugEx.EnterMethod();
+            Order.TransitState(BfxOrderState.SendingCancel);
             try
             {
-                DebugEx.EnterMethod();
-                _stateLock.EnterWriteLock();
-
                 DebugEx.Trace();
-                if (State.OnExecutionReceived(exec) && State.OrderState == BfOrderState.Completed)
+                var resp = _market.Client.CancelChildOrder(productCode: _market.ProductCode, childOrderAcceptanceId: Order.ChildOrderAcceptanceId);
+                if (resp.IsError)
                 {
-                    OnTransactionCompleted();
+                    Order.TransitState(BfxOrderState.OrderConfirmed);
+                    NotifyEvent(BfxOrderEventType.CancelSendFailed, resp);
                 }
+                else
+                {
+                    Order.TransitState(BfxOrderState.WaitingCancelCompleted);
+                    NotifyEvent(BfxOrderEventType.CancelSent, resp);
+                }
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                DebugEx.Trace(ex.Message);
+                throw;
             }
             finally
             {
-                _stateLock.ExitWriteLock();
+                DebugEx.Trace();
                 DebugEx.ExitMethod();
             }
         }
 
-        public bool CancelOrder()
+        public void CancelTransaction()
         {
-            try
-            {
-                DebugEx.EnterMethod();
-                _stateLock.EnterWriteLock();
+            // 注文送信中なら送信をキャンセル
+            // 注文送信済みならキャンセルを送信
+            SendCancelOrderRequest();
+        }
 
-                if (!State.OnCancelRequested())
-                {
-                    DebugEx.Trace();
-                    return false;
-                }
+        public void OnChildOrderEvent(BfChildOrderEvent coe)
+        {
+            if (coe.ChildOrderAcceptanceId != Order.ChildOrderAcceptanceId)
+            {
+                return; // Event for childrent of parent
+            }
 
-                DebugEx.Trace();
-                State.OnCancelAccepted(Client.CancelChildOrder(State.ProductCode, childOrderAcceptanceId: State.AcceptanceId).GetResult());
-                return true;
-            }
-            catch
+            RecordChildOrderEvent(coe);
+            Order.Update(coe);
+            Order.TransitState(coe.EventType);
+
+            switch (coe.EventType)
             {
-                DebugEx.Trace();
-                State.OnCancelFailed();
-                return false;
-            }
-            finally
-            {
-                DebugEx.Trace();
-                _stateLock.ExitWriteLock();
-                DebugEx.ExitMethod();
+                case BfOrderEventType.Order: // Order registered
+                    NotifyEvent(BfxOrderEventType.OrderAccepted, coe);
+                    break;
+
+                case BfOrderEventType.OrderFailed:
+                    NotifyEvent(BfxOrderEventType.OrderFailed, coe);
+                    break;
+
+                case BfOrderEventType.Cancel:
+                    NotifyEvent(BfxOrderEventType.Canceled, coe);
+                    break;
+
+                case BfOrderEventType.CancelFailed:
+                    // Reasonが無いが、注文執行済みと考えて良いか？また、Completeは送信されるのか？
+                    NotifyEvent(BfxOrderEventType.CancelFailed, coe);
+                    break;
+
+                case BfOrderEventType.Execution:
+                    NotifyEvent(Order.OrderSize > Order.ExecutedSize ? BfxOrderEventType.PartiallyExecuted : BfxOrderEventType.Executed, coe);
+                    break;
+
+                // Not happened when Simple Order ?
+                case BfOrderEventType.Trigger:
+                    break;
+
+                case BfOrderEventType.Complete:
+                    NotifyEvent(BfxOrderEventType.Completed, coe);
+                    break;
+
+                // - When TimeInForce=FOK
+                case BfOrderEventType.Expire:
+                    NotifyEvent(BfxOrderEventType.Expired, coe);
+                    break;
+
+                case BfOrderEventType.Unknown:
+                    throw new NotSupportedException();
             }
         }
 
-        void ConfirmOrder()
+        void RecordChildOrderEvent(BfChildOrderEvent coe)
         {
-            try
+            _eventHistory.Add(coe);
+            if (_eventHistory.Count > 100)
             {
-                //DebugEx.EnterMethod();
-                _stateLock.EnterWriteLock();
-
-                // Get order information
-                //DebugEx.Trace();
-                State.OnOrderConfirmed(Client.GetChildOrders(State.ProductCode, childOrderAcceptanceId: State.AcceptanceId).GetResult());
-
-                //DebugEx.Trace();
-                if (State.OrderState != BfOrderState.Active && State.OrderState != BfOrderState.Unknown)
-                {
-                    //DebugEx.Trace();
-                    OnTransactionCompleted();
-                }
+                _eventHistory.RemoveAt(0);
             }
-            finally
-            {
-                //DebugEx.Trace();
-                _stateLock.ExitWriteLock();
-                //DebugEx.ExitMethod();
-            }
+        }
+
+        void NotifyEvent(BfxOrderEventType oet, BfChildOrderEvent coe)
+        {
+            OrderTransactionEvent?.Invoke(this, new BfxChildOrderTransactionEventArgs { EventType = oet, OrderEvent = coe });
+        }
+
+        void NotifyEvent(BfxOrderEventType oet, IBitFlyerResponse resp)
+        {
+            OrderTransactionEvent?.Invoke(this, new BfxChildOrderTransactionEventArgs { EventType = oet, Response = resp });
         }
     }
 }

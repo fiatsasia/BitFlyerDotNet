@@ -21,6 +21,12 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Exchange status details
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetBoardState">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfBoardStateResult> GetBoardState(BfProductCode productCode)
         {
             return Get<BfBoardStateResult>(nameof(GetBoardState), "product_code=" + productCode.ToEnumString());

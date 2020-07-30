@@ -5,26 +5,7 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
 ### Updates
-- 2020/06/11
-  - Added support GetBalanceHistory API.
-  - Updated GetMarkets API.
-- 2019/09/27
-  - Added ETH_JPY support.
-- 2019/09/26
-  - Changed platform to .NET Standard 2.0 / Core 3.0 
-- 2019/06/02
-  - Added GetOrderBookSource() to RealtimeSource. This functionality provides order book feed which integrates by BoardSnapshot and Board realtime APIs. [See sample code.](Samples/RealtimeApiSample/Program.cs)
-  - Some of property definitions are changed. (ex. Status -> State)
-  - BitflyerDotNet.Trading is revised. [Check changes from here](Samples/TradingApiSample/Program.cs)
-  - Some of functionality was moved to [Financial.Extensions](https://github.com/fiatsasia/Financial.Extensions).
-  - Xamarin application samples are removed to shorten time of build solution.
-- 2019/05/12
-  - All of prices and sizes are changed definition type from double to decimal.
-  - Changed build environment Visual Studio from 2017 to 2019.
-- 2019/03/31
-  - Added hot/cold start option to RealtimeExecutionSource and chaged default to hot (hot start on subscribe).
-- 2019/03/21
-  - Added BTCUSD and BTCEUR support in realtime ticker API. 
+- Version 3.0.0 - [BitFlyerDotNet Site](https://scrapbox.io/BitFlyerDotNet/Updates)
 
 ### Environment 
 - Solution and Projects are for Visual Studio 2019 and 2019 for Mac.
@@ -33,15 +14,16 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 - Sample applications are tested on iOS, Android, MacOS and Windows desktop. 
 - [Reactive Extensions (Rx.NET)](http://reactivex.io/)
 - [JSON.NET](https://www.newtonsoft.com/json)
-- Entity Framework Core and SQLite
+- Entity Framework Core and [SQLite](https://www.sqlite.org/index.html)
 
 ### BitFlyerDotNet.LightningAPI
 ```
 PM> Install-Package BitFlyerDotNet.LightningApi
 ```
-- bitFlyer Lightning API wrapper class library
-- Supports all of Public/Private/Realtime APIs
-- Realtime APIs are wrapped by Reactive Extensions
+- bitFlyer Lightning API wrapper class library.
+- Supports all of Public/Private/Realtime APIs.
+- [Realtime APIs](https://scrapbox.io/BitFlyerDotNet/Realtime_APIs) are wrapped by Reactive Extensions.
+- All of Realtime API subscribers (include private) share single WebSocket channel.
 ### BitFlyerDotNet.Trading
 - BitFlyerDotNet.Trading contains BitFlyer.DotNet.LightningAPI
 ```
@@ -62,41 +44,64 @@ PM> Install-Package BitFlyerDotNet.Historical
 
 ## Sample code
 
-### Realtime API
-[To see sample console application from here.](Samples/RealTimeApiSample/Program.cs)
+### Realtime API Public Channels
 ```
 using BitFlyerDotNet.LightningApi;
 
 // Display realtime executions from WebSocket
-var factory = new RealtimeSourceFactory();
-factory.GetExecutionSource(BfProductCode.FXBTCJPY).Subscribe(exec =>
+using (var factory = new RealtimeSourceFactory())
+using (var source = factory.GetExecutionSource(BfProductCode.FXBTCJPY))
 {
-    Console.WriteLine("{0} {1} {2} {3} {4} {5}",
-        exec.ExecutionId,
-        exec.Side,
-        exec.Price,
-        exec.Size,
-        exec.ExecutedTime.ToLocalTime(),
-        exec.ChildOrderAcceptanceId);
-});
-Console.ReadLine();
+    source.Subscribe(exec =>
+    {
+        Console.WriteLine("{0} {1} {2} {3} {4} {5}",
+            exec.ExecutionId,
+            exec.Side,
+            exec.Price,
+            exec.Size,
+            exec.ExecutedTime.ToLocalTime(),
+            exec.ChildOrderAcceptanceId);
+    });
+    Console.ReadLine();
+}
+```
+### Realtime API Private Channels
+```
+using BitFlyerDotNet.LightningApi;
+
+// Input API key and secret
+Console.Write("Key:"); var key = Console.ReadLine();
+Console.Write("Secret:"); var secret = Console.ReadLine();
+
+// Display child order event from WebSocket
+using (var factory = new RealtimeSourceFactory(key, secret))
+using (var source = factory.GetChildOrderEventsSource(BfProductCode.FXBTCJPY))
+{
+    source.Subscribe(e =>
+    {
+        Console.WriteLine($"{e.EventDate} {e.EventType}");
+    });
+    Console.ReadLine();
+}
 ```
 ### Public API
 ```
 using BitFlyerDotNet.LightningApi;
 
 // Get supported currency pairs and aliases
-var client = new BitFlyerClient();
-var resp = client.GetMarkets();
-if (resp.IsError)
+using (var client = new BitFlyerClient())
 {
-    Console.WriteLine("Error occured:{0}", resp.ErrorMessage);
-}
-else
-{
-    foreach (var market in resp.GetResult())
+    var resp = client.GetMarkets();
+    if (resp.IsError)
     {
-        Console.WriteLine("{0} {1}", market.ProductCode, market.Alias);
+        Console.WriteLine("Error occured:{0}", resp.ErrorMessage);
+    }
+    else
+    {
+        foreach (var market in resp.GetMessage())
+        {
+            Console.WriteLine("{0} {1}", market.ProductCode, market.Alias);
+        }
     }
 }
 ```
@@ -107,24 +112,17 @@ using BitFlyerDotNet.LightningApi;
 // Buy order
 Console.Write("Key:"); var key = Console.ReadLine();
 Console.Write("Secret:"); var secret = Console.ReadLine();
-var client = new BitFlyerClient(key, secret);
 
-Console.Write("Price:"); var price = decimal.Parse(Console.ReadLine());
-client.SendChildOrder(BfProductCode.FXBTCJPY, BfOrderType.Limit, BfTradeSide.Buy, price, 0.001);
+using (var client = new BitFlyerClient(key, secret))
+{
+    Console.Write("Price:"); var price = decimal.Parse(Console.ReadLine());
+    client.SendChildOrder(BfProductCode.FXBTCJPY, BfOrderType.Limit, BfTradeSide.Buy, price, 0.001);
+}
 ```
-## Sample applications
-
-### Realtime API Sample
-- .NET Core console application.
-[To see sample application from here.](Samples/RealtimeApiSample/Program.cs)
-
-### Trading API Sample
-- .NET Core console application.
-[To see sample application from here.](Samples/TradingApiSample/Program.cs)
+[More sample code from here ->](https://scrapbox.io/BitFlyerDotNet/Samples)
 
 ## Known issues
-
-- Private API getcollateralhistory always returns InternalServerError.
+- 2020/07/27 GetParentOrders API is too slow or sometimes returns "Internal Server Error" if target period contains old order. Probably old parent orders are stored another slow database.
 
 Let me know if you have any questions or requests. We could accept English and Japanese.
 

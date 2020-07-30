@@ -3,23 +3,20 @@
 // https://www.fiats.asia/
 //
 
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    internal sealed class RealtimeBoardSnapshotSource : RealtimeSourceBase<BfBoard>
+    class RealtimeBoardSnapshotSource : RealtimeSourceBase<BfBoard>
     {
-        const string ChannelFormat = "lightning_board_snapshot_{0}";
-
-        public RealtimeBoardSnapshotSource(WebSocketChannels channels, JsonSerializerSettings jsonSettings, string productCode)
-            : base(channels, ChannelFormat, jsonSettings, productCode)
+        public RealtimeBoardSnapshotSource(WebSocketChannels channels, string productCode)
+            : base(channels, $"lightning_board_snapshot_{productCode}")
         {
         }
 
-        public override void OnSubscribe(JToken token)
+        public override object OnMessageReceived(JToken token)
         {
-            OnNext(token);
+            return DispatchMessage(token);
         }
     }
 }

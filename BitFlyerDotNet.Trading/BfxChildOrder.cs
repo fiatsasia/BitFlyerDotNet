@@ -11,185 +11,231 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxChildOrder
+    public class BfxChildOrder : IBfxSimpleOrder, IBfxChildOrder
     {
-        public BfChildOrderRequest Request { get; private set; }
-        BfChildOrderResponse _response;
-        BfChildOrder _order;
+        // Request fields
+        public BfProductCode ProductCode { get; }
+        public BfOrderType OrderType { get; }
+        public BfTradeSide Side { get; }
+        public decimal OrderSize { get; }
+        public decimal? OrderPrice { get; } // Missing if market price order
+        public decimal? TriggerPrice { get; }
+        public decimal? TrailOffset { get; }
+        public int MinuteToExpire { get; }
+        public BfTimeInForce TimeInForce { get; }
 
-        // When use child of parent order
-        public BfParentOrderRequestParameter RequestElement { get; private set; }
-        public BfChildOrderElement OrderElement { get; private set; }
+        // Response fields
+        public string? ChildOrderAcceptanceId { get; private set; }
 
-        List<IBfExecution> _wsExecs = new List<IBfExecution>();
-        List<IBfExecution> _restExecs = new List<IBfExecution>();
+        // Confirmed fields
+        public string? ChildOrderId { get; private set; }
+        public DateTime? OrderDate { get; private set; }
+        public DateTime? ExpireDate { get; private set; }
 
-        // From  child order request
-        public BfProductCode ProductCode => Request?.ProductCode ?? RequestElement.ProductCode;
-        public new BfOrderType OrderType => Request?.OrderType ?? RequestElement.ConditionType;
-        public BfTradeSide Side => Request?.Side ?? RequestElement.Side;
-        public decimal Size => Request?.Size ?? RequestElement.Size;
-        public decimal Price => Request?.Price ?? RequestElement.Price;
+        // Execution fields
+        public decimal? ExecutedSize { get; private set; }
+        public decimal? ExecutedPrice { get; private set; }
+        public decimal? Commission { get; private set; }
+        public decimal? SfdCollectedAmount => _executions.Sum(e => e.SfdCollectedAmount);
+        public IBfxExecution[] Executions => _executions.ToArray();
 
-        // Valid if child order of parent order
-        public decimal TriggerPrice => RequestElement?.TriggerPrice ?? decimal.MinValue;
-        public decimal Offset => RequestElement?.Offset ?? decimal.MinValue;
-        public BfOrderType UnderlyingOrder => _order.ChildOrderType;
+        // Simple order fields
+        public string? AcceptanceId => ChildOrderAcceptanceId;
+        public string? Id => ChildOrderId;
+        public BfxOrderState State { get; internal set; }
 
-        // From response
-        public string AcceptanceId { get; private set; } = string.Empty;
+        // Other fields
+        public string? OrderFailedReason { get; }
 
-        // From confirmed chila order
-        public string OrderId => _order?.ChildOrderId ?? string.Empty;
-        public decimal AveragePrice => _order.AveragePrice;
-        public DateTime OrderDate => _order.ChildOrderDate;
-        public decimal OutstandingSize => _order.OutstandingSize;
-        public decimal TotalCommission => _order.TotalCommission;
+        // Status management
+        public BfxOrderState TransitState(BfxOrderState newState) => State = State.TransitState(newState);
+        public BfxOrderState TransitState(BfOrderEventType evt) => State = State.TransitState(evt);
 
-        // Manage by this class
-        public BfOrderState OrderState { get; private set; } = BfOrderState.Unknown;
-        public decimal ExecutedPrice { get; private set; }
-        public decimal ExecutedSize { get; private set; }
-        public DateTime ExecutedTime { get { return _wsExecs.Select(e => e.ExecutedTime).DefaultIfEmpty().Max(); } }
-        public decimal CancelSize { get; private set; }
-        public DateTime ExpireDate { get; private set; }
+        // Private properties
+        List<BfxExecution> _executions = new List<BfxExecution>();
 
-        public IEnumerable<IBfExecution> Executions => (_wsExecs.Count >= _restExecs.Count) ? _wsExecs : _restExecs;
-        public bool IsOrderCompleted => (OrderState != BfOrderState.Unknown && OrderState != BfOrderState.Active);
+        internal BfChildOrderRequest? Request { get; }
 
-        public event EventHandler<BfxChildOrderEventArgs> OrderChanged;
-
-        public object Tag { get; set; }
-
+        #region Constructors
+        // Market/Limit
         public BfxChildOrder(BfChildOrderRequest request)
         {
             Request = request;
-        }
 
-        public BfxChildOrder(BfParentOrderRequestParameter request)
-        {
-            RequestElement = request;
-        }
-
-        void NotifyOrderChanged()
-        {
-            try
+            ProductCode = request.ProductCode;
+            OrderType = request.ChildOrderType;
+            Side = request.Side;
+            OrderSize = request.Size;
+            if (OrderType == BfOrderType.Limit)
             {
-                OrderChanged?.Invoke(this, new BfxChildOrderEventArgs(this));
+                OrderPrice = request.Price;
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Exception occuted in user handler. {ex.Message}");
-            }
+            MinuteToExpire = request.MinuteToExpire;
+            TimeInForce = request.TimeInForce;
         }
 
-        public virtual void OnOrderAccepted(BfChildOrderResponse response)
+        public BfxChildOrder(BfProductCode productCode, BfChildOrder order)
         {
-            _response = response;
-            AcceptanceId = _response.ChildOrderAcceptanceId;
-            OrderState = BfOrderState.Active;
-            NotifyOrderChanged();
-        }
+            Request = default;
 
-        public virtual bool OnOrderConfirmed(BfChildOrder order)
-        {
-            _order = order;
-
-            AcceptanceId = order.ChildOrderAcceptanceId; // Set first if child of parent
-            CancelSize = order.CancelSize;
-
-            var updated = false;
-            if (OrderState != _order.ChildOrderState)
+            // Request fields
+            ProductCode = productCode;
+            OrderType = order.ChildOrderType;
+            Side = order.Side;
+            OrderSize = order.Size;
+            if (OrderType == BfOrderType.Limit)
             {
-                if (OrderState != BfOrderState.Completed)
-                {
-                    OrderState = _order.ChildOrderState;
-                    updated = true;
-                }
+                OrderPrice = order.Price;
             }
 
-            if (_order.ExecutedSize > ExecutedSize)
+            // Accepted
+            ChildOrderAcceptanceId = order.ChildOrderAcceptanceId;
+
+            // Confirmed
+            ChildOrderId = order.ChildOrderId;
+            OrderDate = order.ChildOrderDate;
+            ExpireDate = order.ExpireDate;
+
+            // Execution
+            ExecutedSize = order.ExecutedSize;
+            ExecutedPrice = order.AveragePrice;
+            Commission = order.TotalCommission;
+
+            switch (order.ChildOrderState)
             {
-                ExecutedSize = _order.ExecutedSize;
-                ExecutedPrice = _order.AveragePrice;
-                updated = true;
-            }
+                case BfOrderState.Active:
+                    State = ExecutedSize == 0 ? BfxOrderState.OrderConfirmed : BfxOrderState.Executing;
+                    break;
 
-            if (updated)
+                case BfOrderState.Completed:
+                    State = BfxOrderState.Executed;
+                    break;
+
+                case BfOrderState.Expired:
+                    State = BfxOrderState.Expired;
+                    break;
+
+                case BfOrderState.Canceled: // GetChildOrders does not return canceled order.
+                case BfOrderState.Rejected: // GetChildOrders probably does not return failed order.
+                    throw new NotImplementedException();
+            }
+        }
+
+        // Market/Limit get from market
+        public BfxChildOrder(BfProductCode productCode, BfChildOrder order, BfPrivateExecution[] execs)
+            : this(productCode, order)
+        {
+            _executions.AddRange(execs.Select(e => new BfxExecution(e)));
+        }
+
+        // Market/Limit/Stop/StopLimit/Trail of parent order
+        public BfxChildOrder(BfParentOrderRequestParameter request, int minuteToExpire, BfTimeInForce timeInForce)
+        {
+            ProductCode = request.ProductCode;
+            OrderType = request.ConditionType;
+            Side = request.Side;
+            OrderSize = request.Size;
+            if (OrderType == BfOrderType.Limit || OrderType == BfOrderType.StopLimit)
             {
-                NotifyOrderChanged();
+                OrderPrice = request.Price;
             }
-
-            return updated;
-        }
-
-        public virtual void OnOrderConfirmed(BfChildOrderElement order)
-        {
-            OrderElement = order;
-        }
-
-        // bF API erase canceled order from the list.
-        public void OnOrderCanceled()
-        {
-            OrderState = BfOrderState.Canceled;
-            CancelSize = Size;
-            NotifyOrderChanged();
-        }
-
-        public void OnOrderExpired(DateTime time)
-        {
-            OrderState = BfOrderState.Expired;
-            CancelSize = Size;
-            ExpireDate = time;
-            NotifyOrderChanged();
-        }
-
-        public virtual bool OnExecutionReceived(BfExecution exec)
-        {
-            _wsExecs.Add(exec);
-            var executedSize = _wsExecs.Sum(e => e.Size);
-            if (executedSize > ExecutedSize)
+            if (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit)
             {
-                ExecutedSize = executedSize;
-                // ToDo:
-                // marketから価格の精度を取得して丸める。
-                //
-                ExecutedPrice = _wsExecs.Sum(e => e.Price * e.Size) / executedSize;
-                if (ExecutedSize == Size)
-                {
-                    OrderState = BfOrderState.Completed;
-                }
-
-                NotifyOrderChanged();
-                return true;
+                TriggerPrice = request.TriggerPrice;
             }
-            return false;
+            if (OrderType == BfOrderType.Trail)
+            {
+                TrailOffset = request.Offset;
+            }
+            MinuteToExpire = minuteToExpire;
+            TimeInForce = timeInForce;
+
+            // ChildOrderAcceptanceId will be update when update order event
         }
 
-        public virtual bool OnExecutionConfirmed(BfPrivateExecution[] execs)
+        // Market/Limit/Stop/StopLimit/Trail of parent order from market
+        public BfxChildOrder(BfProductCode productCode, BfParentOrderDetail detail, int childIndex)
         {
-            if (execs.Length == 0)
-            {
-                return false;
-            }
+            ProductCode = productCode;
 
-            _restExecs.AddRange(execs);
-            var executedSize = execs.Sum(e => e.Size);
-            if (executedSize > ExecutedSize)
+            // Parameter
+            var element = detail.Parameters[childIndex];
+            OrderType = element.ConditionType;
+            Side = element.Side;
+            OrderSize = element.Size;
+            if (OrderType == BfOrderType.Limit || OrderType == BfOrderType.StopLimit)
             {
-                ExecutedSize = executedSize;
-                // ToDo:
-                // marketから価格の精度を取得して丸める。
-                //
-                ExecutedPrice = execs.Sum(e => e.Price * e.Size) / executedSize;
-                if (ExecutedSize == Size)
-                {
-                    OrderState = BfOrderState.Completed;
-                }
-                NotifyOrderChanged();
-                return true;
+                OrderPrice = element.Price;
             }
-            return false;
+            if (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit)
+            {
+                TriggerPrice = element.TriggerPrice;    // TriggetPrice is present in ParentOrderParameter only
+            }
+            if (OrderType == BfOrderType.Trail)
+            {
+                TrailOffset = element.Offset;           // Offset is present in ParentOrderParameter only
+            }
+            MinuteToExpire = detail.MinuteToExpire;
         }
+        #endregion Constructors
+
+        #region Update orders
+        public void Update(BfChildOrderResponse response)
+        {
+            ChildOrderAcceptanceId = response.ChildOrderAcceptanceId;
+        }
+
+        public void Update(BfPrivateExecution[] execs)
+        {
+            _executions.AddRange(execs.Select(e => new BfxExecution(e)));
+        }
+
+        public void Update(BfChildOrderEvent coe)
+        {
+            ChildOrderAcceptanceId = coe.ChildOrderAcceptanceId;
+            ChildOrderId = coe.ChildOrderId;
+
+            switch (coe.EventType)
+            {
+                case BfOrderEventType.Order:
+                    OrderDate = coe.EventDate; // Is it same value to real ordered date ?
+                    ExpireDate = coe.ExpireDate;
+                    break;
+
+                case BfOrderEventType.Execution:
+                    Debug.Assert(OrderType == coe.ChildOrderType);
+                    _executions.Add(new BfxExecution(coe));
+                    if (!ExecutedSize.HasValue)
+                    {
+                        ExecutedSize = coe.Size;
+                    }
+                    else
+                    {
+                        ExecutedSize += ExecutedSize.Value;
+                    }
+                    break;
+
+                case BfOrderEventType.Cancel:
+                    break;
+
+                case BfOrderEventType.Complete:
+                    break;
+
+                // Probably parent order only
+                case BfOrderEventType.Trigger:
+                    break;
+            }
+        }
+
+        public void Update(BfParentOrderEvent poe)
+        {
+            switch (poe.EventType)
+            {
+                case BfOrderEventType.Trigger:
+                    ChildOrderAcceptanceId = poe.ChildOrderAcceptanceId;
+                    break;
+            }
+        }
+        #endregion Update orders
     }
 }

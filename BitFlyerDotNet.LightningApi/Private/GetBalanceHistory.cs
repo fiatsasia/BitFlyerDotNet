@@ -52,6 +52,15 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// List Balance History
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetBalanceHistory">Online help</see>
+        /// </summary>
+        /// <param name="currencyCode"></param>
+        /// <param name="count"></param>
+        /// <param name="before"></param>
+        /// <param name="after"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfBalanceHistory[]> GetBalanceHistory(BfCurrencyCode currencyCode, int count = 0, int before = 0, int after = 0)
         {
             var query = string.Format("currency_code={0}{1}{2}{3}",

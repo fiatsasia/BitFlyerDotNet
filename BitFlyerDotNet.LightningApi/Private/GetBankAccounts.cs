@@ -33,6 +33,11 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Get Summary of Bank Accounts
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetBankAccounts">Online help</see>
+        /// </summary>
+        /// <returns></returns>
         public BitFlyerResponse<BfBankAccount[]> GetBankAccounts()
         {
             return PrivateGet<BfBankAccount[]>(nameof(GetBankAccounts));

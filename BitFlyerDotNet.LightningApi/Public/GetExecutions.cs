@@ -50,6 +50,15 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Execution History
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetExecutions">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="count"></param>
+        /// <param name="before"></param>
+        /// <param name="after"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfExecution[]> GetExecutions(BfProductCode productCode, int count = 0, int before = 0, int after = 0)
         {
             var query = string.Format("product_code={0}{1}{2}{3}",

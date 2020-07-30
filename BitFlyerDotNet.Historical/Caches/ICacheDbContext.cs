@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Financial.Extensions;
+using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical

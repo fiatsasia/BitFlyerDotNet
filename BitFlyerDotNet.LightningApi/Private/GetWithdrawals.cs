@@ -34,6 +34,15 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Get Deposit Cancellation History
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetWithdrawals">Online help</see>
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <param name="count"></param>
+        /// <param name="before"></param>
+        /// <param name="after"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfWithdrawal[]> GetWithdrawals(string messageId = null, int count = 0, int before = 0, int after = 0)
         {
             var query = string.Format("{0}{1}{2}{3}",

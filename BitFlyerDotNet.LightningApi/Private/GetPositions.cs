@@ -48,6 +48,12 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Get Open Interest Summary
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetPositions">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfPosition[]> GetPositions(BfProductCode productCode)
         {
             return PrivateGet<BfPosition[]>(nameof(GetPositions), "product_code=" + productCode.ToEnumString());

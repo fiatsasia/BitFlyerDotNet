@@ -9,30 +9,37 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
+    // Event sequences:
+    // 1. Market price order
+    //  Order -> Execution
+    // 2. Market price order (partiall executed)
+    //  Order -> Execution -> Execution
+    // 3. FOK and killed immediately
+    //  Order -> Expire
+    /// <summary>
+    /// Send parent order <see href="https://scrapbox.io/BitFlyerDotNet/ChildOrderEvent"/>
+    /// </summary>
     public class BfChildOrderEvent
     {
         [JsonProperty(PropertyName = "product_code")]
-        public string ProductCode { get; private set; }
+        public string ProductCode { get; private set; }             // EventType = All
 
         [JsonProperty(PropertyName = "child_order_id")]
-        public string ChildOrderId { get; private set; }
+        public string ChildOrderId { get; private set; }            // EventType = All
 
         [JsonProperty(PropertyName = "child_order_acceptance_id")]
-        public string ChildOrderAcceptanceId { get; private set; }
+        public string ChildOrderAcceptanceId { get; private set; }  // EventType = All
 
         [JsonProperty(PropertyName = "event_date")]
-        public DateTime EventDate { get; private set; }
+        public DateTime EventDate { get; private set; }             // EventType = All
 
         [JsonProperty(PropertyName = "event_type")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfOrderEventType EventType { get; private set; }
+        public BfOrderEventType EventType { get; private set; }     // EventType = All
 
         [JsonProperty(PropertyName = "child_order_type")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfOrderType ChildOrderType { get; private set; }     // EventType = Order
-
-        [JsonProperty(PropertyName = "expire_date")]
-        public DateTime ExpireDate { get; private set; }            // EventType = Order, Execution
 
         [JsonProperty(PropertyName = "reason")]
         public string OrderFailedReason { get; private set; }       // EventType = OrderFailed
@@ -45,10 +52,13 @@ namespace BitFlyerDotNet.LightningApi
         public BfTradeSide Side { get; private set; }               // EventType = Order, Execution
 
         [JsonProperty(PropertyName = "price")]
-        public decimal Price { get; private set; }                  // EventType = Order, Execution
+        public decimal Price { get; private set; }                  // EventType = Order(Order price), Execution(Executed price)
 
         [JsonProperty(PropertyName = "size")]
-        public decimal Size { get; private set; }                   // EventType = Order, Execution
+        public decimal Size { get; private set; }                   // EventType = Order(Order size), Execution(Executed size)
+
+        [JsonProperty(PropertyName = "expire_date")]
+        public DateTime ExpireDate { get; private set; }            // EventType = Order, (missing) when Execution https://bf-lightning-api.readme.io/docs/realtime-child-order-events tells a wrong
 
         [JsonProperty(PropertyName = "commission")]
         public decimal Commission { get; private set; }             // EventType = Execution

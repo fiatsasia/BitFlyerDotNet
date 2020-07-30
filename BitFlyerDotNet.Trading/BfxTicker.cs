@@ -6,12 +6,11 @@
 using System;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
-using Financial.Extensions;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfTradingMarketTicker
+    public class BfxTicker
     {
         public BfOrderBook OrderBook { get; private set; }
         public decimal BestBidPrice => OrderBook?.BestBidPrice ?? decimal.Zero;
@@ -30,7 +29,7 @@ namespace BitFlyerDotNet.Trading
         public double SFDDifference { get; private set; }
         public double SFDRate { get; private set; }
 
-        public BfTradingMarketTicker(BfOrderBook orderBook, BfTicker nativeTicker, BfMarketHealth health, TimeSpan serverTimeDiff)
+        public BfxTicker(BfOrderBook orderBook, BfTicker nativeTicker, BfMarketHealth health, TimeSpan serverTimeDiff)
         {
             OrderBook = orderBook;
             NativeTicker = nativeTicker;
@@ -39,7 +38,7 @@ namespace BitFlyerDotNet.Trading
             UpdatedTime = DateTime.UtcNow + serverTimeDiff;
         }
 
-        public BfTradingMarketTicker(BfOrderBook orderBook, BfTicker fxbtcTicker, BfTicker btcTicker, BfMarketHealth health, TimeSpan serverTimeDiff)
+        public BfxTicker(BfOrderBook orderBook, BfTicker fxbtcTicker, BfTicker btcTicker, BfMarketHealth health, TimeSpan serverTimeDiff)
         {
             OrderBook = orderBook;
             NativeTicker = fxbtcTicker;
@@ -82,28 +81,28 @@ namespace BitFlyerDotNet.Trading
         }
     }
 
-    public class BfTradingMarketTickerSource : IObservable<BfTradingMarketTicker>
+    public class BfxTickerSource : IObservable<BfxTicker>
     {
         CompositeDisposable _disposables = new CompositeDisposable();
-        IObservable<BfTradingMarketTicker> _source;
+        IObservable<BfxTicker> _source;
 
         DateTime _lastServerTime = DateTime.MinValue;
         TimeSpan _serverTimeDiff = TimeSpan.Zero;
 
-        public BfTradingMarketTickerSource(BfTradingMarket market)
+        public BfxTickerSource(BfxMarket market)
         {
             // If market is FX_BTC_JPY, get BTC_JPT ticker to calculate realtime SFD rate.
             if (market.ProductCode == BfProductCode.FXBTCJPY)
             {
-                _source = Observable.Create<BfTradingMarketTicker>(observer =>
+                _source = Observable.Create<BfxTicker>(observer =>
                 {
                     // Merge order book, native ticker and market health(REST)
-                    market.GetOrderBookSource().CombineLatest
+                    market.RealtimeSource.GetOrderBookSource(market.ProductCode).CombineLatest
                     (
                         market.RealtimeSource.GetTickerSource(BfProductCode.FXBTCJPY),
                         market.RealtimeSource.GetTickerSource(BfProductCode.BTCJPY),
                         Observable.Timer(TimeSpan.Zero, market.Config.MarketStatusConfirmInterval)
-                            .Select(count => market.Client.GetMarketHealth(BfProductCode.FXBTCJPY).GetResult()),
+                            .Select(count => market.Client.GetMarketHealth(BfProductCode.FXBTCJPY).GetMessage()),
                         (ob, fxbtcjpy, btcjpy, health) =>
                         {
                             if (fxbtcjpy.Timestamp > _lastServerTime)
@@ -111,7 +110,7 @@ namespace BitFlyerDotNet.Trading
                                 _lastServerTime = fxbtcjpy.Timestamp;
                                 _serverTimeDiff = _lastServerTime - DateTime.UtcNow;
                             }
-                            return new BfTradingMarketTicker(ob, fxbtcjpy, btcjpy, health, _serverTimeDiff);
+                            return new BfxTicker(ob, fxbtcjpy, btcjpy, health, _serverTimeDiff);
                         }
                     )
                     .Subscribe(observer).AddTo(_disposables);
@@ -121,14 +120,14 @@ namespace BitFlyerDotNet.Trading
             }
             else
             {
-                _source = Observable.Create<BfTradingMarketTicker>(observer =>
+                _source = Observable.Create<BfxTicker>(observer =>
                 {
                     // Merge order book, native ticker and market health(REST)
-                    market.GetOrderBookSource().CombineLatest
+                    market.RealtimeSource.GetOrderBookSource(market.ProductCode).CombineLatest
                     (
                         market.RealtimeSource.GetTickerSource(market.ProductCode),
                         Observable.Timer(TimeSpan.Zero, market.Config.MarketStatusConfirmInterval)
-                            .Select(count => market.Client.GetMarketHealth(market.ProductCode).GetResult()),
+                            .Select(count => market.Client.GetMarketHealth(market.ProductCode).GetMessage()),
                         (ob, nt, health) =>
                         {
                             if (nt.Timestamp > _lastServerTime)
@@ -136,7 +135,7 @@ namespace BitFlyerDotNet.Trading
                                 _lastServerTime = nt.Timestamp;
                                 _serverTimeDiff = _lastServerTime - DateTime.UtcNow;
                             }
-                            return new BfTradingMarketTicker(ob, nt, health, _serverTimeDiff);
+                            return new BfxTicker(ob, nt, health, _serverTimeDiff);
                         }
                     )
                     .Subscribe(observer).AddTo(_disposables);
@@ -146,7 +145,7 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        public IDisposable Subscribe(IObserver<BfTradingMarketTicker> observer)
+        public IDisposable Subscribe(IObserver<BfxTicker> observer)
         {
             return _source.Subscribe(observer);
         }

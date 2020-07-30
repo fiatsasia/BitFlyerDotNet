@@ -5,7 +5,7 @@
 
 using System;
 using System.Collections.Generic;
-using Financial.Extensions;
+using Financier;
 
 namespace BitFlyerDotNet.Historical
 {

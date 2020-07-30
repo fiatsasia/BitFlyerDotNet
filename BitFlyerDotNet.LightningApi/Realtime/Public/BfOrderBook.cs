@@ -5,11 +5,10 @@
 
 using System.Linq;
 using System.Collections.Generic;
-using Financial.Extensions.Trading;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfOrderBook : IOrderBook<decimal, decimal>
+    public class BfOrderBook
     {
         SortedDictionary<decimal, decimal> _bids { get; } = new SortedDictionary<decimal, decimal>();
         SortedDictionary<decimal, decimal> _asks { get; } = new SortedDictionary<decimal, decimal>();

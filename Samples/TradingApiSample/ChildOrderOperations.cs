@@ -5,13 +5,12 @@
 
 using System;
 using BitFlyerDotNet.LightningApi;
-using BitFlyerDotNet.Trading;
 
-namespace TradingApiSample
+namespace OrderApiSample
 {
     partial class Program
     {
-        static BfxChildOrderTransaction _childOrderTransaction;
+        static string _childOrderAcceptanceId;
 
         static void ChildOrderMain()
         {
@@ -60,90 +59,59 @@ namespace TradingApiSample
             }
         }
 
+        // Selling order too high price by best ask price. Order will be on order book but not execute.
         static void PlaceUnexecutableChildOrder(bool fok = false, bool mte = false)
         {
-            // Selling order too high price by best ask price. Order will be on order book but not execute.
-            BfChildOrderRequest order = null;
+            BfChildOrderRequest request;
             if (fok)
             {
-                order = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m, timeInForce: BfTimeInForce.FOK);
+                request = BfChildOrderRequest.LimitPrice(ProductCode, BfTradeSide.Sell, _orderSize, _ticker.BestAsk + 50000m, timeInForce: BfTimeInForce.FOK);
             }
             else if (mte)
             {
-                order = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m, minuteToExpire: TimeSpan.FromMinutes(1));
+                request = BfChildOrderRequest.LimitPrice(ProductCode, BfTradeSide.Sell, _orderSize, _ticker.BestAsk + 50000.0m, minuteToExpire: _minuteToExpire);
             }
             else
             {
-                order = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m);
+                request = BfChildOrderRequest.LimitPrice(ProductCode, BfTradeSide.Sell, _orderSize, _ticker.BestAsk + 50000m);
             }
 
-            var transaction = _market.PlaceOrder(order).Result;
-            if (transaction != null)
+            var resp = _client.SendChildOrder(request);
+            if (!resp.IsErrorOrEmpty)
             {
-                _childOrderTransaction = transaction;
-                Console.WriteLine("Order accepted.");
-            }
-            else
-            {
-                Console.WriteLine("Order failed.");
+                _childOrderAcceptanceId = resp.GetMessage().ChildOrderAcceptanceId;
             }
         }
 
         static void CancelChildOrder()
         {
-            if (_childOrderTransaction == null || !_childOrderTransaction.IsCancelable())
+            var resp = _client.CancelChildOrder(ProductCode, childOrderAcceptanceId: _childOrderAcceptanceId);
+            if (!resp.IsErrorOrEmpty)
             {
-                return;
+                // Cancel order sent
             }
-
-            _childOrderTransaction.CancelOrder();
         }
 
+        // Buy by best bid price within minimum size
         static void BuyBestBidPrice()
         {
-            // Buy by best bid price within minimum size
-            var order = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Buy, _market.MinimumOrderSize, _market.BestBidPrice);
-            var transaction = _market.PlaceOrder(order).Result;
-            if (transaction != null)
+            var request = BfChildOrderRequest.LimitPrice(ProductCode, BfTradeSide.Buy, _orderSize, _ticker.BestBid);
+            var resp = _client.SendChildOrder(request);
+            if (!resp.IsErrorOrEmpty)
             {
-                _childOrderTransaction = transaction;
-                Console.WriteLine("Order accepted.");
-            }
-            else
-            {
-                Console.WriteLine("Order failed.");
+                _childOrderAcceptanceId = resp.GetMessage().ChildOrderAcceptanceId;
             }
         }
 
+        // Sell by best ask price within minimum size
         static void SellBestAskPrice()
         {
-            // Sell by best ask price within minimum size
-            var order = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice);
-            var transaction = _market.PlaceOrder(order).Result;
-            if (transaction != null)
+            var request = BfChildOrderRequest.LimitPrice(ProductCode, BfTradeSide.Sell, _orderSize, _ticker.BestAsk);
+            var resp = _client.SendChildOrder(request);
+            if (!resp.IsErrorOrEmpty)
             {
-                _childOrderTransaction = transaction;
-                Console.WriteLine("Order accepted.");
+                _childOrderAcceptanceId = resp.GetMessage().ChildOrderAcceptanceId;
             }
-            else
-            {
-                Console.WriteLine("Order failed.");
-            }
-        }
-
-        static void OnChildOrderTransactionStateChanged(object sender, BfxChildOrderTransactionEventArgs args)
-        {
-            Console.WriteLine($"{args.Time.ToString("yyyy-MM-dd HH:mm:ss.fff")} Child order state changed to {args.Kind}");
-
-            if (args.Kind == BfxOrderTransactionEventKind.OrderFailed)
-            {
-                Console.WriteLine(args.State.OrderFailedException.Message);
-            }
-        }
-
-        static void OnChildOrderChanged(object sender, BfxChildOrderEventArgs args)
-        {
-            Console.WriteLine($"{_market.ServerTime.ToString("yyyy-MM-dd HH:mm:ss.fff")} Child order changed to {args.OrderState}");
         }
     }
 }

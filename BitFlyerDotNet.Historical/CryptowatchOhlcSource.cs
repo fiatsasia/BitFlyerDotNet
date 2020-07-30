@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Financial.Extensions;
+using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical

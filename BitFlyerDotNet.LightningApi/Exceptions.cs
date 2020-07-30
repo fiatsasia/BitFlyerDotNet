@@ -9,9 +9,13 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BitFlyerDotNetException : ApplicationException
     {
-        public BitFlyerDotNetException(string message)
-            : base(message)
-        {
-        }
+        public BitFlyerDotNetException() : base() { }
+        public BitFlyerDotNetException(string message) : base(message) { }
+    }
+
+    public class BitFlyerUnauthorizedException : BitFlyerDotNetException
+    {
+        public BitFlyerUnauthorizedException() : base() { }
+        public BitFlyerUnauthorizedException(string message) : base(message) { }
     }
 }

@@ -8,13 +8,15 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
     <Authors>Fiats Inc.</Authors>
     <Product>BitFlyerDotNet</Product>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>2.1.7</Version>
+    <Version>2.1.8</Version>
     <Description>BitFlyerDotNet is a bitFlyer Lightning API wrapper and libraries.</Description>
     <Copyright>Copyright (c) 2017-2020 Fiats Inc. All rights reserved.</Copyright>
     <PackageProjectUrl>https://github.com/fiatsasia/BitFlyerDotNet</PackageProjectUrl>

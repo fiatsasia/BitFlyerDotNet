@@ -7,7 +7,7 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
-using Financial.Extensions;
+using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical

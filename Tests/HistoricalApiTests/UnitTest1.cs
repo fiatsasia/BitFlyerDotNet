@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Financial.Extensions;
+using Financier;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Historical;
 

@@ -9,7 +9,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
-using Financial.Extensions;
+using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical

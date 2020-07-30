@@ -9,7 +9,7 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfChildOrderElement
+    public class BfParentOrderParameter
     {
         [JsonProperty(PropertyName = "product_code")]
         public string ProductCode { get; private set; }
@@ -51,11 +51,19 @@ namespace BitFlyerDotNet.LightningApi
         public int MinuteToExpire { get; private set; }
 
         [JsonProperty(PropertyName = "parameters")]
-        public BfChildOrderElement[] ChildOrders { get; private set; }
+        public BfParentOrderParameter[] Parameters { get; private set; }
     }
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Get Parent Order Details
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetParentOrder">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="parentOrderId"></param>
+        /// <param name="parentOrderAcceptanceId"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfParentOrderDetail> GetParentOrder(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
         {
             if (string.IsNullOrEmpty(parentOrderId) && string.IsNullOrEmpty(parentOrderAcceptanceId))

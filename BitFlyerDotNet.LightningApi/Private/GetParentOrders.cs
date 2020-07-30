@@ -65,6 +65,16 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// List Parent Orders
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetParentOrders">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="orderState"></param>
+        /// <param name="count"></param>
+        /// <param name="before"></param>
+        /// <param name="after"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfParentOrder[]> GetParentOrders(BfProductCode productCode, BfOrderState orderState = BfOrderState.Unknown, int count = 0, int before = 0, int after = 0)
         {
             var query = string.Format("product_code={0}{1}{2}{3}",

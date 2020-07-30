@@ -5,15 +5,22 @@
 
 using System;
 using System.Reactive.Linq;
+using System.Reactive.Disposables;
 
 namespace BitFlyerDotNet.LightningApi
 {
     internal class BfOrderBookStream : IObservable<BfOrderBook>
     {
+        public readonly string ProductCode;
         IObservable<BfOrderBook> _source;
+        IDisposable _disposable;
+        Action<BfOrderBookStream> _dispose;
 
-        public BfOrderBookStream(RealtimeBoardSnapshotSource snapshot, RealtimeBoardSource update)
+        public BfOrderBookStream(string productCode, RealtimeBoardSnapshotSource snapshot, RealtimeBoardSource update, Action<BfOrderBookStream> dispose)
         {
+            ProductCode = productCode;
+            _dispose = dispose;
+
             _source = Observable.Create<BfOrderBook>(observer =>
             {
                 var orderBook = new BfOrderBook();
@@ -42,7 +49,14 @@ namespace BitFlyerDotNet.LightningApi
 
         public IDisposable Subscribe(IObserver<BfOrderBook> observer)
         {
-            return _source.Subscribe(observer);
+            _disposable = _source.Subscribe(observer);
+            return Disposable.Create(OnDispose);
+        }
+
+        void OnDispose()
+        {
+            _disposable.Dispose();
+            _dispose(this);
         }
     }
 }

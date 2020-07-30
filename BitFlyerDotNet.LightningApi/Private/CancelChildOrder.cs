@@ -11,33 +11,44 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BfCancelChildOrderRequest
     {
-        [JsonProperty(PropertyName = "product_code")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfProductCode ProductCode { get; set; }
 
-        [JsonProperty(PropertyName = "child_order_id")]
         public string ChildOrderId { get; set; }
         public bool ShouldSerializeChildOrderId() { return !string.IsNullOrEmpty(ChildOrderId); }
 
-        [JsonProperty(PropertyName = "child_order_acceptance_id")]
         public string ChildOrderAcceptanceId { get; set; }
         public bool ShouldSerializeChildOrderAcceptanceId() { return !string.IsNullOrEmpty(ChildOrderAcceptanceId); }
     }
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Cancel Order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelChildOrder">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public BitFlyerResponse<string> CancelChildOrder(BfCancelChildOrderRequest request)
         {
-            return PrivatePost<string>(nameof(CancelChildOrder), JsonConvert.SerializeObject(request, _jsonSettings));
-        }
-
-        public BitFlyerResponse<string> CancelChildOrder(BfProductCode productCode, string childOrderId = null, string childOrderAcceptanceId = null)
-        {
-            if (string.IsNullOrEmpty(childOrderId) && string.IsNullOrEmpty(childOrderAcceptanceId))
+            if (string.IsNullOrEmpty(request.ChildOrderId) && string.IsNullOrEmpty(request.ChildOrderAcceptanceId))
             {
                 throw new ArgumentException();
             }
 
+            return PrivatePost<string>(nameof(CancelChildOrder), request);
+        }
+
+        /// <summary>
+        /// Cancel Order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelChildOrder">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="childOrderId"></param>
+        /// <param name="childOrderAcceptanceId"></param>
+        /// <returns></returns>
+        public BitFlyerResponse<string> CancelChildOrder(BfProductCode productCode, string childOrderId = null, string childOrderAcceptanceId = null)
+        {
             return CancelChildOrder(new BfCancelChildOrderRequest
             {
                 ProductCode = productCode,

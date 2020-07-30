@@ -4,7 +4,7 @@
 //
 
 using System;
-using Financial.Extensions;
+using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical

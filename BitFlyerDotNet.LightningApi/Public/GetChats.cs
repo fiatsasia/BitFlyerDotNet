@@ -22,34 +22,67 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Chat (Japan)
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChats">Online help</see>
+        /// </summary>
+        /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChats()
         {
             return Get<BfChat[]>(nameof(GetChats));
         }
 
+        /// <summary>
+        /// Chat (Japan)
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChats">Online help</see>
+        /// </summary>
+        /// <param name="fromDate"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChats(DateTime fromDate)
         {
             return Get<BfChat[]>(nameof(GetChats), "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
         }
 
+        /// <summary>
+        /// Chat (U.S.)
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChats">Online help</see>
+        /// </summary>
+        /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChatsUsa()
         {
-            return Get<BfChat[]>(nameof(GetChats) + _usaMarket);
+            return Get<BfChat[]>(nameof(GetChats) + UsaMarket);
         }
 
+        /// <summary>
+        /// Chat (U.S.)
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChats">Online help</see>
+        /// </summary>
+        /// <param name="fromDate"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChatsUsa(DateTime fromDate)
         {
-            return Get<BfChat[]>(nameof(GetChats) + _usaMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
+            return Get<BfChat[]>(nameof(GetChats) + UsaMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
         }
 
+        /// <summary>
+        /// Chat (E.U.)
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChats">Online help</see>
+        /// </summary>
+        /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChatsEu()
         {
-            return Get<BfChat[]>(nameof(GetChats) + _euMarket);
+            return Get<BfChat[]>(nameof(GetChats) + EuMarket);
         }
 
+        /// <summary>
+        /// Chat (E.U.)
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChats">Online help</see>
+        /// </summary>
+        /// <param name="fromDate"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChatsEu(DateTime fromDate)
         {
-            return Get<BfChat[]>(nameof(GetChats) + _euMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
+            return Get<BfChat[]>(nameof(GetChats) + EuMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
         }
     }
 }

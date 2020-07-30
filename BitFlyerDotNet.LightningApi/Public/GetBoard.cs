@@ -30,6 +30,12 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Order Book
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetBoard">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfBoard> GetBoard(BfProductCode productCode)
         {
             return Get<BfBoard>(nameof(GetBoard), "product_code=" + productCode.ToEnumString());

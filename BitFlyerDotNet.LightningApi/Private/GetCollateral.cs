@@ -22,6 +22,10 @@ namespace BitFlyerDotNet.LightningApi
         public decimal KeepRate { get; private set; }
     }
 
+    /// <summary>
+    /// Get Margin Status
+    /// <see href="https://scrapbox.io/BitFlyerDotNet/GetCollateral">Online help</see>
+    /// </summary>
     public partial class BitFlyerClient
     {
         public BitFlyerResponse<BfCollateral> GetCollateral()

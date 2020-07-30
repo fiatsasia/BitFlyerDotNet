@@ -23,6 +23,11 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Get Account Asset Balance
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetBalance">Online help</see>
+        /// </summary>
+        /// <returns></returns>
         public BitFlyerResponse<BfBalance[]> GetBalance()
         {
             return PrivateGet<BfBalance[]>(nameof(GetBalance));

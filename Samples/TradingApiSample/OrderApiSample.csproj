@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BitFlyerDotNet.Trading\BitFlyerDotNet.Trading.csproj" />
+    <ProjectReference Include="..\..\BitFlyerDotNet.LightningApi\BitFlyerDotNet.LightningApi.csproj" />
   </ItemGroup>
 
 </Project>

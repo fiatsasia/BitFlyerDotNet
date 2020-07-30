@@ -6,82 +6,92 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Xml.Linq;
 using System.Reactive.Disposables;
+using System.Xml.Linq;
+using System.Diagnostics;
+using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
-using BitFlyerDotNet.Trading;
 
-namespace TradingApiSample
+namespace OrderApiSample
 {
     partial class Program
     {
         static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
         static CompositeDisposable _disposables = new CompositeDisposable();
+        static ConsoleTraceListener _listener;
 
         const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
-        static BfTradingAccount _account;
-        static BfTradingMarket _market;
-        static BfxOrderFactory _orderFactory;
+        static BitFlyerClient _client;
+        static RealtimeSourceFactory _factory;
+        static BfTicker _ticker;
+
+        static decimal _orderSize = ProductCode.MinimumOrderSize();
+        static int _minuteToExpire = 1;
 
         // Pass key and secret from arguments.
         static void Main(string[] args)
         {
-            Trace.Listeners.Add(new ConsoleTraceListener());
+            _listener = new ConsoleTraceListener();
 
             // Set API ket and secret
-            _account = new BfTradingAccount();
             if (args.Length > 0)
             {
                 LoadRunsettings(args[0]);
-                _account.Login(Properties["ApiKey"], Properties["ApiSecret"]);
+                var key = Properties["ApiKey"];
+                var secret = Properties["ApiSecret"];
+                _client = new BitFlyerClient(key, secret);
+                _factory = new RealtimeSourceFactory(key, secret);
             }
             else
             {
                 Console.Write("API Key   :"); var key = Console.ReadLine();
                 Console.Write("API Secret:"); var secret = Console.ReadLine();
-                if (!string.IsNullOrEmpty(key))
+                if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(key))
                 {
-                    _account.Login(key, secret);
+                    Console.WriteLine("API key and secret are required.");
+                    Console.ReadLine();
+                    return;
                 }
-                else
-                {
-                    _account.Initialize();
-                }
+                _client = new BitFlyerClient(key, secret);
+                _factory = new RealtimeSourceFactory(key, secret);
             }
+            _factory.MessageReceived += OnRealtimeMessageReceived;
 
-            // Register event handlers
-            _market = _account.GetMarket(ProductCode);
-            _market.ChildOrderTransactionStateChanged += OnChildOrderTransactionStateChanged;
-            _market.ChildOrderChanged += OnChildOrderChanged;
-            _market.ParentOrderTransactionStateChanged += OnParentOrderTransactionStateChanged;
-            _market.ParentOrderChanged += OnParentOrderChanged;
-            _market.TickerChanged += OnTickerChanged;
-            _market.PositionChanged += OnPositionChanged;
+            _disposables.Add(_client);
+            _disposables.Add(_factory);
 
-            _orderFactory = new BfxOrderFactory(_market);
+            _client.ConfirmCallback = ConfirmOrder;
+
+            _disposables.Add(_factory.GetTickerSource(ProductCode).Subscribe(OnTickerChanged));
+            _disposables.Add(_factory.GetChildOrderEventsSource().Subscribe(OnChildOrderEvent));
+            _disposables.Add(_factory.GetParentOrderEventsSource().Subscribe(OnParentOrderEvent));
 
             while (true)
             {
                 Console.WriteLine("======== Main menu");
-                Console.WriteLine("1) Open market sample");
-                Console.WriteLine("C) Child order samples");
-                Console.WriteLine("P) Parent order samples");
+                Console.WriteLine("C)hild order samples");
+                Console.WriteLine("P)arent order samples");
+                Console.WriteLine("E)nable debug dump");
+                Console.WriteLine("D)isable debug dump");
                 Console.WriteLine("");
                 Console.WriteLine("Q) Quit sample");
 
                 switch (GetCh())
                 {
-                    case '1':
-                        OpenMarket();
-                        break;
-
                     case 'C':
                         ChildOrderMain();
                         break;
 
                     case 'P':
                         ParentOrderMain();
+                        break;
+
+                    case 'E':
+                        Trace.Listeners.Add(_listener); // Debug.Trace output to console
+                        break;
+
+                    case 'D':
+                        Trace.Listeners.Remove(_listener);
                         break;
 
                     case 'Q':
@@ -95,28 +105,46 @@ namespace TradingApiSample
         static void LoadRunsettings(string filePath)
         {
             var xml = XDocument.Load(filePath);
-            var n = xml.Element("RunSettings").Elements("TestRunParameters");
             Properties = xml.Element("RunSettings").Element("TestRunParameters").Elements("Parameter").ToDictionary(e => e.Attribute("name").Value, e => e.Attribute("value").Value);
         }
 
-        // When open market, it starts market ticker publishing.
-        static void OpenMarket()
+        static bool ConfirmOrder(string apiName, string json)
         {
-            var config = new BfTradingMarketConfiguration();
-            config.PositionUpdateInterval = TimeSpan.FromSeconds(5);
-            _market.Open(config);
+            Console.WriteLine($"{apiName}:");
+            var jobject = JsonConvert.DeserializeObject(json);
+            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+
+            return false;
         }
 
-        // Called when position is added or removed.
-        static void OnPositionChanged(BfPosition pos, bool addedOrRemoved)
+        static void OnRealtimeMessageReceived(string json, object message)
         {
+            switch (message)
+            {
+                case BfTicker _:
+                    return;
+
+                default:
+                    break;
+            }
+
+            Console.WriteLine($"{message.GetType().Name}:");
+            var jobject = JsonConvert.DeserializeObject(json);
+            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
         // Trading ticker is streaming from order book source and support SFD rate if market is FX_BTC_JPY
-        static void OnTickerChanged(BfTradingMarketTicker ticker)
+        static void OnTickerChanged(BfTicker ticker)
         {
-            //Console.WriteLine($"{ticker.UpdatedTime.ToString("yyyy-MM-dd HH:mm:ss.fff")} {ticker.ServerTimeDiff}");
-            //Console.WriteLine($"B:{ticker.BestBidPrice} A:{ticker.BestAskPrice} LTP:{ticker.LastTradedPrice} H:{ticker.MarketStatus} SFD:{ticker.SFDDifference}");
+            _ticker = ticker;
+        }
+
+        static void OnChildOrderEvent(BfChildOrderEvent evt)
+        {
+        }
+
+        static void OnParentOrderEvent(BfParentOrderEvent evt)
+        {
         }
     }
 }

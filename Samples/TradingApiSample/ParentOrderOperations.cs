@@ -5,23 +5,23 @@
 
 using System;
 using BitFlyerDotNet.LightningApi;
-using BitFlyerDotNet.Trading;
 
-namespace TradingApiSample
+namespace OrderApiSample
 {
     partial class Program
     {
-        static BfxParentOrderTransaction _parentOrderTransaction;
+        static string _parentOrderAcceptanceId;
 
         static void ParentOrderMain()
         {
             while (true)
             {
                 Console.WriteLine("======== Parent order operations");
-                Console.WriteLine("1) Place unexecutable parent order (IFD)");
-                Console.WriteLine("2) Place unexecutable parent order (OCO)");
-                Console.WriteLine("3) Place unexecutable parent order (mitnutes to expire)");
-                Console.WriteLine("4) Place unexecutable parent order (FOK)");
+                Console.WriteLine("1) Stop          2) Stop Limit");
+                Console.WriteLine("3) Trail         4) IFD");
+                Console.WriteLine("5) OCO");
+                Console.WriteLine("6) IFD (mitnutes to expire)");
+                Console.WriteLine("7) IFD (FOK)");
                 Console.WriteLine("");
                 Console.WriteLine("C) Cancel parent order");
                 Console.WriteLine("");
@@ -30,18 +30,30 @@ namespace TradingApiSample
                 switch (GetCh())
                 {
                     case '1':
-                        PlaceUnexecutableParentOrder(BfOrderType.IFD);
+                        PlaceUnexecutableParentOrder(BfOrderType.Stop);
                         break;
 
                     case '2':
-                        PlaceUnexecutableParentOrder(BfOrderType.OCO);
+                        PlaceUnexecutableParentOrder(BfOrderType.StopLimit);
                         break;
 
                     case '3':
-                        PlaceUnexecutableParentOrder(BfOrderType.IFD, mte: true);
+                        PlaceUnexecutableParentOrder(BfOrderType.Trail);
                         break;
 
                     case '4':
+                        PlaceUnexecutableParentOrder(BfOrderType.IFD);
+                        break;
+
+                    case '5':
+                        PlaceUnexecutableParentOrder(BfOrderType.OCO);
+                        break;
+
+                    case '6':
+                        PlaceUnexecutableParentOrder(BfOrderType.IFD, mte: true);
+                        break;
+
+                    case '7':
                         PlaceUnexecutableParentOrder(BfOrderType.IFD, fok: true);
                         break;
 
@@ -57,25 +69,37 @@ namespace TradingApiSample
 
         static void PlaceUnexecutableParentOrder(BfOrderType orderType, bool mte = false, bool fok = false)
         {
-            var childOrder1 = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Sell, _market.MinimumOrderSize, _market.BestAskPrice + 50000.0m);
-            var childOrder2 = _orderFactory.CreateLimitPriceOrder(BfTradeSide.Buy, _market.MinimumOrderSize, _market.BestBidPrice - 50000.0m);
+            var childOrder1 = BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, _orderSize, _ticker.BestAsk + 50000.0m);
+            var childOrder2 = BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Buy, _orderSize, _ticker.BestBid - 50000.0m);
             BfParentOrderRequest request;
             switch (orderType)
             {
+                case BfOrderType.Stop:
+                    request = BfParentOrderRequest.Stop(ProductCode, BfTradeSide.Buy, _orderSize, _ticker.BestAsk + 50000m);
+                    break;
+
+                case BfOrderType.StopLimit:
+                    request = BfParentOrderRequest.StopLimit(ProductCode, BfTradeSide.Buy, _orderSize, _ticker.BestAsk + 40000m, _ticker.BestAsk + 50000m);
+                    break;
+
+                case BfOrderType.Trail:
+                    request = BfParentOrderRequest.Trail(ProductCode, BfTradeSide.Buy, _orderSize, 50000m);
+                    break;
+
                 case BfOrderType.IFD:
-                    request = _orderFactory.CreateIFD(
-                        childOrder1.ToParameter(),
-                        childOrder2.ToParameter(),
-                        mte ? TimeSpan.FromMinutes(1) : default(TimeSpan),
+                    request = BfParentOrderRequest.IFD(
+                        childOrder1,
+                        childOrder2,
+                        mte ? _minuteToExpire : 0,
                         fok ? BfTimeInForce.FOK : BfTimeInForce.NotSpecified
                     );
                     break;
 
                 case BfOrderType.OCO:
-                    request = _orderFactory.CreateOCO(
-                        childOrder1.ToParameter(),
-                        childOrder2.ToParameter(),
-                        mte ? TimeSpan.FromMinutes(1) : default(TimeSpan),
+                    request = BfParentOrderRequest.OCO(
+                        childOrder1,
+                        childOrder2,
+                        mte ? _minuteToExpire : 0,
                         fok ? BfTimeInForce.FOK : BfTimeInForce.NotSpecified
                     );
                     break;
@@ -84,45 +108,20 @@ namespace TradingApiSample
                     throw new AggregateException();
             }
 
-            var transaction = _market.PlaceOrder(request).Result;
-            if (transaction != null)
+            var resp = _client.SendParentOrder(request);
+            if (!resp.IsErrorOrEmpty)
             {
-                _parentOrderTransaction = transaction;
-                Console.WriteLine("Order accepted.");
+                _parentOrderAcceptanceId = resp.GetMessage().ParentOrderAcceptanceId;
             }
-            else
-            {
-                Console.WriteLine("Order failed.");
-            }
-        }
-
-        static void PlaceParentOrder()
-        {
         }
 
         static void CancelParentOrder()
         {
-            if (_parentOrderTransaction == null || !_parentOrderTransaction.IsCancelable())
+            var resp = _client.CancelParentOrder(ProductCode, parentOrderAcceptanceId: _parentOrderAcceptanceId);
+            if (!resp.IsErrorOrEmpty)
             {
-                return;
+                // Cancel order sent
             }
-
-            _parentOrderTransaction.CancelOrder();
-        }
-
-        static void OnParentOrderTransactionStateChanged(object sender, BfxParentOrderTransactionEventArgs args)
-        {
-            Console.WriteLine($"{args.Time.ToString("yyyy-MM-dd HH:mm:ss.fff")} Parent order state changed to {args.Kind}");
-
-            if (args.Kind == BfxOrderTransactionEventKind.OrderFailed)
-            {
-                Console.WriteLine(args.State.OrderFailedException.Message);
-            }
-        }
-
-        static void OnParentOrderChanged(object sender, BfxParentOrderEventArgs args)
-        {
-            Console.WriteLine($"{_market.ServerTime.ToString("yyyy-MM-dd HH:mm:ss.fff")} Parent order changed to {args.ParentOrderState}");
         }
     }
 }

@@ -3,24 +3,32 @@
 // https://www.fiats.asia/
 //
 
-using Newtonsoft.Json;
+using System;
 using Newtonsoft.Json.Linq;
-using WebSocket4Net;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    internal sealed class RealtimeTickerSource : RealtimeSourceBase<BfTicker>
+    class RealtimeTickerSource : RealtimeSourceBase<BfTicker>
     {
-        const string ChannelFormat = "lightning_ticker_{0}";
+        public readonly string ProductCode;
+        Action<RealtimeTickerSource> _dispose;
 
-        internal RealtimeTickerSource(WebSocketChannels channels, JsonSerializerSettings jsonSettings, string productCode)
-            : base(channels, ChannelFormat, jsonSettings, productCode)
+        internal RealtimeTickerSource(WebSocketChannels channels, string productCode, Action<RealtimeTickerSource> dispose)
+            : base(channels, $"lightning_ticker_{productCode}")
         {
+            ProductCode = productCode;
+            _dispose = dispose;
         }
 
-        public override void OnSubscribe(JToken token)
+        protected override void OnDispose()
         {
-            OnNext(token);
+            base.OnDispose();
+            _dispose(this);
+        }
+
+        public override object OnMessageReceived(JToken token)
+        {
+            return DispatchMessage(token);
         }
     }
 }

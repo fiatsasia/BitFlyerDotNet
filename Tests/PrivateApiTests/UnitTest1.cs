@@ -4,8 +4,8 @@
 //
 
 using System;
-using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
 
 namespace PrivateApiTests
@@ -17,17 +17,13 @@ namespace PrivateApiTests
         static string _key;
         static string _secret;
         BitFlyerClient _client;
+        string _requestJson;
+        bool _enableSendOrder = false;
 
-        string _parentOrderAcceptanceId;
-        string _parentOrderId;
-        string _childOrderAcceptanceId;
-        string _childOrderId;
-
-        [TestInitialize]
-        public void Initialize()
-        {
-            _client = new BitFlyerClient(_key, _secret);
-        }
+        const string DummyChildOrderAcceptanceId = "JRF20200725-070531-482865";
+        const string DummyChildOrderId = "JFX20200725-070531-213381F";
+        const string DummyParentOrderAcceptanceId = "JRF20200725-073619-718102";
+        const string DummyParentOrderId = "JCP20200725-073619-498654";
 
         [ClassInitialize]
         public static void Classinitialize(TestContext context)
@@ -40,503 +36,430 @@ namespace PrivateApiTests
             _secret = context.Properties["ApiSecret"].ToString();
         }
 
-        bool CheckUnauthorized(IBitFlyerResponse resp)
+        [TestInitialize]
+        public void Initialize()
         {
-            if (resp.IsUnauthorized)
+            _client = new BitFlyerClient(_key, _secret);
+            _client.ConfirmCallback = (apiName, json) =>
             {
-                Console.WriteLine("API is Unauthorized by user settings.");
-            }
-            return resp.IsUnauthorized;
+                var jobject = JsonConvert.DeserializeObject(json);
+                json = JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings);
+                _requestJson = $"{apiName}: " + Environment.NewLine + json;
+
+                return _enableSendOrder; // Disable send order to market
+            };
         }
 
-        void DumpJson(IBitFlyerResponse resp)
+        string GetRequestJson()
         {
-            Console.WriteLine("JSON:");
-            Console.WriteLine(resp.Json);
-            Console.WriteLine("--------------------------------");
+            return _requestJson;
+        }
+
+        void EnableSendOrder(bool enable)
+        {
+            _enableSendOrder = enable;
+        }
+
+        void DumpResponse(IBitFlyerResponse resp)
+        {
+            var jobject = JsonConvert.DeserializeObject(resp.Json);
+            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
         [TestMethod]
         public void CancelAllChildOrders()
         {
-            var resp = _client.CancelAllChildOrders(_productCode);
-            if (CheckUnauthorized(resp))
+            EnableSendOrder(true);
+            try
             {
-                return;
+                var resp = _client.CancelAllChildOrders(_productCode);
+                Assert.IsTrue(resp.IsOk); // Response message is nothing
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
         }
 
         [TestMethod]
-        [Ignore]
         public void CancelChildOrderByAcceptanceId()
         {
-            var resp = _client.CancelChildOrder(_productCode, childOrderAcceptanceId: _childOrderAcceptanceId);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
+            EnableSendOrder(false);
+            var resp = _client.CancelChildOrder(_productCode, childOrderAcceptanceId: DummyChildOrderAcceptanceId);
+            Assert.IsTrue(resp.IsOk);
+            Console.WriteLine(GetRequestJson());
         }
 
         [TestMethod]
-        [Ignore]
         public void CancelChildOrderById()
         {
-            var resp = _client.CancelChildOrder(_productCode, childOrderId: _childOrderId);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
+            EnableSendOrder(false);
+            var resp = _client.CancelChildOrder(_productCode, childOrderId: DummyChildOrderId);
+            Assert.IsTrue(resp.IsOk); // Order force canceled
+            Console.WriteLine(GetRequestJson());
         }
 
-        //
-        // Order testing needs test server environment
-        //
         [TestMethod]
-        [Ignore]
         public void CancelParentOrderByAcceptanceId()
         {
-            var resp = _client.CancelParentOrder(_productCode, parentOrderAcceptanceId: _parentOrderAcceptanceId);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
+            EnableSendOrder(false);
+            var resp = _client.CancelParentOrder(_productCode, parentOrderAcceptanceId: DummyParentOrderAcceptanceId);
+            Assert.IsTrue(resp.IsOk); // Order force canceled
+            Console.WriteLine(GetRequestJson());
         }
 
         [TestMethod]
-        [Ignore]
         public void CancelParentOrderById()
         {
-            var resp = _client.CancelParentOrder(_productCode, parentOrderId: _parentOrderId);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
+            EnableSendOrder(false);
+            var resp = _client.CancelParentOrder(_productCode, parentOrderId: DummyParentOrderId);
+            Assert.IsTrue(resp.IsOk); // Order force canceled
+            Console.WriteLine(GetRequestJson());
         }
 
         [TestMethod]
         public void GetBalance()
         {
-            var resp = _client.GetBalance();
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetBalance();
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsErrorOrEmpty);
-            DumpJson(resp);
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
+        }
 
-            var balances = resp.GetResult();
-            balances.ForEach(balance => { Console.WriteLine("{0} {1} {2}", balance.CurrencyCode, balance.Available, balance.Amount); });
+        [TestMethod]
+        public void GetBalanceHistory()
+        {
+            try
+            {
+                var resp = _client.GetBalanceHistory(BfCurrencyCode.JPY, count: 5);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
+            }
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
         }
 
         [TestMethod]
         public void GetBankAccounts()
         {
-            var resp = _client.GetBankAccounts();
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetBankAccounts();
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsErrorOrEmpty);
-            DumpJson(resp);
-
-            var bankAccounts = resp.GetResult();
-            bankAccounts.ForEach(ba =>
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine("{0} {1} {2} {3} {4} {5} {6}",
-                    ba.AccountId,
-                    ba.IsVerified,
-                    ba.BankName,
-                    ba.BranchName,
-                    ba.AccountType,
-                    ba.AccountNumber,
-                    ba.AccountName
-                );
-            });
+            }
         }
 
         [TestMethod]
         public void GetChildOrders()
         {
-            var resp = _client.GetChildOrders(_productCode);
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetChildOrders(_productCode, count: 5);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var orders = resp.GetResult();
-            orders.ForEach(order =>
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine($"{order.Side} {order.ChildOrderType} {order.ChildOrderState} {order.ChildOrderAcceptanceId} {order.ExpireDate}");
-            });
+            }
+        }
+
+        [TestMethod]
+        public void GetChildCanceledOrders()
+        {
+            try
+            {
+                var resp = _client.GetChildOrders(_productCode, BfOrderState.Canceled, count: 5);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
+            }
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
+        }
+
+        [TestMethod]
+        public void GetChildExpiredOrders()
+        {
+            try
+            {
+                var resp = _client.GetChildOrders(_productCode, BfOrderState.Expired, count: 5);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
+            }
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
+        }
+
+        [TestMethod]
+        public void GetChildRejectedOrders()
+        {
+            try
+            {
+                var resp = _client.GetChildOrders(_productCode, BfOrderState.Rejected, count: 5);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
+            }
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
         }
 
         [TestMethod]
         public void GetCoinAddresses()
         {
-            var resp = _client.GetCoinAddresses();
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetCoinAddresses();
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var coinAddresses = resp.GetResult();
-            coinAddresses.ForEach(add => { Console.WriteLine("{0} {1} {2}", add.AddressType, add.CurrencyCode, add.Address); });
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
         }
 
         [TestMethod]
         public void GetCoinIns()
         {
-            var resp = _client.GetCoinIns();
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetCoinIns();
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var coinins = resp.GetResult();
-            coinins.ForEach(coinin =>
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7}",
-                    coinin.PagingId,
-                    coinin.OrderId,
-                    coinin.CurrencyCode,
-                    coinin.Amount,
-                    coinin.CoinAddress,
-                    coinin.TransactionHash,
-                    coinin.TransactionStatus,
-                    coinin.EventDate.ToLocalTime()
-                );
-            });
+            }
         }
 
         [TestMethod]
         public void GetCoinOuts()
         {
-            var resp = _client.GetCoinOuts();
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetCoinOuts();
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var coinouts = resp.GetResult();
-            coinouts.ForEach(coinout =>
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7} {8} {9}",
-                    coinout.PagingId,
-                    coinout.OrderId,
-                    coinout.CurrencyCode,
-                    coinout.Amount,
-                    coinout.CoinAddress,
-                    coinout.TransactionHash,
-                    coinout.Fee,
-                    coinout.AdditionalFee,
-                    coinout.TransactionStatus,
-                    coinout.EventDate.ToLocalTime()
-                );
-            });
+            }
         }
 
         [TestMethod]
         public void GetCollateral()
         {
-            var resp = _client.GetCollateral();
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetCollateral();
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var coll = resp.GetResult();
-            Console.WriteLine("{0} {1} {2} {3}",
-                coll.Collateral,
-                coll.OpenPositionProfitAndLoss,
-                coll.RequireCollateral,
-                coll.KeepRate
-            );
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
         }
 
-        //
-        // GetCollateralHistory always returns "InternalServerError" since end of 2017.
-        //
         [TestMethod]
-        [Ignore]
         public void GetCollateralHistory()
         {
-            var resp = _client.GetCollateralHistory();
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetCollateralHistory(count: 5);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var colls = resp.GetResult();
-            colls.ForEach(coll =>
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine("{0} {1} {2} {3} {4} {5}",
-                    coll.PagingId,
-                    coll.CurrencyCode,
-                    coll.Change,
-                    coll.Amount,
-                    coll.ReasonCode,
-                    coll.Date
-                );
-            });
+            }
         }
 
         [TestMethod]
         public void GetDeposits()
         {
-            var resp = _client.GetDeposits();
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetDeposits();
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var deposits = resp.GetResult();
-            deposits.ForEach(deposit =>
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine("{0} {1} {2} {3} {4} {5}",
-                    deposit.PagingId,
-                    deposit.OrderId,
-                    deposit.CurrencyCode,
-                    deposit.Amount,
-                    deposit.Status,
-                    deposit.EventDate
-                );
-            });
+            }
         }
 
-        //
-        // Order testing needs test server environment
-        //
         [TestMethod]
         [Ignore]
         public void GetParentOrder()
         {
-            var resp = _client.GetParentOrder(_productCode, parentOrderAcceptanceId: _parentOrderAcceptanceId);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
+            var resp = _client.GetParentOrder(_productCode, parentOrderAcceptanceId: DummyParentOrderAcceptanceId);
+            Assert.IsFalse(resp.IsUnauthorized, "Permission denied");
+            Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+            DumpResponse(resp);
+            var message = resp.GetMessage();
         }
 
+        // 2020/07/27
+        // GetParentOrders API is too slow or sometimes returns "Internal Server Error" if target period contains old order.
+        // Probably old parent orders are stored another slow database.
         [TestMethod]
+        [Timeout(30000)] // 30 seconds
         public void GetParentOrders()
         {
-            var resp = _client.GetParentOrders(_productCode);
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetParentOrders(_productCode, count: 1);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var orders = resp.GetResult();
-            orders.ForEach(order =>
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine("{0} {1} {2} {3} {4} {5}",
-                    order.ParentOrderAcceptanceId,
-                    order.ParentOrderId,
-                    order.Side,
-                    order.ParentOrderType,
-                    order.ParentOrderState,
-                    order.ParentOrderDate.ToLocalTime()
-                );
-            });
+            }
         }
 
         [TestMethod]
         public void GetActiveParentOrders()
         {
-            var resp = _client.GetParentOrders(_productCode, BfOrderState.Active);
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetParentOrders(_productCode, BfOrderState.Active);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var orders = resp.GetResult();
-            orders.ForEach(order =>
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine("{0} {1} {2} {3} {4} {5}",
-                    order.ParentOrderAcceptanceId,
-                    order.ParentOrderId,
-                    order.Side,
-                    order.ParentOrderType,
-                    order.ParentOrderState,
-                    order.ParentOrderDate.ToLocalTime()
-                );
-            });
+            }
         }
 
         [TestMethod]
         public void GetPermissions()
         {
-            var resp = _client.GetPermissions();
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetPermissions();
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var permissions = resp.GetResult();
-            permissions.ForEach(permisson => { Console.WriteLine(permisson); });
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
         }
 
         [TestMethod]
         public void GetPositions()
         {
-            var resp = _client.GetPositions(_productCode);
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetPositions(_productCode);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var positions = resp.GetResult();
-            positions.ForEach(pos =>
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine("{0} [1} {2} {3}",
-                    pos.Side,
-                    pos.Price,
-                    pos.Size,
-                    pos.SwapPointAccumulate,
-                    pos.OpenDate.ToLocalTime(),
-                    pos.SwapPointAccumulate,
-                    pos.SwapForDifference
-                );
-            });
+            }
         }
 
         [TestMethod]
         public void GetExecutions()
         {
-            var resp = _client.GetPrivateExecutions(_productCode, count: 5);
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
+                //var resp = _client.GetChildOrders(_productCode, BfOrderState.Completed, count: 1);
 
-            var execs = resp.GetResult();
-            execs.ForEach(exec =>
+                var resp = _client.GetPrivateExecutions(_productCode, count: 5);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
+            }
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine("{0} {1} {2} {3} {4}",
-                    exec.Side,
-                    exec.Price,
-                    exec.Size,
-                    exec.Commission,
-                    exec.ExecutedTime.ToLocalTime()
-                );
-            });
+            }
         }
 
         [TestMethod]
         public void GetTradingCommission()
         {
-            var resp = _client.GetTradingCommission(_productCode);
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetTradingCommission(_productCode);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsErrorOrEmpty);
-            DumpJson(resp);
-
-            var commission = resp.GetResult();
-            Console.WriteLine("Commission rate = {0}", commission.CommissionRate);
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
         }
 
         [TestMethod]
         public void GetWithdrawals()
         {
-            var resp = _client.GetWithdrawals();
-            if (CheckUnauthorized(resp))
+            try
             {
-                return;
+                var resp = _client.GetWithdrawals();
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                DumpResponse(resp);
+                var message = resp.GetMessage();
             }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
-
-            var withdrawls = resp.GetResult();
-            withdrawls.ForEach(withdrawl =>
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
-                Console.WriteLine("{0} {1} {2} {3} {4} {5}",
-                    withdrawl.PagingId,
-                    withdrawl.OrderId,
-                    withdrawl.CurrencyCode,
-                    withdrawl.Amount,
-                    withdrawl.Status,
-                    withdrawl.EventDate.ToLocalTime()
-                );
-            });
+            }
         }
 
         [TestMethod]
-        [Ignore]
         public void SendChildOrder()
         {
-            var resp = _client.SendChildOrder(_productCode, BfOrderType.Limit, BfTradeSide.Buy, 0.0m, 0.0m);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
+            EnableSendOrder(false);
+            var resp = _client.SendChildOrder(_productCode, BfOrderType.Limit, BfTradeSide.Buy, 100.0m, 1.0m);
+            Assert.IsTrue(resp.IsOk);
+            Console.WriteLine(GetRequestJson());
         }
 
         [TestMethod]
-        [Ignore]
         public void SendParentOrder()
         {
-            var order = new BfParentOrderRequest();
+            EnableSendOrder(false);
+            var order = BfParentOrderRequest.Stop(_productCode, BfTradeSide.Sell, 0.1m, 100000m);
             var resp = _client.SendParentOrder(order);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
+            Assert.IsTrue(resp.IsOk);
+            Console.WriteLine(GetRequestJson());
         }
 
         [TestMethod]
-        [Ignore]
         public void Withdraw()
         {
-            var request = new BfWithdrawRequest();
-            var resp = _client.Withdraw(request);
-            if (CheckUnauthorized(resp))
-            {
-                return;
-            }
-            Assert.IsFalse(resp.IsError);
-            DumpJson(resp);
+            EnableSendOrder(false);
+            var resp = _client.Withdraw(BfCurrencyCode.JPY, bankAccountId: 1234, amount: 12000m, authenticationCode: "012345");
+            Assert.IsFalse(resp.IsUnauthorized, "Permission denied");
+            Assert.IsTrue(resp.IsOk);
+            Console.WriteLine(GetRequestJson());
         }
     }
 }

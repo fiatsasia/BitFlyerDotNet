@@ -6,132 +6,138 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxParentOrder
+    public class BfxParentOrder : IBfxConditionalOrder, IBfxSimpleOrder
     {
-        public BfParentOrderRequest Request { get; private set; }
-        BfParentOrderResponse _response;
-        public BfParentOrderDetail OrderDetail { get; private set; }
-        BfParentOrder _order;
+        // Common IBfxOrder fields
+        public BfProductCode ProductCode { get; private set; }
+        public BfOrderType OrderType { get; private set; }
+        public DateTime? OrderDate { get; private set; }
+        public DateTime? ExpireDate { get; private set; }
+        public string? AcceptanceId => ParentOrderAcceptanceId;
+        public string? Id => ParentOrderId;
 
-        public bool IsSimpleOrder => Request.OrderMethod == BfOrderType.Simple;
+        // Simple order fields
+        public BfTradeSide Side { get; private set; }
+        public decimal OrderSize { get; private set; }
+        public decimal? OrderPrice { get; private set; }
 
-        public int PagingId => OrderDetail.PagingId;
-        public string OrderId => OrderDetail.ParentOrderId;
+        public decimal? TriggerPrice { get; private set; }
+        public decimal? TrailOffset { get; private set; }
 
-        public BfProductCode ProductCode { get; }
-        public BfOrderType OrderType => Request.OrderMethod;
-        public BfTradeSide Side => _order.Side; // include BuySell
+        public decimal? ExecutedSize { get; private set; }
+        public decimal? ExecutedPrice { get; private set; }
+        public decimal? Commission { get; private set; }
+        public decimal? SfdCollectedAmount { get; private set; }
 
-        public string AcceptanceId { get; private set; } = string.Empty;
-        public BfOrderState ParentOrderState { get; private set; } = BfOrderState.Unknown;
-        public DateTime ExpireDate { get; private set; }
+        // Parent order fields
+        public string? ParentOrderAcceptanceId { get; private set; }
+        public string? ParentOrderId { get; private set; }
+        public IBfxChildOrder[] Children => _childOrders.ToArray();
 
-        public List<BfxChildOrder> ChildOrders { get; private set; } = new List<BfxChildOrder>();
 
-        public event EventHandler<BfxChildOrderEventArgs> ChildOrderChanged
-        {
-            add { ChildOrders.ForEach(e => { e.OrderChanged += value; }); }
-            remove { ChildOrders.ForEach(e => { e.OrderChanged -= value; }); }
-        }
+        public int MinuteToExpire => throw new NotImplementedException();
+        public BfTimeInForce TimeInForce => throw new NotImplementedException();
+        public string? ChildOrderAcceptanceId => throw new NotImplementedException();
+        public string? ChildOrderId => throw new NotImplementedException();
+        public BfxOrderState State => throw new NotImplementedException();
+        public string? OrderFailedReason => throw new NotImplementedException();
 
-        public event EventHandler<BfxParentOrderEventArgs> ParentOrderChanged;
+        // Request
+        public BfParentOrderRequest? Request { get; }
+
+        // Response
+
+        public IBfxExecution[] Executions => _childOrders[0].Executions;
+
+        List<BfxChildOrder> _childOrders;
 
         public BfxParentOrder(BfParentOrderRequest request)
         {
             Request = request;
-            ProductCode = request.Paremters[0].ProductCode;
 
-            foreach (var childRequest in request.Paremters)
+            ProductCode = request.Parameters[0].ProductCode;
+            if (request.OrderMethod == BfOrderType.Simple)
             {
-                ChildOrders.Add(new BfxChildOrder(childRequest));
+                OrderType = request.Parameters[0].ConditionType;
+                Side = request.Parameters[0].Side;
+                OrderSize = request.Parameters[0].Size;
+                if (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit)
+                {
+                    OrderPrice = request.Parameters[0].Price;
+                    TriggerPrice = request.Parameters[0].TriggerPrice;
+                }
+                if (OrderType == BfOrderType.Trail)
+                {
+                    TrailOffset = request.Parameters[0].Offset;
+                }
+            }
+            else
+            {
+                OrderType = request.OrderMethod;
+            }
+
+            _childOrders = new List<BfxChildOrder>(request.Parameters.Select(e => new BfxChildOrder(e, request.MinuteToExpire, request.TimeInForce)));
+        }
+
+        public BfxParentOrder(BfProductCode productCode, BfParentOrder order, BfParentOrderDetail detail)
+        {
+            ProductCode = productCode;
+            if (detail.OrderMethod == BfOrderType.Simple)
+            {
+                OrderType = detail.Parameters[0].ConditionType;
+                Side = detail.Parameters[0].Side;
+                OrderSize = detail.Parameters[0].Size;
+                if (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit)
+                {
+                    OrderPrice = detail.Parameters[0].Price;
+                    TriggerPrice = detail.Parameters[0].TriggerPrice;
+                }
+                if (OrderType == BfOrderType.Trail)
+                {
+                    TrailOffset = detail.Parameters[0].Offset;
+                }
+            }
+            else
+            {
+                OrderType = detail.OrderMethod;
+            }
+
+
+            ParentOrderAcceptanceId = order.ParentOrderAcceptanceId;
+            ParentOrderId = detail.ParentOrderId;
+
+            _childOrders = new List<BfxChildOrder>();
+            for (int childIndex = 0; childIndex < detail.Parameters.Length; childIndex++)
+            {
+                _childOrders.Add(new BfxChildOrder(ProductCode, detail, childIndex));
             }
         }
 
-        void NotifyOrderChanged()
+        public void Update(BfParentOrderResponse response)
         {
-            try
-            {
-                ParentOrderChanged?.Invoke(this, new BfxParentOrderEventArgs(this));
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Exception occuted in user handler. {ex.Message}");
-            }
+            ParentOrderAcceptanceId = response.ParentOrderAcceptanceId;
         }
 
-        public virtual void OnParentOrderAccepted(BfParentOrderResponse response)
+        public void Update(BfParentOrderEvent poe)
         {
-            _response = response;
-            AcceptanceId = response.ParentOrderAcceptanceId;
-            ParentOrderState = BfOrderState.Active;
-            NotifyOrderChanged();
-        }
+            _childOrders[poe.ChildOrderIndex - 1].Update(poe);
 
-        public virtual void OnParentOrderConfirmed(BfParentOrderDetail order)
-        {
-            OrderDetail = order;
-            order.ChildOrders.Zip(ChildOrders, (o2, o1) => (o1, o2))
-                .ForEach(e => e.o1.OnOrderConfirmed(e.o2));
-        }
-
-        public virtual void OnParentOrderConfirmed(BfParentOrder order)
-        {
-            _order = order;
-            var updated = false;
-            if (ParentOrderState != _order.ParentOrderState)
+            switch (poe.EventType)
             {
-                updated = true;
-            }
-            ParentOrderState = _order.ParentOrderState;
-            ExpireDate = _order.ExpireDate;
-
-            if (updated)
-            {
-                NotifyOrderChanged();
+                case BfOrderEventType.Order:
+                    OrderDate = poe.EventDate; // Is it same value to real ordered date ?
+                    ExpireDate = poe.ExpireDate;
+                    break;
             }
         }
 
-        public void OnOrderCanceled()
+        public void Update(BfChildOrderEvent coe)
         {
-            ParentOrderState = BfOrderState.Canceled;
-            NotifyOrderChanged();
-        }
-
-        public void OnOrderExpired(DateTime time)
-        {
-            ParentOrderState = BfOrderState.Expired;
-            ExpireDate = time;
-            NotifyOrderChanged();
-        }
-
-        public virtual void OnChildOrderConfirmed(BfChildOrder[] orders)
-        {
-            if (orders.Length == 0)
-            {
-                return;
-            }
-
-            // 1. Simple order (stop/stop limit/trailing stop)
-            // - If condition is done, order will be disptached as limit price or market price.
-            // 2. IFD
-            // - At first, condition order will be dispatched.
-            // - At be done first order, second order will be dispatched.
-            // 3. OCO
-            // - At first, both of orders will be dispatched.
-            // - At be done first or second order, other order will be canceled.
-            // 4. IFDOCO
-            // - At first, first order will be dispached.
-            // - At be done first order, second and thirnd order will be dispached at same time.
-            // - At be done second or third order, other order will be canceld.
-            for (int orderPos = 0; orderPos < orders.Length; orderPos++)
-            {
-                ChildOrders[orderPos].OnOrderConfirmed(orders[orderPos]);
-            }
+            throw new NotImplementedException();
         }
     }
 }

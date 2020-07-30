@@ -65,6 +65,19 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// List Orders
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChildOrders">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="orderState"></param>
+        /// <param name="count"></param>
+        /// <param name="before"></param>
+        /// <param name="after"></param>
+        /// <param name="childOrderId"></param>
+        /// <param name="childOrderAcceptanceId"></param>
+        /// <param name="parentOrderId"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfChildOrder[]> GetChildOrders(
             BfProductCode productCode,
             BfOrderState orderState = BfOrderState.Unknown,

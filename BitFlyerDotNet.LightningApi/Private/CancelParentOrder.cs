@@ -11,26 +11,37 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BfCancelParentOrderRequest
     {
-        [JsonProperty(PropertyName = "product_code")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfProductCode ProductCode { get; set; }
 
-        [JsonProperty(PropertyName = "parent_order_id")]
         public string ParentOrderId { get; set; }
         public bool ShouldSerializeParentOrderId() { return !string.IsNullOrEmpty(ParentOrderId); }
 
-        [JsonProperty(PropertyName = "parent_order_acceptance_id")]
         public string ParentOrderAcceptanceId { get; set; }
         public bool ShouldSerializeParentOrderAcceptanceId() { return !string.IsNullOrEmpty(ParentOrderAcceptanceId); }
     }
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Cancel parent order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelParentOrder">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public BitFlyerResponse<string> CancelParentOrder(BfCancelParentOrderRequest request)
         {
-            return PrivatePost<string>(nameof(CancelParentOrder), JsonConvert.SerializeObject(request, _jsonSettings));
+            return PrivatePost<string>(nameof(CancelParentOrder), request);
         }
 
+        /// <summary>
+        /// Cancel parent order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelParentOrder">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="parentOrderId"></param>
+        /// <param name="parentOrderAcceptanceId"></param>
+        /// <returns></returns>
         public BitFlyerResponse<string> CancelParentOrder(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
         {
             if (string.IsNullOrEmpty(parentOrderId) && string.IsNullOrEmpty(parentOrderAcceptanceId))

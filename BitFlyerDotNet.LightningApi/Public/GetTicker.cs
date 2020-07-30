@@ -45,12 +45,16 @@ namespace BitFlyerDotNet.LightningApi
 
         [JsonProperty(PropertyName = "volume_by_product")]
         public decimal VolumeByProduct { get; private set; }
-
-        public decimal MidPrice { get { return (BestAsk + BestBid) / 2.0m; } }
     }
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Ticker
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetTicker">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfTicker> GetTicker(BfProductCode productCode)
         {
             return Get<BfTicker>(nameof(GetTicker), "product_code=" + productCode.ToEnumString());

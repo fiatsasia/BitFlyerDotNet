@@ -34,6 +34,14 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Get Cash Deposits
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetDeposits">Online help</see>
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="before"></param>
+        /// <param name="after"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfDeposit[]> GetDeposits(int count = 0, int before = 0, int after = 0)
         {
             var query = string.Format("{0}{1}{2}",

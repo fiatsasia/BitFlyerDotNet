@@ -5,10 +5,11 @@
 
 using System;
 using System.Linq;
-using System.Diagnostics;
-using System.Threading;
 using System.IO;
+using System.Threading;
+using System.Diagnostics;
 using System.Runtime.Serialization;
+using System.Reactive.Disposables;
 using Newtonsoft.Json;
 
 namespace BitFlyerDotNet.LightningApi
@@ -19,8 +20,17 @@ namespace BitFlyerDotNet.LightningApi
         {
             var enumType = typeof(TEnum);
             var name = Enum.GetName(enumType, type);
-            var enumMemberAttribute = ((EnumMemberAttribute[])enumType.GetField(name).GetCustomAttributes(typeof(EnumMemberAttribute), true)).Single();
-            return enumMemberAttribute.Value;
+            var enumMemberAttribute = ((EnumMemberAttribute[])enumType.GetField(name).GetCustomAttributes(typeof(EnumMemberAttribute), true)).SingleOrDefault();
+            return enumMemberAttribute?.Value ?? type.ToString();
+        }
+    }
+
+    internal static class RxUtil
+    {
+        public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
+        {
+            disposable.Add(resource);
+            return resource;
         }
     }
 
@@ -56,7 +66,7 @@ namespace BitFlyerDotNet.LightningApi
             switch (value)
             {
                 case decimal dec:
-                    int precision = (Decimal.GetBits(dec)[3] >> 16) & 0x000000FF;
+                    int precision = (Decimal.GetBits((decimal)(double)dec)[3] >> 16) & 0xFF;
                     return precision == 0;
 
                 case double d:

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
-using Financial.Extensions;
+using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -54,7 +54,7 @@ namespace BitFlyerDotNet.Historical
                     }
                     Thread.Sleep(100);
 
-                    var elements = result.GetResult();
+                    var elements = result.GetMessage();
                     foreach (var element in elements)
                     {
                         if (_cancel.IsCancellationRequested)

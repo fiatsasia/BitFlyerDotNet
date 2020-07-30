@@ -39,6 +39,17 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// List Executions
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetPrivateExecutions">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="count"></param>
+        /// <param name="before"></param>
+        /// <param name="after"></param>
+        /// <param name="childOrderId"></param>
+        /// <param name="childOrderAcceptanceId"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfPrivateExecution[]> GetPrivateExecutions(BfProductCode productCode, int count = 0, int before = 0, int after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
         {
             var query = string.Format("product_code={0}{1}{2}{3}{4}{5}",

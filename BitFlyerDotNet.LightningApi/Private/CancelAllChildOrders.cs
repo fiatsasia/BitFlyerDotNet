@@ -10,18 +10,29 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BfCancelAllChildOrdersRequest
     {
-        [JsonProperty(PropertyName = "product_code")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfProductCode ProductCode { get; set; }
     }
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Cancel All Orders
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelAllChildOrders">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public BitFlyerResponse<string> CancelAllChildOrders(BfCancelAllChildOrdersRequest request)
         {
-            return PrivatePost<string>(nameof(CancelAllChildOrders), JsonConvert.SerializeObject(request, _jsonSettings));
+            return PrivatePost<string>(nameof(CancelAllChildOrders), request);
         }
 
+        /// <summary>
+        /// Cancel All Orders
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelAllChildOrders">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <returns></returns>
         public BitFlyerResponse<string> CancelAllChildOrders(BfProductCode productCode)
         {
             return CancelAllChildOrders(new BfCancelAllChildOrdersRequest

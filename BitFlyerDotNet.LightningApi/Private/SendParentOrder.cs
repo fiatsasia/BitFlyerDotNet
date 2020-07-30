@@ -3,66 +3,205 @@
 // https://www.fiats.asia/
 //
 
+using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfParentOrderRequestParameter : IBfChildOrderRequest
+    public class BfParentOrderRequestParameter
     {
-        [JsonProperty(PropertyName = "product_code")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfProductCode ProductCode { get; set; }
 
-        [JsonProperty(PropertyName = "condition_type")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfOrderType ConditionType { get; set; }
 
-        [JsonProperty(PropertyName = "side")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfTradeSide Side { get; set; }
 
-        [JsonProperty(PropertyName = "size")]
-        public decimal Size { get; set; }
-
-        [JsonProperty(PropertyName = "price")]
         [JsonConverter(typeof(DecimalJsonConverter))]
         public decimal Price { get; set; }
         public bool ShouldSerializePrice() { return ConditionType == BfOrderType.Limit || ConditionType == BfOrderType.StopLimit; }
 
-        [JsonProperty(PropertyName = "trigger_price")]
+        [JsonConverter(typeof(DecimalJsonConverter))]
+        public decimal Size { get; set; }
+
+        [JsonConverter(typeof(DecimalJsonConverter))]
         public decimal TriggerPrice { get; set; }
         public bool ShouldSerializeTriggerPrice() { return ConditionType == BfOrderType.Stop || ConditionType == BfOrderType.StopLimit; }
 
-        [JsonProperty(PropertyName = "offset")]
         [JsonConverter(typeof(DecimalJsonConverter))]
         public decimal Offset { get; set; }
         public bool ShouldSerializeOffset() { return ConditionType == BfOrderType.Trail; }
 
-        // BfChildOrderRequest compatibility
-        public BfOrderType OrderType => ConditionType;
+        // Message builders
+        public static BfParentOrderRequestParameter MarketPrice(BfProductCode productCode, BfTradeSide side, decimal size)
+        {
+            return new BfParentOrderRequestParameter
+            {
+                ProductCode = productCode,
+                ConditionType = BfOrderType.Market,
+                Side = side,
+                Size = size,
+            };
+        }
+
+        public static BfParentOrderRequestParameter LimitPrice(BfProductCode productCode, BfTradeSide side, decimal size, decimal price)
+        {
+            return new BfParentOrderRequestParameter
+            {
+                ProductCode = productCode,
+                ConditionType = BfOrderType.Limit,
+                Side = side,
+                Size = size,
+                Price = price,
+            };
+        }
+
+        public static BfParentOrderRequestParameter Stop(BfProductCode productCode, BfTradeSide side, decimal size, decimal triggerPrice)
+        {
+            if (size > triggerPrice)
+            {
+                throw new ArgumentException();
+            }
+
+            return new BfParentOrderRequestParameter
+            {
+                ProductCode = productCode,
+                ConditionType = BfOrderType.Stop,
+                Side = side,
+                Size = size,
+                TriggerPrice = triggerPrice,
+            };
+        }
+
+        public static BfParentOrderRequestParameter StopLimit(BfProductCode productCode, BfTradeSide side, decimal size, decimal price, decimal triggerPrice)
+        {
+            if (size > price || size > triggerPrice)
+            {
+                throw new ArgumentException();
+            }
+
+            return new BfParentOrderRequestParameter
+            {
+                ProductCode = productCode,
+                ConditionType = BfOrderType.StopLimit,
+                Side = side,
+                Size = size,
+                Price = price,
+                TriggerPrice = triggerPrice
+            };
+        }
+
+        public static BfParentOrderRequestParameter Trail(BfProductCode productCode, BfTradeSide side, decimal size, decimal offset)
+        {
+            if (size > offset)
+            {
+                throw new ArgumentException();
+            }
+
+            return new BfParentOrderRequestParameter
+            {
+                ProductCode = productCode,
+                ConditionType = BfOrderType.Trail,
+                Side = side,
+                Size = size,
+                Offset = offset,
+            };
+        }
     }
 
     public class BfParentOrderRequest
     {
-        [JsonProperty(PropertyName = "order_method")]
         [JsonConverter(typeof(StringEnumConverter))]
         public BfOrderType OrderMethod { get; set; }
 
-        [JsonProperty(PropertyName = "minute_to_expire")]
-        public int MinuteToExpire { get; set; } = BitFlyerClientConfig.MinuteToExpireDefault;
-        public bool ShouldSerializeMinuteToExpire()
-            { return MinuteToExpire != BitFlyerClientConfig.MinuteToExpireDefault && MinuteToExpire > 0; } // default = 43200 (30 days)
+        public int MinuteToExpire { get; set; }
+        public bool ShouldSerializeMinuteToExpire() { return MinuteToExpire > 0; } // default = 43200 (30 days)
 
-        [JsonProperty(PropertyName = "time_in_force")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfTimeInForce TimeInForce { get; set; } = BitFlyerClientConfig.TimeInForceDefault;
-        public bool ShouldSerializeTimeInForce()
-            { return TimeInForce != BitFlyerClientConfig.TimeInForceDefault && TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
+        public BfTimeInForce TimeInForce { get; set; }
+        public bool ShouldSerializeTimeInForce() { return TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
 
-        [JsonProperty(PropertyName = "parameters")]
-        public List<BfParentOrderRequestParameter> Paremters { get; } = new List<BfParentOrderRequestParameter>();
+        public List<BfParentOrderRequestParameter> Parameters { get; set; } = new List<BfParentOrderRequestParameter>();
+
+        // Message builders
+        public static BfParentOrderRequest Stop(BfProductCode productCode, BfTradeSide side, decimal size, decimal triggerPrice, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        {
+            return new BfParentOrderRequest
+            {
+                OrderMethod = BfOrderType.Simple,
+                MinuteToExpire = minuteToExpire,
+                TimeInForce = timeInForce,
+                Parameters = new List<BfParentOrderRequestParameter>
+                {
+                    BfParentOrderRequestParameter.Stop(productCode, side, size, triggerPrice)
+                }
+            };
+        }
+
+        public static BfParentOrderRequest StopLimit(BfProductCode productCode, BfTradeSide side, decimal size, decimal price, decimal triggerPrice, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        {
+            return new BfParentOrderRequest
+            {
+                OrderMethod = BfOrderType.Simple,
+                MinuteToExpire = minuteToExpire,
+                TimeInForce = timeInForce,
+                Parameters = new List<BfParentOrderRequestParameter>
+                {
+                    BfParentOrderRequestParameter.StopLimit(productCode, side, size, price, triggerPrice)
+                }
+            };
+        }
+
+        public static BfParentOrderRequest Trail(BfProductCode productCode, BfTradeSide side, decimal size, decimal offset, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        {
+            return new BfParentOrderRequest
+            {
+                OrderMethod = BfOrderType.Simple,
+                MinuteToExpire = minuteToExpire,
+                TimeInForce = timeInForce,
+                Parameters = new List<BfParentOrderRequestParameter>
+                {
+                    BfParentOrderRequestParameter.Trail(productCode, side, size, offset)
+                }
+            };
+        }
+
+        public static BfParentOrderRequest IFD(BfParentOrderRequestParameter first, BfParentOrderRequestParameter second, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        {
+            return new BfParentOrderRequest
+            {
+                OrderMethod = BfOrderType.IFD,
+                MinuteToExpire = minuteToExpire,
+                TimeInForce = timeInForce,
+                Parameters = new List<BfParentOrderRequestParameter> { first, second }
+            };
+        }
+
+        public static BfParentOrderRequest OCO(BfParentOrderRequestParameter first, BfParentOrderRequestParameter second, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        {
+            return new BfParentOrderRequest
+            {
+                OrderMethod = BfOrderType.OCO,
+                MinuteToExpire = minuteToExpire,
+                TimeInForce = timeInForce,
+                Parameters = new List<BfParentOrderRequestParameter> { first, second }
+            };
+        }
+
+        public static BfParentOrderRequest IFDOCO(BfParentOrderRequestParameter ifdone, BfParentOrderRequestParameter ocoFirst, BfParentOrderRequestParameter ocoSecond, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        {
+            return new BfParentOrderRequest
+            {
+                OrderMethod = BfOrderType.IFDOCO,
+                MinuteToExpire = minuteToExpire,
+                TimeInForce = timeInForce,
+                Parameters = new List<BfParentOrderRequestParameter> { ifdone, ocoFirst, ocoSecond }
+            };
+        }
     }
 
     public class BfParentOrderResponse
@@ -73,37 +212,37 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        /// <summary>
+        /// Submit New Parent Order (Special order)
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendParentOrder">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest request)
         {
-            if (request.MinuteToExpire == BitFlyerClientConfig.MinuteToExpireDefault && Config.MinuteToExpire != BitFlyerClientConfig.MinuteToExpireDefault)
+            if (!request.OrderMethod.IsOrderMethod())
+            {
+                throw new ArgumentException();
+            }
+            foreach (var childOrder in request.Parameters)
+            {
+                if (!childOrder.ConditionType.IsConditionType())
+                {
+                    throw new ArgumentException();
+                }
+            }
+
+            if (request.MinuteToExpire == 0 && Config.MinuteToExpire > 0)
             {
                 request.MinuteToExpire = Config.MinuteToExpire;
             }
 
-            if (request.TimeInForce == BitFlyerClientConfig.TimeInForceDefault && Config.TimeInForce != BitFlyerClientConfig.TimeInForceDefault)
+            if (request.TimeInForce == BfTimeInForce.NotSpecified && Config.TimeInForce != BfTimeInForce.NotSpecified)
             {
                 request.TimeInForce = Config.TimeInForce;
             }
 
-            var jsonRequest = JsonConvert.SerializeObject(request, _jsonSettings);
-            return PrivatePost<BfParentOrderResponse>(nameof(SendParentOrder), jsonRequest);
-        }
-
-        public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest request, params BfParentOrderRequestParameter[] childOrders)
-        {
-            if (request.MinuteToExpire == BitFlyerClientConfig.MinuteToExpireDefault && Config.MinuteToExpire != BitFlyerClientConfig.MinuteToExpireDefault)
-            {
-                request.MinuteToExpire = Config.MinuteToExpire;
-            }
-
-            if (request.TimeInForce == BitFlyerClientConfig.TimeInForceDefault && Config.TimeInForce != BitFlyerClientConfig.TimeInForceDefault)
-            {
-                request.TimeInForce = Config.TimeInForce;
-            }
-
-            request.Paremters.AddRange(childOrders);
-            var jsonRequest = JsonConvert.SerializeObject(request, _jsonSettings);
-            return PrivatePost<BfParentOrderResponse>(nameof(SendParentOrder), jsonRequest);
+            return PrivatePost<BfParentOrderResponse>(nameof(SendParentOrder), request);
         }
     }
 }

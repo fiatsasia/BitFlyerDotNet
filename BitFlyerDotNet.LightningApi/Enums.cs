@@ -18,6 +18,8 @@ namespace BitFlyerDotNet.LightningApi
         LTC,
         MONA,
         LSK,
+        XRP,
+        BAT,
     }
 
     public enum BfProductCode
@@ -44,6 +46,23 @@ namespace BitFlyerDotNet.LightningApi
         BTCJPYMAT3M,
         [EnumMember(Value = "ETH_JPY")]
         ETHJPY,
+    }
+
+    public static class BfProductCodeExtension
+    {
+        public static decimal MinimumOrderSize(this BfProductCode productCode)
+        {
+            switch (productCode)
+            {
+                case BfProductCode.FXBTCJPY:
+                case BfProductCode.ETHBTC:
+                case BfProductCode.BCHBTC:
+                    return 0.01m;
+
+                default:
+                    return 0.001m;
+            }
+        }
     }
 
     public enum BfMarketType
@@ -176,6 +195,24 @@ namespace BitFlyerDotNet.LightningApi
         OCO,
         [EnumMember(Value = "IFDOCO")]
         IFDOCO,
+    }
+
+    public static class BfOrderTypeExtension
+    {
+        public static bool IsOrderMethod(this BfOrderType orderType)
+        {
+            return orderType == BfOrderType.Simple || orderType == BfOrderType.IFD || orderType == BfOrderType.OCO || orderType == BfOrderType.IFDOCO;
+        }
+
+        public static bool IsChildOrder(this BfOrderType orderType)
+        {
+            return orderType == BfOrderType.Limit || orderType == BfOrderType.Market;
+        }
+
+        public static bool IsConditionType(this BfOrderType orderType)
+        {
+            return IsChildOrder(orderType) || orderType == BfOrderType.Stop || orderType == BfOrderType.StopLimit || orderType == BfOrderType.Trail;
+        }
     }
 
     public enum BfTimeInForce
