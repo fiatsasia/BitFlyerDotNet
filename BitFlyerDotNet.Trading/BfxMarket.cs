@@ -7,7 +7,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using BitFlyerDotNet.LightningApi;
@@ -31,18 +30,16 @@ namespace BitFlyerDotNet.Trading
         public IEnumerable<BfxChildOrder> ChildOrders => _childOrderTransactions.Values.Select(e => e.Order);
         public IEnumerable<BfxParentOrderTransaction> ParentOrderTransactions => _parentOrderTransactions.Values;
         public IEnumerable<BfxParentOrder> ParentOrders => _parentOrderTransactions.Values.Select(e => e.Order);
-        public IReadOnlyList<BfPosition> Positions => _positions;
 
         // Events
         public event Action<BfxTicker>? TickerChanged;
-        public event EventHandler<BfxOrderEventArgs>? OrderEvent;
+        public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionEvent;
 
         // Private properties
         CompositeDisposable _disposables = new CompositeDisposable();
         BfxAccount _account;
         ConcurrentDictionary<string, BfxChildOrderTransaction> _childOrderTransactions = new ConcurrentDictionary<string, BfxChildOrderTransaction>();
         ConcurrentDictionary<string, BfxParentOrderTransaction> _parentOrderTransactions = new ConcurrentDictionary<string, BfxParentOrderTransaction>();
-        List<BfPosition> _positions = new List<BfPosition>();
 
         public BfxMarket(BfxAccount account, BfProductCode productCode, BfxConfiguration config)
         {
@@ -65,46 +62,45 @@ namespace BitFlyerDotNet.Trading
 
         public void Open()
         {
+            StartTicker();
+            //LoadMarketInformations();
+        }
+
+        public void StartTicker()
+        {
             new BfxTickerSource(this).Subscribe(ticker =>
             {
                 Ticker = ticker;
                 TickerChanged?.Invoke(ticker);
             }).AddTo(_disposables);
+        }
 
+        public void LoadMarketInformations()
+        {
             // Load child orders
-            foreach (var child in _account.Client.GetChildOrders(ProductCode, BfOrderState.Active).GetMessage())
+            foreach (var child in _account.Client.GetChildOrders(ProductCode, BfOrderState.Active).GetContent())
             {
-                var execs = Client.GetPrivateExecutions(ProductCode, childOrderId: child.ChildOrderId).GetMessage();
+                var execs = Client.GetPrivateExecutions(ProductCode, childOrderId: child.ChildOrderId).GetContent();
                 var order = new BfxChildOrder(ProductCode, child, execs);
                 _childOrderTransactions.TryAdd(child.ChildOrderAcceptanceId, new BfxChildOrderTransaction(this, order));
             }
 
             // Load parent orders
-            foreach (var parentOrder in _account.Client.GetParentOrders(ProductCode, orderState: BfOrderState.Active).GetMessage())
+            foreach (var parentOrder in _account.Client.GetParentOrders(ProductCode, orderState: BfOrderState.Active).GetContent())
             {
-                var detail = Client.GetParentOrder(ProductCode, parentOrderId: parentOrder.ParentOrderId).GetMessage();
+                var detail = Client.GetParentOrder(ProductCode, parentOrderId: parentOrder.ParentOrderId).GetContent();
                 var xParentOrder = new BfxParentOrder(ProductCode, parentOrder, detail);
                 var parentTran = new BfxParentOrderTransaction(this, xParentOrder);
 
-                var childOrders = Client.GetChildOrders(ProductCode, parentOrderId: parentOrder.ParentOrderId).GetMessage();
+                var childOrders = Client.GetChildOrders(ProductCode, parentOrderId: parentOrder.ParentOrderId).GetContent();
                 foreach (var childOrder in childOrders)
                 {
                     var xChildOrder = new BfxChildOrder(ProductCode, childOrder);
                     var childTran = new BfxChildOrderTransaction(this, xChildOrder, parentTran);
-                    _childOrderTransactions[childOrder.ChildOrderAcceptanceId] = childTran; // overrite
+                    _childOrderTransactions[childOrder.ChildOrderAcceptanceId] = childTran; // overwrite
                 }
                 _parentOrderTransactions.TryAdd(parentOrder.ParentOrderAcceptanceId, parentTran);
             };
-
-            // Get active positions from real market
-            if (ProductCode == BfProductCode.FXBTCJPY)
-            {
-                var resp = _account.Client.GetPositions(ProductCode);
-                if (!resp.IsError)
-                {
-                    _positions = new List<BfPosition>(resp.GetMessage());
-                }
-            }
         }
 
         internal void TryOpen()
@@ -135,12 +131,12 @@ namespace BitFlyerDotNet.Trading
         {
             TryOpen();
             var trans = new BfxChildOrderTransaction(this, order);
+            trans.OrderTransactionEvent += OnChildOrderTransactionEvent;
             var id = trans.SendOrderRequest();
             if (!_childOrderTransactions.TryAdd(id, trans))
             {
                 throw new Exception();
             }
-            trans.OrderTransactionEvent += OnChildOrderTransactionEvent;
             return trans;
         }
 
@@ -161,38 +157,13 @@ namespace BitFlyerDotNet.Trading
         }
 
         // Called from ChildOrderTransaction
-        void OnChildOrderTransactionEvent(object sender, BfxChildOrderTransactionEventArgs ev)
+        void OnChildOrderTransactionEvent(object sender, BfxChildOrderTransactionEventArgs evt)
         {
             if (!(sender is BfxChildOrderTransaction tran))
             {
                 throw new ArgumentException();
             }
-
-            switch (ev.EventType)
-            {
-                case BfxOrderEventType.OrderSent:
-                    _childOrderTransactions.TryAdd(ev.ChildOrderAcceptanceId, tran);
-                    break;
-
-                case BfxOrderEventType.OrderAccepted:
-                    OrderEvent?.Invoke(this, new BfxSimpleOrderEventArgs { EventType = BfxOrderEventType.OrderAccepted, OrderEvent = ev.OrderEvent, Order = tran.Order });
-                    break;
-
-                case BfxOrderEventType.PartiallyExecuted:
-                case BfxOrderEventType.Executed:
-                    if (ProductCode == BfProductCode.FXBTCJPY)
-                    {
-                        Task.Run(() =>
-                        {
-                            var resp = _account.Client.GetPositions(ProductCode);
-                            if (!resp.IsError)
-                            {
-                                _positions = new List<BfPosition>(resp.GetMessage());
-                            }
-                        });
-                    }
-                    break;
-            }
+            OrderTransactionEvent?.Invoke(sender, evt);
         }
 #endregion Child Order
 
@@ -229,27 +200,16 @@ namespace BitFlyerDotNet.Trading
             var tran = sender as BfxParentOrderTransaction;
             switch (ev.EventType)
             {
-                case BfxOrderEventType.OrderSent:
+                case BfxOrderTransactionEventType.OrderSent:
                     // 1. _parentOrderTransactions に登録
                     break;
 
-                case BfxOrderEventType.OrderAccepted:
+                case BfxOrderTransactionEventType.Ordered:
                     // 1. クライアントに通知
                     break;
 
-                case BfxOrderEventType.PartiallyExecuted:
-                case BfxOrderEventType.Executed:
-                    if (ProductCode == BfProductCode.FXBTCJPY)
-                    {
-                        Task.Run(() =>
-                        {
-                            var resp = _account.Client.GetPositions(ProductCode);
-                            if (!resp.IsError)
-                            {
-                                _positions = new List<BfPosition>(resp.GetMessage());
-                            }
-                        });
-                    }
+                case BfxOrderTransactionEventType.PartiallyExecuted:
+                case BfxOrderTransactionEventType.Executed:
                     break;
             }
         }

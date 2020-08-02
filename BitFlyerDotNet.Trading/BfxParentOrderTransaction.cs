@@ -12,9 +12,10 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxParentOrderTransaction : IBfxOrderTransaction
+    public class BfxParentOrderTransaction : BfxOrderTransaction
     {
         public BfxParentOrder Order { get; private set; }
+        public override BfxOrderState OrderState => Order.State;
         public IReadOnlyList<BfParentOrderEvent> EventHistory => _eventHistory;
 
         // Events
@@ -31,8 +32,13 @@ namespace BitFlyerDotNet.Trading
 
         public string SendOrderRequest()
         {
-            Debug.Assert(Order.Request != null);
             DebugEx.EnterMethod();
+            if (Order.Request == null)
+            {
+                throw new BitFlyerDotNetException();
+            }
+
+            Order.Request.Parameters.ForEach(e => { e.ProductCode = _market.ProductCode; });
             try
             {
                 for (var retry = 0; retry <= _market.Config.OrderRetryMax; retry++)
@@ -41,8 +47,9 @@ namespace BitFlyerDotNet.Trading
                     var resp = _market.Client.SendParentOrder(Order.Request);
                     if (!resp.IsError)
                     {
-                        Order.Update(resp.GetMessage());
-                        return resp.GetMessage().ParentOrderAcceptanceId;
+                        Order.Update(resp.GetContent());
+                        NotifyEvent(BfxOrderTransactionEventType.OrderSent, resp);
+                        return resp.GetContent().ParentOrderAcceptanceId;
                     }
 
                     DebugEx.Trace("Trying retry...");
@@ -63,7 +70,12 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        IBitFlyerResponse SendCancelOrderRequest()
+        protected override void TryAbortSendingOrder()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override IBitFlyerResponse SendCancelOrderRequest()
         {
             if (string.IsNullOrEmpty(Order.ParentOrderAcceptanceId))
             {
@@ -116,24 +128,16 @@ namespace BitFlyerDotNet.Trading
                     break;
 
                 case BfOrderEventType.CancelFailed:
-                    // Reasonが無いが、注文執行済みと考えて良いか？また、Completeは送信されるのか？
-                    break;
-
-                case BfOrderEventType.Execution:
-                    // 分割約定の場合、Sizeは約定毎か累積か？
                     break;
 
                 case BfOrderEventType.Trigger:
-                    // Simple Order では発生しない？
-                    break;
-
-                case BfOrderEventType.Complete:
-                    // Executionと別に送信されるのか？
                     break;
 
                 case BfOrderEventType.Expire:
                     break;
 
+                case BfOrderEventType.Complete:
+                case BfOrderEventType.Execution:
                 default:
                     throw new NotSupportedException();
             }
@@ -141,9 +145,19 @@ namespace BitFlyerDotNet.Trading
             _eventHistory.Add(poe);
         }
 
-        public void OnChildOrderEvent(BfChildOrderEvent coe)
+        public override void OnChildOrderEvent(BfChildOrderEvent coe)
         {
             Order.Update(coe);
+        }
+
+        void NotifyEvent(BfxOrderTransactionEventType oet, BfChildOrderEvent coe)
+        {
+            throw new NotImplementedException();
+        }
+
+        void NotifyEvent(BfxOrderTransactionEventType oet, IBitFlyerResponse resp)
+        {
+            throw new NotImplementedException();
         }
     }
 }

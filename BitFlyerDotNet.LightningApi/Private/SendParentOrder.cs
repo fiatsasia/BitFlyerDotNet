@@ -48,7 +48,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfParentOrderRequestParameter LimitPrice(BfProductCode productCode, BfTradeSide side, decimal size, decimal price)
+        public static BfParentOrderRequestParameter LimitPrice(BfProductCode productCode, BfTradeSide side, decimal price, decimal size)
         {
             return new BfParentOrderRequestParameter
             {
@@ -60,7 +60,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfParentOrderRequestParameter Stop(BfProductCode productCode, BfTradeSide side, decimal size, decimal triggerPrice)
+        public static BfParentOrderRequestParameter Stop(BfProductCode productCode, BfTradeSide side, decimal triggerPrice, decimal size)
         {
             if (size > triggerPrice)
             {
@@ -72,12 +72,12 @@ namespace BitFlyerDotNet.LightningApi
                 ProductCode = productCode,
                 ConditionType = BfOrderType.Stop,
                 Side = side,
-                Size = size,
                 TriggerPrice = triggerPrice,
+                Size = size,
             };
         }
 
-        public static BfParentOrderRequestParameter StopLimit(BfProductCode productCode, BfTradeSide side, decimal size, decimal price, decimal triggerPrice)
+        public static BfParentOrderRequestParameter StopLimit(BfProductCode productCode, BfTradeSide side, decimal triggerPrice, decimal price, decimal size)
         {
             if (size > price || size > triggerPrice)
             {
@@ -89,13 +89,13 @@ namespace BitFlyerDotNet.LightningApi
                 ProductCode = productCode,
                 ConditionType = BfOrderType.StopLimit,
                 Side = side,
-                Size = size,
                 Price = price,
+                Size = size,
                 TriggerPrice = triggerPrice
             };
         }
 
-        public static BfParentOrderRequestParameter Trail(BfProductCode productCode, BfTradeSide side, decimal size, decimal offset)
+        public static BfParentOrderRequestParameter Trail(BfProductCode productCode, BfTradeSide side, decimal offset, decimal size)
         {
             if (size > offset)
             {
@@ -107,8 +107,8 @@ namespace BitFlyerDotNet.LightningApi
                 ProductCode = productCode,
                 ConditionType = BfOrderType.Trail,
                 Side = side,
-                Size = size,
                 Offset = offset,
+                Size = size,
             };
         }
     }
@@ -128,7 +128,7 @@ namespace BitFlyerDotNet.LightningApi
         public List<BfParentOrderRequestParameter> Parameters { get; set; } = new List<BfParentOrderRequestParameter>();
 
         // Message builders
-        public static BfParentOrderRequest Stop(BfProductCode productCode, BfTradeSide side, decimal size, decimal triggerPrice, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        public static BfParentOrderRequest Stop(BfProductCode productCode, BfTradeSide side, decimal triggerPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return new BfParentOrderRequest
             {
@@ -137,12 +137,12 @@ namespace BitFlyerDotNet.LightningApi
                 TimeInForce = timeInForce,
                 Parameters = new List<BfParentOrderRequestParameter>
                 {
-                    BfParentOrderRequestParameter.Stop(productCode, side, size, triggerPrice)
+                    BfParentOrderRequestParameter.Stop(productCode, side, triggerPrice, size)
                 }
             };
         }
 
-        public static BfParentOrderRequest StopLimit(BfProductCode productCode, BfTradeSide side, decimal size, decimal price, decimal triggerPrice, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        public static BfParentOrderRequest StopLimit(BfProductCode productCode, BfTradeSide side, decimal triggerPrice, decimal orderPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return new BfParentOrderRequest
             {
@@ -151,12 +151,12 @@ namespace BitFlyerDotNet.LightningApi
                 TimeInForce = timeInForce,
                 Parameters = new List<BfParentOrderRequestParameter>
                 {
-                    BfParentOrderRequestParameter.StopLimit(productCode, side, size, price, triggerPrice)
+                    BfParentOrderRequestParameter.StopLimit(productCode, side, triggerPrice, orderPrice, size)
                 }
             };
         }
 
-        public static BfParentOrderRequest Trail(BfProductCode productCode, BfTradeSide side, decimal size, decimal offset, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        public static BfParentOrderRequest Trail(BfProductCode productCode, BfTradeSide side, decimal offset, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return new BfParentOrderRequest
             {
@@ -165,7 +165,7 @@ namespace BitFlyerDotNet.LightningApi
                 TimeInForce = timeInForce,
                 Parameters = new List<BfParentOrderRequestParameter>
                 {
-                    BfParentOrderRequestParameter.Trail(productCode, side, size, offset)
+                    BfParentOrderRequestParameter.Trail(productCode, side, offset, size)
                 }
             };
         }

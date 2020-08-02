@@ -12,7 +12,11 @@ namespace BitFlyerDotNet.Trading
 {
     public interface IBfxOrder
     {
-        BfProductCode ProductCode { get; }
+        BfProductCode ProductCode { get; }      // 1-3- 56-8
+        BfOrderType OrderType { get; }          // 1-3- 56-8   1,5,8:ChildOrderType 3,6:ConditionType
+        BfTradeSide? Side { get; }               // 1-3- 56-8
+        decimal? OrderPrice { get; }            // 1-3- 56-8   Price
+        decimal? OrderSize { get; }              // 1-3- 56-8   Size
 
         string? AcceptanceId { get; }
         string? Id { get; }
@@ -30,7 +34,7 @@ namespace BitFlyerDotNet.Trading
         decimal? SfdCollectedAmount { get; }
     }
 
-    public interface IBfxChildOrder
+    public interface IBfxChildOrder : IBfxOrder
     {
         // 1:ChildOrderRequest
         // 2:ChildOrderRequestResponse
@@ -43,11 +47,6 @@ namespace BitFlyerDotNet.Trading
         // 9:ParentOrderEvent
 
         // Request fields
-        BfProductCode ProductCode { get; }      // 1-3- 56-8
-        BfOrderType OrderType { get; }          // 1-3- 56-8   1,5,8:ChildOrderType 3,6:ConditionType
-        BfTradeSide Side { get; }               // 1-3- 56-8
-        decimal OrderSize { get; }              // 1-3- 56-8   Size
-        decimal? OrderPrice { get; }            // 1-3- 56-8   Price
         decimal? TriggerPrice { get; }          // --3- -6--   OrderType is Stop or Stop Limit
         decimal? TrailOffset { get; }           // --3- -6--   Offset; OrderType is Trailing stop
         int MinuteToExpire { get; }             // 1--4 --7-
@@ -79,16 +78,8 @@ namespace BitFlyerDotNet.Trading
         // - 
     }
 
-    public interface IBfxParentOrder
+    public interface IBfxParentOrder : IBfxOrder
     {
-    }
-
-    public interface IBfxSimpleOrder : IBfxOrder
-    {
-    }
-
-    public interface IBfxConditionalOrder : IBfxOrder
-    {
-        IBfxChildOrder[] Children { get; }
+        IBfxOrder[] Children { get; }
     }
 }

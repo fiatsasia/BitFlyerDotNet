@@ -54,7 +54,7 @@ namespace BitFlyerDotNet.Historical
                     }
                     Thread.Sleep(100);
 
-                    var elements = result.GetMessage();
+                    var elements = result.GetContent();
                     foreach (var element in elements)
                     {
                         if (_cancel.IsCancellationRequested)

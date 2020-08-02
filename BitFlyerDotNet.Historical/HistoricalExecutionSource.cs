@@ -33,10 +33,10 @@ namespace BitFlyerDotNet.Historical
                 {
                     while (true)
                     {
-                        var result = client.GetExecutions(productCode, ReadCountMax, before, 0);
-                        if (result.IsError)
+                        var resp = client.GetExecutions(productCode, ReadCountMax, before, 0);
+                        if (resp.IsError)
                         {
-                            if (result.StatusCode == HttpStatusCode.BadRequest) // no more records
+                            if (resp.StatusCode == HttpStatusCode.BadRequest) // no more records
                             {
                                 observer.OnCompleted();
                                 return;
@@ -46,7 +46,7 @@ namespace BitFlyerDotNet.Historical
                         }
                         Thread.Sleep(ReadInterval);
 
-                        var elements = result.GetMessage();
+                        var elements = resp.GetContent();
                         foreach (var element in elements)
                         {
                             if (_cancel.IsCancellationRequested)

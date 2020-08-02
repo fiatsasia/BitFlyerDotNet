@@ -24,7 +24,7 @@ namespace BitFlyerDotNet.Trading
             Price = coe.Price;
             Size = coe.Size;
             Commission = coe.Commission;
-            SfdCollectedAmount = coe.SfdCollectedAmount;
+            SfdCollectedAmount = coe.SwapForDifference;
         }
 
         public BfxExecution(BfPrivateExecution exec)

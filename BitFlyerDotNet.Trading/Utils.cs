@@ -10,7 +10,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    internal static class RxUtil
+    internal static class RxExtensions
     {
         public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
         {
@@ -36,15 +36,6 @@ namespace BitFlyerDotNet.Trading
                 Size = child.Size,
                 Price = child.Price,
             };
-        }
-
-        public static BfParentOrderRequestParameter ToParameter(this BfParentOrderRequest parent)
-        {
-            if (parent.Parameters.Count != 1)
-            {
-                throw new ArgumentException();
-            }
-            return parent.Parameters[0];
         }
     }
 }

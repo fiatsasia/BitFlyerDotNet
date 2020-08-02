@@ -102,13 +102,13 @@ namespace BitFlyerDotNet.Trading
                         market.RealtimeSource.GetTickerSource(BfProductCode.FXBTCJPY),
                         market.RealtimeSource.GetTickerSource(BfProductCode.BTCJPY),
                         Observable.Timer(TimeSpan.Zero, market.Config.MarketStatusConfirmInterval)
-                            .Select(count => market.Client.GetMarketHealth(BfProductCode.FXBTCJPY).GetMessage()),
+                            .Select(count => market.Client.GetMarketHealth(BfProductCode.FXBTCJPY).GetContent()),
                         (ob, fxbtcjpy, btcjpy, health) =>
                         {
                             if (fxbtcjpy.Timestamp > _lastServerTime)
                             {
                                 _lastServerTime = fxbtcjpy.Timestamp;
-                                _serverTimeDiff = _lastServerTime - DateTime.UtcNow;
+                                _serverTimeDiff = fxbtcjpy.Timestamp - DateTime.UtcNow;
                             }
                             return new BfxTicker(ob, fxbtcjpy, btcjpy, health, _serverTimeDiff);
                         }
@@ -127,13 +127,13 @@ namespace BitFlyerDotNet.Trading
                     (
                         market.RealtimeSource.GetTickerSource(market.ProductCode),
                         Observable.Timer(TimeSpan.Zero, market.Config.MarketStatusConfirmInterval)
-                            .Select(count => market.Client.GetMarketHealth(market.ProductCode).GetMessage()),
+                            .Select(count => market.Client.GetMarketHealth(market.ProductCode).GetContent()),
                         (ob, nt, health) =>
                         {
                             if (nt.Timestamp > _lastServerTime)
                             {
                                 _lastServerTime = nt.Timestamp;
-                                _serverTimeDiff = _lastServerTime - DateTime.UtcNow;
+                                _serverTimeDiff = nt.Timestamp - DateTime.UtcNow;
                             }
                             return new BfxTicker(ob, nt, health, _serverTimeDiff);
                         }

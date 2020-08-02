@@ -10,20 +10,18 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxParentOrder : IBfxConditionalOrder, IBfxSimpleOrder
+    public class BfxParentOrder : IBfxParentOrder
     {
         // Common IBfxOrder fields
         public BfProductCode ProductCode { get; private set; }
         public BfOrderType OrderType { get; private set; }
+        public BfTradeSide? Side { get; private set; }
+        public decimal? OrderPrice { get; private set; }
+        public decimal? OrderSize { get; private set; }
         public DateTime? OrderDate { get; private set; }
         public DateTime? ExpireDate { get; private set; }
         public string? AcceptanceId => ParentOrderAcceptanceId;
         public string? Id => ParentOrderId;
-
-        // Simple order fields
-        public BfTradeSide Side { get; private set; }
-        public decimal OrderSize { get; private set; }
-        public decimal? OrderPrice { get; private set; }
 
         public decimal? TriggerPrice { get; private set; }
         public decimal? TrailOffset { get; private set; }
@@ -36,7 +34,7 @@ namespace BitFlyerDotNet.Trading
         // Parent order fields
         public string? ParentOrderAcceptanceId { get; private set; }
         public string? ParentOrderId { get; private set; }
-        public IBfxChildOrder[] Children => _childOrders.ToArray();
+        public IBfxOrder[] Children => _childOrders.ToArray();
 
 
         public int MinuteToExpire => throw new NotImplementedException();

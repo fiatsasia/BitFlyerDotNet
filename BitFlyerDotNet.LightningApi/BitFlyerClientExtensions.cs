@@ -14,7 +14,7 @@ namespace BitFlyerDotNet.LightningApi
         public static List<(BfProductCode ProductCode, string Symbol)> GetAvailableMarkets(this BitFlyerClient client)
         {
             var result = new List<(BfProductCode ProductCode, string Symbol)>();
-            foreach (var market in client.GetMarketsAll().SelectMany(e => e.GetMessage()))
+            foreach (var market in client.GetMarketsAll().SelectMany(e => e.GetContent()))
             {
                 if (market.ProductCode.StartsWith("BTCJPY"))
                 {

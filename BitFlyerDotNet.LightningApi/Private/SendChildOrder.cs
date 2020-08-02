@@ -79,7 +79,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(BfChildOrderRequest request)
         {
-            if (!request.ChildOrderType.IsChildOrder())
+            if (!request.ChildOrderType.IsSimple())
             {
                 throw new ArgumentException($"Invalid {nameof(BfChildOrderRequest.ChildOrderType)} is {request.ChildOrderType}");
             }

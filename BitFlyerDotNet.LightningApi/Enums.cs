@@ -173,6 +173,10 @@ namespace BitFlyerDotNet.LightningApi
         Completed,
     }
 
+    /// <summary>
+    /// Order Type
+    /// <see href="https://scrapbox.io/BitFlyerDotNet/OrderType">Online help</see>
+    /// </summary>
     public enum BfOrderType
     {
         [EnumMember(Value = "")]
@@ -201,17 +205,39 @@ namespace BitFlyerDotNet.LightningApi
     {
         public static bool IsOrderMethod(this BfOrderType orderType)
         {
-            return orderType == BfOrderType.Simple || orderType == BfOrderType.IFD || orderType == BfOrderType.OCO || orderType == BfOrderType.IFDOCO;
-        }
-
-        public static bool IsChildOrder(this BfOrderType orderType)
-        {
-            return orderType == BfOrderType.Limit || orderType == BfOrderType.Market;
+            return
+                orderType == BfOrderType.Simple ||
+                orderType == BfOrderType.IFD ||
+                orderType == BfOrderType.OCO ||
+                orderType == BfOrderType.IFDOCO;
         }
 
         public static bool IsConditionType(this BfOrderType orderType)
         {
-            return IsChildOrder(orderType) || orderType == BfOrderType.Stop || orderType == BfOrderType.StopLimit || orderType == BfOrderType.Trail;
+            return
+                orderType == BfOrderType.Market ||
+                orderType == BfOrderType.Limit ||
+                orderType == BfOrderType.Stop ||
+                orderType == BfOrderType.StopLimit ||
+                orderType == BfOrderType.Trail;
+        }
+
+        public static bool IsConditional(this BfOrderType orderType)
+        {
+            return
+                orderType == BfOrderType.Stop ||
+                orderType == BfOrderType.StopLimit ||
+                orderType == BfOrderType.Trail ||
+                orderType == BfOrderType.IFD ||
+                orderType == BfOrderType.OCO ||
+                orderType == BfOrderType.IFDOCO;
+        }
+
+        public static bool IsSimple(this BfOrderType orderType)
+        {
+            return
+                orderType == BfOrderType.Market ||
+                orderType == BfOrderType.Limit;
         }
     }
 

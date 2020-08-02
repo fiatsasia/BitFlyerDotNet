@@ -30,138 +30,103 @@ namespace OrderApiTests
                 Console.WriteLine("");
                 Console.WriteLine("R) Return to main");
 
-                switch (GetCh())
+                try
                 {
-                    case 'S':
-                        {
-                            var request = BfParentOrderRequest.Stop(ProductCode, BfTradeSide.Buy, OrderSize, _ticker.BestAsk + UnexecuteGap);
-                            var resp = _client.SendParentOrder(request);
-                            if (resp.IsOk)
+                    switch (GetCh())
+                    {
+                        case 'S':
                             {
-                                _parentOrderAcceptanceIds.Enqueue(resp.GetMessage().ParentOrderAcceptanceId);
+                                var request = BfParentOrderRequest.Stop(ProductCode, BfTradeSide.Buy, _ticker.BestAsk + UnexecuteGap, OrderSize);
+                                var content = _client.SendParentOrder(request).GetContent();
+                                _parentOrderAcceptanceIds.Enqueue(content.ParentOrderAcceptanceId);
                             }
-                            else
-                            {
-                                Console.WriteLine($"Error: {resp.ErrorMessage}");
-                            }
-                        }
-                        break;
+                            break;
 
-                    case 'L':
-                        {
-                            var request = BfParentOrderRequest.StopLimit(ProductCode, BfTradeSide.Buy, OrderSize, _ticker.BestAsk + UnexecuteGap, _ticker.BestAsk + UnexecuteGap);
-                            var resp = _client.SendParentOrder(request);
-                            if (resp.IsOk)
+                        case 'L':
                             {
-                                _parentOrderAcceptanceIds.Enqueue(resp.GetMessage().ParentOrderAcceptanceId);
+                                var request = BfParentOrderRequest.StopLimit(ProductCode, BfTradeSide.Buy, _ticker.BestAsk + UnexecuteGap, _ticker.BestAsk + UnexecuteGap, OrderSize);
+                                var content = _client.SendParentOrder(request).GetContent();
+                                _parentOrderAcceptanceIds.Enqueue(content.ParentOrderAcceptanceId);
                             }
-                            else
-                            {
-                                Console.WriteLine($"Error: {resp.ErrorMessage}");
-                            }
-                        }
-                        break;
+                            break;
 
-                    case 'T':
-                        {
-                            var request = BfParentOrderRequest.Trail(ProductCode, BfTradeSide.Buy, OrderSize, UnexecuteGap);
-                            var resp = _client.SendParentOrder(request);
-                            if (resp.IsOk)
+                        case 'T':
                             {
-                                _parentOrderAcceptanceIds.Enqueue(resp.GetMessage().ParentOrderAcceptanceId);
+                                var request = BfParentOrderRequest.Trail(ProductCode, BfTradeSide.Buy, UnexecuteGap, OrderSize);
+                                var content = _client.SendParentOrder(request).GetContent();
+                                _parentOrderAcceptanceIds.Enqueue(content.ParentOrderAcceptanceId);
                             }
-                            else
-                            {
-                                Console.WriteLine($"Error: {resp.ErrorMessage}");
-                            }
-                        }
-                        break;
+                            break;
 
-                    case 'I':
-                        {
-                            var request = BfParentOrderRequest.IFD(
-                                BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, OrderSize, _ticker.BestAsk + UnexecuteGap),
-                                BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Buy, OrderSize, _ticker.BestBid - UnexecuteGap)
-                            );
-                            var resp = _client.SendParentOrder(request);
-                            if (resp.IsOk)
+                        case 'I':
                             {
-                                _parentOrderAcceptanceIds.Enqueue(resp.GetMessage().ParentOrderAcceptanceId);
+                                var request = BfParentOrderRequest.IFD(
+                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
+                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Buy, _ticker.BestBid - UnexecuteGap, OrderSize)
+                                );
+                                var content = _client.SendParentOrder(request).GetContent();
+                                _parentOrderAcceptanceIds.Enqueue(content.ParentOrderAcceptanceId);
                             }
-                            else
-                            {
-                                Console.WriteLine($"Error: {resp.ErrorMessage}");
-                            }
-                        }
-                        break;
+                            break;
 
-                    case 'O':
-                        {
-                            var request = BfParentOrderRequest.OCO(
-                                BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, OrderSize, _ticker.BestAsk + UnexecuteGap),
-                                BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Buy, OrderSize, _ticker.BestBid - UnexecuteGap)
-                            );
-                            var resp = _client.SendParentOrder(request);
-                            if (resp.IsOk)
+                        case 'O':
                             {
-                                _parentOrderAcceptanceIds.Enqueue(resp.GetMessage().ParentOrderAcceptanceId);
+                                var request = BfParentOrderRequest.OCO(
+                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
+                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Buy, _ticker.BestBid - UnexecuteGap, OrderSize)
+                                );
+                                var content = _client.SendParentOrder(request).GetContent();
+                                _parentOrderAcceptanceIds.Enqueue(content.ParentOrderAcceptanceId);
                             }
-                            else
+                            break;
+
+                        case 'D':
                             {
-                                Console.WriteLine($"Error: {resp.ErrorMessage}");
+                                var request = BfParentOrderRequest.IFDOCO(
+                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
+                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
+                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Buy, _ticker.BestBid - UnexecuteGap, OrderSize)
+                                );
+                                var content = _client.SendParentOrder(request).GetContent();
+                                _parentOrderAcceptanceIds.Enqueue(content.ParentOrderAcceptanceId);
                             }
-                        }
-                        break;
+                            break;
 
-                    case 'D':
-                        {
-                            var request = BfParentOrderRequest.IFDOCO(
-                                BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, OrderSize, _ticker.BestAsk + UnexecuteGap),
-                                BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, OrderSize, _ticker.BestAsk + UnexecuteGap),
-                                BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Buy, OrderSize, _ticker.BestBid - UnexecuteGap)
-                            );
-                            var resp = _client.SendParentOrder(request);
-                            if (resp.IsOk)
+                        case 'F':
+                            break;
+
+                        case 'M':
+                            break;
+
+                        case 'C':
                             {
-                                _parentOrderAcceptanceIds.Enqueue(resp.GetMessage().ParentOrderAcceptanceId);
+                                var resp = _client.CancelParentOrder(ProductCode, parentOrderAcceptanceId: _parentOrderAcceptanceIds.Dequeue());
+                                if (!resp.IsErrorOrEmpty)
+                                {
+                                    // Cancel order sent
+                                }
                             }
-                            else
+                            break;
+
+                        case 'G':
                             {
-                                Console.WriteLine($"Error: {resp.ErrorMessage}");
+                                var resp = _client.GetParentOrders(ProductCode);
+                                if (resp.IsOk)
+                                {
+                                    var jobj = JsonConvert.DeserializeObject(resp.Json);
+                                    var json = JsonConvert.SerializeObject(jobj, Formatting.Indented);
+                                    Console.WriteLine(json);
+                                }
                             }
-                        }
-                        break;
+                            break;
 
-                    case 'F':
-                        break;
-
-                    case 'M':
-                        break;
-
-                    case 'C':
-                        {
-                            var resp = _client.CancelParentOrder(ProductCode, parentOrderAcceptanceId: _parentOrderAcceptanceIds.Dequeue());
-                            if (!resp.IsErrorOrEmpty)
-                            {
-                                // Cancel order sent
-                            }
-                        }
-                        break;
-
-                    case 'G':
-                        {
-                            var resp = _client.GetParentOrders(ProductCode);
-                            if (resp.IsOk)
-                            {
-                                var jobj = JsonConvert.DeserializeObject(resp.Json);
-                                var json = JsonConvert.SerializeObject(jobj, Formatting.Indented);
-                                Console.WriteLine(json);
-                            }
-                        }
-                        break;
-
-                    case 'R':
-                        return;
+                        case 'R':
+                            return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{ex.Message}");
                 }
             }
         }

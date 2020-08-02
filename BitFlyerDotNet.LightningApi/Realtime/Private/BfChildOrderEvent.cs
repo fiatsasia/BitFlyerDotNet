@@ -58,12 +58,12 @@ namespace BitFlyerDotNet.LightningApi
         public decimal Size { get; private set; }                   // EventType = Order(Order size), Execution(Executed size)
 
         [JsonProperty(PropertyName = "expire_date")]
-        public DateTime ExpireDate { get; private set; }            // EventType = Order, (missing) when Execution https://bf-lightning-api.readme.io/docs/realtime-child-order-events tells a wrong
+        public DateTime ExpireDate { get; private set; }            // EventType = Order
 
         [JsonProperty(PropertyName = "commission")]
         public decimal Commission { get; private set; }             // EventType = Execution
 
         [JsonProperty(PropertyName = "sfd")]
-        public decimal SfdCollectedAmount { get; private set; }     // EventType = Execution
+        public decimal SwapForDifference { get; private set; }      // EventType = Execution
     }
 }

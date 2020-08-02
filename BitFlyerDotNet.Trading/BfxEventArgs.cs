@@ -8,9 +8,29 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxChildOrderTransactionEventArgs : EventArgs
+    public class BfxPositionChangedEventArgs : EventArgs
     {
-        public BfxOrderEventType EventType { get; internal set; }
+        public BfxPositionChange Position { get; internal set; }
+        public bool IsOpened => Position.Close == null;
+
+        public BfxPositionChangedEventArgs(BfxPositionChange pos)
+        {
+            Position = pos;
+        }
+    }
+
+    public class BfxOrderTransactionEventArgs : EventArgs
+    {
+        public BfxOrderTransactionEventType EventType { get; internal set; }
+        public BfxOrderTransactionState State { get; internal set; }
+        public BfxOrderState OrderState { get; internal set; }
+        public DateTime Time { get; internal set; }
+
+        public IBfxOrder Order { get; internal set; }
+    }
+
+    public class BfxChildOrderTransactionEventArgs : BfxOrderTransactionEventArgs
+    {
         public BfChildOrderEvent OrderEvent { get; internal set; }
         public IBitFlyerResponse Response { get; internal set; }
 
@@ -20,7 +40,7 @@ namespace BitFlyerDotNet.Trading
             {
                 if (Response is BitFlyerResponse<BfChildOrderResponse> resp)
                 {
-                    return resp.GetMessage().ChildOrderAcceptanceId;
+                    return resp.GetContent().ChildOrderAcceptanceId;
                 }
                 else if (OrderEvent != null)
                 {
@@ -34,27 +54,14 @@ namespace BitFlyerDotNet.Trading
         }
     }
 
-    public class BfxParentOrderTransactionEventArgs : EventArgs
+    public class BfxParentOrderTransactionEventArgs : BfxOrderTransactionEventArgs
     {
-        public BfxOrderEventType EventType { get; internal set; }
         public BfParentOrderEvent OrderEvent { get; internal set; }
         public IBitFlyerResponse Response { get; internal set; }
     }
 
     public class BfxOrderEventArgs : EventArgs
     {
-        public BfxOrderEventType EventType { get; internal set; }
-    }
-
-    public class BfxSimpleOrderEventArgs : BfxOrderEventArgs
-    {
-        public BfChildOrderEvent OrderEvent { get; internal set; }
-        public IBfxSimpleOrder Order { get; internal set; }
-    }
-
-    public class BfxConditionalOrderEventArgs : BfxOrderEventArgs
-    {
-        public BfParentOrderEvent OrderEvent { get; internal set; }
-        public BfxParentOrder Order { get; internal set; }
+        public BfxOrderTransactionEventType EventType { get; internal set; }
     }
 }

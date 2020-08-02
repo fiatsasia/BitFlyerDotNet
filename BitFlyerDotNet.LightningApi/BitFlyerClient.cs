@@ -134,7 +134,7 @@ namespace BitFlyerDotNet.LightningApi
             return _response;
         }
 
-        public T GetMessage()
+        public T GetContent()
         {
             if (IsError)
             {
