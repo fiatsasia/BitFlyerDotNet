@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -71,13 +72,7 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        /// <summary>
-        /// Send a New Order
-        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(BfChildOrderRequest request)
+        void Validate(ref BfChildOrderRequest request)
         {
             if (!request.ChildOrderType.IsSimple())
             {
@@ -93,8 +88,30 @@ namespace BitFlyerDotNet.LightningApi
             {
                 request.TimeInForce = Config.TimeInForce;
             }
+        }
 
-            return PrivatePost<BfChildOrderResponse>(nameof(SendChildOrder), request);
+        /// <summary>
+        /// Send a New Order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(BfChildOrderRequest request)
+        {
+            Validate(ref request);
+            return PrivatePostAsync<BfChildOrderResponse>(nameof(SendChildOrder), request).Result;
+        }
+
+        /// <summary>
+        /// Send a New Order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(BfChildOrderRequest request)
+        {
+            Validate(ref request);
+            return await PrivatePostAsync<BfChildOrderResponse>(nameof(SendChildOrder), request);
         }
 
         /// <summary>
@@ -118,7 +135,7 @@ namespace BitFlyerDotNet.LightningApi
             int minuteToExpire = 0,
             BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
-            return SendChildOrder(new BfChildOrderRequest
+            var request = new BfChildOrderRequest
             {
                 ProductCode = productCode,
                 ChildOrderType = orderType,
@@ -127,7 +144,44 @@ namespace BitFlyerDotNet.LightningApi
                 Size = size,
                 MinuteToExpire = minuteToExpire,
                 TimeInForce = timeInForce,
-            });
+            };
+            Validate(ref request);
+            return SendChildOrder(request);
+        }
+
+        /// <summary>
+        /// Send a New Order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="orderType"></param>
+        /// <param name="side"></param>
+        /// <param name="price"></param>
+        /// <param name="size"></param>
+        /// <param name="minuteToExpire"></param>
+        /// <param name="timeInForce"></param>
+        /// <returns></returns>
+        public async Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(
+            BfProductCode productCode,
+            BfOrderType orderType,
+            BfTradeSide side,
+            decimal price,
+            decimal size,
+            int minuteToExpire = 0,
+            BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        {
+            var request = new BfChildOrderRequest
+            {
+                ProductCode = productCode,
+                ChildOrderType = orderType,
+                Side = side,
+                Price = price,
+                Size = size,
+                MinuteToExpire = minuteToExpire,
+                TimeInForce = timeInForce,
+            };
+            Validate(ref request);
+            return await SendChildOrderAsync(request);
         }
     }
 }

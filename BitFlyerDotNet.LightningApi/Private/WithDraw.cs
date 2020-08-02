@@ -39,7 +39,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfWithdrawRequest request)
         {
-            return PrivatePost<BfWithdrawResponse>(nameof(Withdraw), request);
+            return PrivatePostAsync<BfWithdrawResponse>(nameof(Withdraw), request).Result;
         }
 
         /// <summary>

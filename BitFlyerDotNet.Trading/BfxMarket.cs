@@ -126,20 +126,6 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-#region Child order
-        BfxChildOrderTransaction SendChildOrder(BfxChildOrder order)
-        {
-            TryOpen();
-            var trans = new BfxChildOrderTransaction(this, order);
-            trans.OrderTransactionEvent += OnChildOrderTransactionEvent;
-            var id = trans.SendOrderRequest();
-            if (!_childOrderTransactions.TryAdd(id, trans))
-            {
-                throw new Exception();
-            }
-            return trans;
-        }
-
         // Called from Account - Assign child event to child or parent transaction
         internal void RedirectChildOrderEvents(BfChildOrderEvent coe)
         {
@@ -156,6 +142,20 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
+        #region Child order
+        BfxChildOrderTransaction SendChildOrder(BfxChildOrder order)
+        {
+            TryOpen();
+            var trans = new BfxChildOrderTransaction(this, order);
+            trans.OrderTransactionEvent += OnChildOrderTransactionEvent;
+            var id = trans.SendOrderRequestAsync().Result;
+            if (!_childOrderTransactions.TryAdd(id, trans))
+            {
+                throw new Exception();
+            }
+            return trans;
+        }
+
         // Called from ChildOrderTransaction
         void OnChildOrderTransactionEvent(object sender, BfxChildOrderTransactionEventArgs evt)
         {
@@ -165,14 +165,14 @@ namespace BitFlyerDotNet.Trading
             }
             OrderTransactionEvent?.Invoke(sender, evt);
         }
-#endregion Child Order
+        #endregion Child Order
 
-#region Parent Order
+        #region Parent Order
         BfxParentOrderTransaction SendParentOrder(BfxParentOrder order)
         {
             TryOpen();
             var trans = new BfxParentOrderTransaction(this, order);
-            var id = trans.SendOrderRequest();
+            var id = trans.SendOrderRequestAsync().Result;
             if (!_parentOrderTransactions.TryAdd(id, trans))
             {
                 throw new Exception();
@@ -184,11 +184,22 @@ namespace BitFlyerDotNet.Trading
         // Called from account
         internal void RedirectParentOrderEvents(BfParentOrderEvent poe)
         {
-            if (!_parentOrderTransactions.TryGetValue(poe.ChildOrderAcceptanceId, out var tran))
+            if (_parentOrderTransactions.TryGetValue(poe.ChildOrderAcceptanceId, out var tran))
             {
+                tran.OnParentOrderEvent(poe);
+
+                if (poe.EventType == BfOrderEventType.Trigger)
+                {
+                    var childOrder = tran.Order.Children[poe.ChildOrderIndex] as BfxChildOrder;
+                    if (childOrder != null && childOrder.ChildOrderAcceptanceId != null)
+                    {
+                        var childTran = new BfxChildOrderTransaction(this, childOrder, tran);
+                        _childOrderTransactions.TryAdd(childOrder.ChildOrderAcceptanceId, childTran);
+                    }
+                }
+
                 return; // Children of parent orders (Probably never receive)
             }
-            tran.OnParentOrderEvent(poe);
         }
 
         // Called from ParentOrderTransaction
@@ -213,6 +224,6 @@ namespace BitFlyerDotNet.Trading
                     break;
             }
         }
-#endregion Parent Order
+        #endregion Parent Order
     }
 }

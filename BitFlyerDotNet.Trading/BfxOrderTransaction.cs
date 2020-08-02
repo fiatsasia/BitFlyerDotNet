@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
@@ -17,7 +18,7 @@ namespace BitFlyerDotNet.Trading
 
         public abstract void OnChildOrderEvent(BfChildOrderEvent coe);
 
-        protected abstract IBitFlyerResponse SendCancelOrderRequest();
+        protected abstract Task<IBitFlyerResponse> SendCancelOrderRequestAsync();
         protected abstract void TryAbortSendingOrder();
 
         public virtual void CancelOrder()
@@ -27,13 +28,13 @@ namespace BitFlyerDotNet.Trading
                 case BfxOrderTransactionState.Idle:
                     if (OrderState == BfxOrderState.Ordered || OrderState == BfxOrderState.Executing)
                     {
-                        SendCancelOrderRequest();
+                        SendCancelOrderRequestAsync();
                     }
                     break;
 
                 case BfxOrderTransactionState.WaitingOrderAccepted:
                 case BfxOrderTransactionState.OrderAccepted:
-                    SendCancelOrderRequest();
+                    SendCancelOrderRequestAsync();
                     break;
 
                 case BfxOrderTransactionState.SendingCancel:

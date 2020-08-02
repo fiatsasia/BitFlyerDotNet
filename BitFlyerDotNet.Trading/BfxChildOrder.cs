@@ -118,7 +118,7 @@ namespace BitFlyerDotNet.Trading
                     break;
 
                 case BfOrderState.Rejected: // GetChildOrders probably does not return failed order.
-                    throw new NotImplementedException();
+                    throw new NotSupportedException();
             }
         }
 
@@ -262,12 +262,12 @@ namespace BitFlyerDotNet.Trading
 
         public void Update(BfParentOrderEvent poe)
         {
-            switch (poe.EventType)
+            if (poe.EventType != BfOrderEventType.Trigger)
             {
-                case BfOrderEventType.Trigger:
-                    ChildOrderAcceptanceId = poe.ChildOrderAcceptanceId;
-                    break;
+                throw new ArgumentException();
             }
+
+            ChildOrderAcceptanceId = poe.ChildOrderAcceptanceId;
         }
         #endregion Update orders
     }

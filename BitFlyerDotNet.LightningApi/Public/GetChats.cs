@@ -29,7 +29,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChats()
         {
-            return Get<BfChat[]>(nameof(GetChats));
+            return GetAsync<BfChat[]>(nameof(GetChats)).Result;
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChats(DateTime fromDate)
         {
-            return Get<BfChat[]>(nameof(GetChats), "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
+            return GetAsync<BfChat[]>(nameof(GetChats), "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff")).Result;
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChatsUsa()
         {
-            return Get<BfChat[]>(nameof(GetChats) + UsaMarket);
+            return GetAsync<BfChat[]>(nameof(GetChats) + UsaMarket).Result;
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChatsUsa(DateTime fromDate)
         {
-            return Get<BfChat[]>(nameof(GetChats) + UsaMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
+            return GetAsync<BfChat[]>(nameof(GetChats) + UsaMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff")).Result;
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChatsEu()
         {
-            return Get<BfChat[]>(nameof(GetChats) + EuMarket);
+            return GetAsync<BfChat[]>(nameof(GetChats) + EuMarket).Result;
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfChat[]> GetChatsEu(DateTime fromDate)
         {
-            return Get<BfChat[]>(nameof(GetChats) + EuMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
+            return GetAsync<BfChat[]>(nameof(GetChats) + EuMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff")).Result;
         }
     }
 }

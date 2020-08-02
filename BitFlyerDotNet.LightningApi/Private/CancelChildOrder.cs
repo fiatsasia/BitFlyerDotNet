@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -23,6 +24,14 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
+        void Validate(ref BfCancelChildOrderRequest request)
+        {
+            if (string.IsNullOrEmpty(request.ChildOrderId) && string.IsNullOrEmpty(request.ChildOrderAcceptanceId))
+            {
+                throw new ArgumentException();
+            }
+        }
+
         /// <summary>
         /// Cancel Order
         /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelChildOrder">Online help</see>
@@ -31,12 +40,20 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<string> CancelChildOrder(BfCancelChildOrderRequest request)
         {
-            if (string.IsNullOrEmpty(request.ChildOrderId) && string.IsNullOrEmpty(request.ChildOrderAcceptanceId))
-            {
-                throw new ArgumentException();
-            }
+            Validate(ref request);
+            return PrivatePostAsync<string>(nameof(CancelChildOrder), request).Result;
+        }
 
-            return PrivatePost<string>(nameof(CancelChildOrder), request);
+        /// <summary>
+        /// Cancel Order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelChildOrder">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<BitFlyerResponse<string>> CancelChildOrderAsync(BfCancelChildOrderRequest request)
+        {
+            Validate(ref request);
+            return await PrivatePostAsync<string>(nameof(CancelChildOrder), request);
         }
 
         /// <summary>
@@ -49,12 +66,32 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<string> CancelChildOrder(BfProductCode productCode, string childOrderId = null, string childOrderAcceptanceId = null)
         {
-            return CancelChildOrder(new BfCancelChildOrderRequest
+            var request = new BfCancelChildOrderRequest
             {
                 ProductCode = productCode,
                 ChildOrderId = childOrderId,
                 ChildOrderAcceptanceId = childOrderAcceptanceId
-            });
+            };
+            Validate(ref request);
+            return PrivatePostAsync<string>(nameof(CancelChildOrder), request).Result;
+        }
+
+        /// <summary>
+        /// Cancel Order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelChildOrder">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<BitFlyerResponse<string>> CancelChildOrderAsync(BfProductCode productCode, string childOrderId = null, string childOrderAcceptanceId = null)
+        {
+            var request = new BfCancelChildOrderRequest
+            {
+                ProductCode = productCode,
+                ChildOrderId = childOrderId,
+                ChildOrderAcceptanceId = childOrderAcceptanceId
+            };
+            Validate(ref request);
+            return await PrivatePostAsync<string>(nameof(CancelChildOrder), request);
         }
     }
 }

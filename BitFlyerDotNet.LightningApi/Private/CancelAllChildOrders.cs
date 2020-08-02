@@ -24,7 +24,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<string> CancelAllChildOrders(BfCancelAllChildOrdersRequest request)
         {
-            return PrivatePost<string>(nameof(CancelAllChildOrders), request);
+            return PrivatePostAsync<string>(nameof(CancelAllChildOrders), request).Result;
         }
 
         /// <summary>

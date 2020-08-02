@@ -30,7 +30,7 @@ namespace BitFlyerDotNet.LightningApi
     {
         public BitFlyerResponse<BfCollateral> GetCollateral()
         {
-            return PrivateGet<BfCollateral>(nameof(GetCollateral));
+            return PrivateGetAsync<BfCollateral>(nameof(GetCollateral)).Result;
         }
     }
 }

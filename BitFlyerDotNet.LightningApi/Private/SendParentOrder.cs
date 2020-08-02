@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -212,13 +213,7 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        /// <summary>
-        /// Submit New Parent Order (Special order)
-        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendParentOrder">Online help</see>
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest request)
+        void Validate(ref BfParentOrderRequest request)
         {
             if (!request.OrderMethod.IsOrderMethod())
             {
@@ -241,8 +236,30 @@ namespace BitFlyerDotNet.LightningApi
             {
                 request.TimeInForce = Config.TimeInForce;
             }
+        }
 
-            return PrivatePost<BfParentOrderResponse>(nameof(SendParentOrder), request);
+        /// <summary>
+        /// Submit New Parent Order (Special order)
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendParentOrder">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest request)
+        {
+            Validate(ref request);
+            return PrivatePostAsync<BfParentOrderResponse>(nameof(SendParentOrder), request).Result;
+        }
+
+        /// <summary>
+        /// Submit New Parent Order (Special order)
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendParentOrder">Online help</see>
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<BitFlyerResponse<BfParentOrderResponse>> SendParentOrderAsync(BfParentOrderRequest request)
+        {
+            Validate(ref request);
+            return await PrivatePostAsync<BfParentOrderResponse>(nameof(SendParentOrder), request);
         }
     }
 }

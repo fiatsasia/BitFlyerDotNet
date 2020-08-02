@@ -23,7 +23,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfTradingCommission> GetTradingCommission(BfProductCode productCode)
         {
-            return PrivateGet<BfTradingCommission>(nameof(GetTradingCommission), "product_code=" + productCode.ToEnumString());
+            return PrivateGetAsync<BfTradingCommission>(nameof(GetTradingCommission), "product_code=" + productCode.ToEnumString()).Result;
         }
     }
 }

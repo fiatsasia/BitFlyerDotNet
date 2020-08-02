@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Diagnostics;
 using BitFlyerDotNet.LightningApi;
 
@@ -16,7 +17,6 @@ namespace BitFlyerDotNet.Trading
         // Public properties
         public BfxChildOrder Order { get; private set; }
         public override BfxOrderState OrderState => Order.State;
-        public IReadOnlyList<BfChildOrderEvent> EventHistory => _eventHistory;
         public BfxParentOrderTransaction? Parent { get; }
 
         // Events
@@ -24,7 +24,6 @@ namespace BitFlyerDotNet.Trading
 
         // Private properties
         BfxMarket _market;
-        List<BfChildOrderEvent> _eventHistory = new List<BfChildOrderEvent>();
 
         public BfxChildOrderTransaction(BfxMarket market, BfxChildOrder order, BfxParentOrderTransaction? parent)
         {
@@ -45,13 +44,13 @@ namespace BitFlyerDotNet.Trading
         {
             // 注文送信中なら送信をキャンセル
             // 注文送信済みならキャンセルを送信
-            SendCancelOrderRequest();
+            SendCancelOrderRequestAsync();
         }
 
         // - 経過時間でリトライ終了のオプション
         // - 通信エラー以外でのリトライ終了
         // - 送信完了からChildOrderEvent(Order)までの状態
-        public string SendOrderRequest()
+        public async Task<string> SendOrderRequestAsync()
         {
             Debug.Assert(State == BfxOrderTransactionState.Idle && Order.State == BfxOrderState.Outstanding);
             DebugEx.EnterMethod();
@@ -67,7 +66,7 @@ namespace BitFlyerDotNet.Trading
                 for (var retry = 0; retry <= _market.Config.OrderRetryMax; retry++)
                 {
                     DebugEx.Trace();
-                    var resp = _market.Client.SendChildOrder(Order.Request);
+                    var resp = await _market.Client.SendChildOrderAsync(Order.Request);
                     if (!resp.IsError)
                     {
                         Order.Update(resp.GetContent());
@@ -77,7 +76,7 @@ namespace BitFlyerDotNet.Trading
                     }
 
                     DebugEx.Trace("Trying retry...");
-                    Thread.Sleep(_market.Config.OrderRetryInterval);
+                    await Task.Delay(_market.Config.OrderRetryInterval);
                 }
 
                 DebugEx.Trace("SendOrderRequest - Retried out");
@@ -104,7 +103,7 @@ namespace BitFlyerDotNet.Trading
         // - エラーリトライ(無限リトライ)
         // - 注文執行によるキャンセルの中止 => CancelFailed受信
         // - 注文送信リトライ中のキャンセル
-        protected override IBitFlyerResponse SendCancelOrderRequest()
+        protected override async Task<IBitFlyerResponse> SendCancelOrderRequestAsync()
         {
             Debug.Assert(!string.IsNullOrEmpty(Order.ChildOrderAcceptanceId));
             Debug.Assert(State == BfxOrderTransactionState.Idle && Order.State == BfxOrderState.Ordered);
@@ -115,7 +114,7 @@ namespace BitFlyerDotNet.Trading
             try
             {
                 DebugEx.Trace();
-                var resp = _market.Client.CancelChildOrder(productCode: _market.ProductCode, childOrderAcceptanceId: Order.ChildOrderAcceptanceId);
+                var resp = await _market.Client.CancelChildOrderAsync(productCode: _market.ProductCode, childOrderAcceptanceId: Order.ChildOrderAcceptanceId);
                 if (resp.IsError)
                 {
                     ChangeState(BfxOrderTransactionState.Idle);
@@ -148,7 +147,6 @@ namespace BitFlyerDotNet.Trading
                 return; // Event for childrent of parent
             }
 
-            RecordChildOrderEvent(coe);
             Order.Update(coe);
 
             switch (coe.EventType)
@@ -186,15 +184,6 @@ namespace BitFlyerDotNet.Trading
                 case BfOrderEventType.Trigger: // Not happened when Simple Order ?
                 case BfOrderEventType.Unknown:
                     throw new NotSupportedException();
-            }
-        }
-
-        void RecordChildOrderEvent(BfChildOrderEvent coe)
-        {
-            _eventHistory.Add(coe);
-            if (_eventHistory.Count > 100)
-            {
-                _eventHistory.RemoveAt(0);
             }
         }
 

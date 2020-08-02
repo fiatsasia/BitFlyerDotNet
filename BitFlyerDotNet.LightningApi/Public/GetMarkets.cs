@@ -30,7 +30,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfMarket[]> GetMarkets()
         {
-            return Get<BfMarket[]>(nameof(GetMarkets));
+            return GetAsync<BfMarket[]>(nameof(GetMarkets)).Result;
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfMarket[]> GetMarketsUsa()
         {
-            return Get<BfMarket[]>(nameof(GetMarkets) + UsaMarket);
+            return GetAsync<BfMarket[]>(nameof(GetMarkets) + UsaMarket).Result;
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfMarket[]> GetMarketsEu()
         {
-            return Get<BfMarket[]>(nameof(GetMarkets) + EuMarket);
+            return GetAsync<BfMarket[]>(nameof(GetMarkets) + EuMarket).Result;
         }
 
         /// <summary>

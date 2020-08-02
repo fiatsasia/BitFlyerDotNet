@@ -56,7 +56,7 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
-            return PrivateGet<BfCoinin[]>(nameof(GetCoinIns), query);
+            return PrivateGetAsync<BfCoinin[]>(nameof(GetCoinIns), query).Result;
         }
     }
 }

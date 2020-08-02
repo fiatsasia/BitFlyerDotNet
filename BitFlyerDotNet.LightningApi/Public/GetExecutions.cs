@@ -67,7 +67,7 @@ namespace BitFlyerDotNet.LightningApi
                 (before > 0) ? $"&before={before}" : "",
                 (after > 0) ? $"&after={after}" : ""
             );
-            return Get<BfExecution[]>(nameof(GetExecutions), query);
+            return GetAsync<BfExecution[]>(nameof(GetExecutions), query).Result;
         }
     }
 }

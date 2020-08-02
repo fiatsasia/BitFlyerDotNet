@@ -30,7 +30,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfBalance[]> GetBalance()
         {
-            return PrivateGet<BfBalance[]>(nameof(GetBalance));
+            return PrivateGetAsync<BfBalance[]>(nameof(GetBalance)).Result;
         }
     }
 }

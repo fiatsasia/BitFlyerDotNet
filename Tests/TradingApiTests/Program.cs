@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Xml.Linq;
+using System.Reactive.Linq;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
 
@@ -31,7 +32,16 @@ namespace TradingApiTests
             using (var market = account.GetMarket(ProductCode))
             {
                 account.PositionChanged += OnPositionChanged;
-                market.OrderTransactionEvent += OnOrderTransactionEvent;
+
+                // Call event handler on another thread
+                //market.OrderTransactionEvent += OnOrderTransactionEvent;
+                Observable.FromEventPattern<BfxOrderTransactionEventArgs>(market, nameof(market.OrderTransactionEvent))
+                .ObserveOn(System.Reactive.Concurrency.Scheduler.Default)
+                .Subscribe(e =>
+                {
+                    OnOrderTransactionEvent(e.Sender, e.EventArgs);
+                });
+
                 market.Open();
                 while (true)
                 {

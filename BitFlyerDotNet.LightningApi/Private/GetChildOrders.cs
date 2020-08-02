@@ -100,7 +100,7 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(parentOrderId) ? "&parent_order_id=" + parentOrderId : ""
             );
 
-            return PrivateGet<BfChildOrder[]>(nameof(GetChildOrders), query);
+            return PrivateGetAsync<BfChildOrder[]>(nameof(GetChildOrders), query).Result;
         }
     }
 }

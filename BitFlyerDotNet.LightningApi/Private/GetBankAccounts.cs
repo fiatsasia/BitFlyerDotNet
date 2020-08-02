@@ -40,7 +40,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfBankAccount[]> GetBankAccounts()
         {
-            return PrivateGet<BfBankAccount[]>(nameof(GetBankAccounts));
+            return PrivateGetAsync<BfBankAccount[]>(nameof(GetBankAccounts)).Result;
         }
     }
 }

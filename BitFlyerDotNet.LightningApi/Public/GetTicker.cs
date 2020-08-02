@@ -57,7 +57,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfTicker> GetTicker(BfProductCode productCode)
         {
-            return Get<BfTicker>(nameof(GetTicker), "product_code=" + productCode.ToEnumString());
+            return GetAsync<BfTicker>(nameof(GetTicker), "product_code=" + productCode.ToEnumString()).Result;
         }
     }
 }

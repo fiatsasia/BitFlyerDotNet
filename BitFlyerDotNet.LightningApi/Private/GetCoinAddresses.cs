@@ -32,7 +32,7 @@ namespace BitFlyerDotNet.LightningApi
         [Obsolete("This method is obsolete. Use GetAddresses instead.", false)]
         public BitFlyerResponse<BfCoinAddress[]> GetCoinAddresses()
         {
-            return PrivateGet<BfCoinAddress[]>("getaddresses");
+            return PrivateGetAsync<BfCoinAddress[]>("getaddresses").Result;
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfCoinAddress[]> GetAddresses()
         {
-            return PrivateGet<BfCoinAddress[]>(nameof(GetAddresses));
+            return PrivateGetAsync<BfCoinAddress[]>(nameof(GetAddresses)).Result;
         }
     }
 }

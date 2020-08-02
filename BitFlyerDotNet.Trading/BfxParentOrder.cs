@@ -130,6 +130,10 @@ namespace BitFlyerDotNet.Trading
                     OrderDate = poe.EventDate; // Is it same value to real ordered date ?
                     ExpireDate = poe.ExpireDate;
                     break;
+
+                case BfOrderEventType.Trigger:
+                    _childOrders[poe.ChildOrderIndex].Update(poe);
+                    break;
             }
         }
 

@@ -56,7 +56,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfPosition[]> GetPositions(BfProductCode productCode)
         {
-            return PrivateGet<BfPosition[]>(nameof(GetPositions), "product_code=" + productCode.ToEnumString());
+            return PrivateGetAsync<BfPosition[]>(nameof(GetPositions), "product_code=" + productCode.ToEnumString()).Result;
         }
     }
 }

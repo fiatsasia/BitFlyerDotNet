@@ -52,7 +52,7 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
-            return PrivateGet<BfWithdrawal[]>(nameof(GetWithdrawals), query);
+            return PrivateGetAsync<BfWithdrawal[]>(nameof(GetWithdrawals), query).Result;
         }
     }
 }

@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Reactive.Disposables;
 using BitFlyerDotNet.LightningApi;
@@ -16,13 +17,11 @@ namespace BitFlyerDotNet.Trading
     {
         public BfxParentOrder Order { get; private set; }
         public override BfxOrderState OrderState => Order.State;
-        public IReadOnlyList<BfParentOrderEvent> EventHistory => _eventHistory;
 
         // Events
         public event EventHandler<BfxParentOrderTransactionEventArgs>? OrderTransactionEvent;
 
         BfxMarket _market;
-        List<BfParentOrderEvent> _eventHistory = new List<BfParentOrderEvent>();
 
         public BfxParentOrderTransaction(BfxMarket market, BfxParentOrder order)
         {
@@ -30,7 +29,7 @@ namespace BitFlyerDotNet.Trading
             Order = order;
         }
 
-        public string SendOrderRequest()
+        public async Task<string> SendOrderRequestAsync()
         {
             DebugEx.EnterMethod();
             if (Order.Request == null)
@@ -44,7 +43,7 @@ namespace BitFlyerDotNet.Trading
                 for (var retry = 0; retry <= _market.Config.OrderRetryMax; retry++)
                 {
                     DebugEx.Trace();
-                    var resp = _market.Client.SendParentOrder(Order.Request);
+                    var resp = await _market.Client.SendParentOrderAsync(Order.Request);
                     if (!resp.IsError)
                     {
                         Order.Update(resp.GetContent());
@@ -53,7 +52,7 @@ namespace BitFlyerDotNet.Trading
                     }
 
                     DebugEx.Trace("Trying retry...");
-                    Thread.Sleep(_market.Config.OrderRetryInterval);
+                    await Task.Delay(_market.Config.OrderRetryInterval);
                 }
 
                 DebugEx.Trace("SendOrderRequest - Retried out");
@@ -75,7 +74,7 @@ namespace BitFlyerDotNet.Trading
             throw new NotImplementedException();
         }
 
-        protected override IBitFlyerResponse SendCancelOrderRequest()
+        protected override async Task<IBitFlyerResponse> SendCancelOrderRequestAsync()
         {
             if (string.IsNullOrEmpty(Order.ParentOrderAcceptanceId))
             {
@@ -86,12 +85,12 @@ namespace BitFlyerDotNet.Trading
             try
             {
                 DebugEx.Trace();
-                return _market.Client.CancelParentOrder(productCode: _market.ProductCode, parentOrderAcceptanceId: Order.ParentOrderAcceptanceId);
+                return await _market.Client.CancelParentOrderAsync(productCode: _market.ProductCode, parentOrderAcceptanceId: Order.ParentOrderAcceptanceId);
             }
             catch
             {
                 DebugEx.Trace();
-                return default;
+                throw;
             }
             finally
             {
@@ -104,7 +103,7 @@ namespace BitFlyerDotNet.Trading
         {
             // 注文送信中なら送信をキャンセル
             // 注文送信済みならキャンセルを送信
-            SendCancelOrderRequest();
+            SendCancelOrderRequestAsync();
         }
 
         public void OnParentOrderEvent(BfParentOrderEvent poe)
@@ -141,8 +140,6 @@ namespace BitFlyerDotNet.Trading
                 default:
                     throw new NotSupportedException();
             }
-
-            _eventHistory.Add(poe);
         }
 
         public override void OnChildOrderEvent(BfChildOrderEvent coe)

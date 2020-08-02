@@ -49,7 +49,7 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
-            return PrivateGet<BfCollateralHistory[]>(nameof(GetCollateralHistory), query);
+            return PrivateGetAsync<BfCollateralHistory[]>(nameof(GetCollateralHistory), query).Result;
         }
     }
 }

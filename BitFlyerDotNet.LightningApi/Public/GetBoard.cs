@@ -38,7 +38,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfBoard> GetBoard(BfProductCode productCode)
         {
-            return Get<BfBoard>(nameof(GetBoard), "product_code=" + productCode.ToEnumString());
+            return GetAsync<BfBoard>(nameof(GetBoard), "product_code=" + productCode.ToEnumString()).Result;
         }
     }
 }

@@ -69,7 +69,7 @@ namespace BitFlyerDotNet.LightningApi
                 (before > 0) ? $"&before={before}" : "",
                 (after > 0) ? $"&after={after}" : ""
             );
-            return PrivateGet<BfBalanceHistory[]>(nameof(GetBalanceHistory), query);
+            return PrivateGetAsync<BfBalanceHistory[]>(nameof(GetBalanceHistory), query).Result;
         }
     }
 }

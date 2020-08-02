@@ -85,7 +85,7 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             );
 
-            return PrivateGet<BfParentOrder[]>(nameof(GetParentOrders), query);
+            return PrivateGetAsync<BfParentOrder[]>(nameof(GetParentOrders), query).Result;
         }
     }
 }

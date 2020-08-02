@@ -50,7 +50,7 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
-            return PrivateGet<BfDeposit[]>(nameof(GetDeposits), query);
+            return PrivateGetAsync<BfDeposit[]>(nameof(GetDeposits), query).Result;
         }
     }
 }

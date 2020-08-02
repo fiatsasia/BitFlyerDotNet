@@ -13,7 +13,6 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using System.Threading;
 
 namespace BitFlyerDotNet.LightningApi
 {
@@ -71,12 +70,6 @@ namespace BitFlyerDotNet.LightningApi
         };
 
         string JsonEmpty => (typeof(T) != typeof(string) && typeof(T).IsArray) ? "[]" : "{}";
-
-        internal void ParseResponseMessage(string request, HttpResponseMessage message)
-        {
-            StatusCode = message.StatusCode;
-            Json = message.Content.ReadAsStringAsync().Result;
-        }
 
         public HttpStatusCode StatusCode { get; internal set; } = HttpStatusCode.OK;
         public BfErrorResponse ErrorResponse { get; internal set; } = BfErrorResponse.Default;
@@ -176,6 +169,12 @@ namespace BitFlyerDotNet.LightningApi
         {
             _json = JsonEmpty;
         }
+
+        internal void Set(HttpStatusCode statusCode, string json)
+        {
+            StatusCode = statusCode;
+            Json = json;
+        }
     }
 
     public partial class BitFlyerClient : IDisposable
@@ -236,7 +235,7 @@ namespace BitFlyerDotNet.LightningApi
             Debug.Print($"{nameof(BitFlyerClient)}.Dispose exit");
         }
 
-        internal BitFlyerResponse<T> Get<T>(string apiName, string queryParameters = "")
+        internal async Task<BitFlyerResponse<T>> GetAsync<T>(string apiName, string queryParameters = "")
         {
             var path = PublicBasePath + apiName.ToLower();
             if (!string.IsNullOrEmpty(queryParameters))
@@ -246,32 +245,33 @@ namespace BitFlyerDotNet.LightningApi
 
             using (var request = new HttpRequestMessage(HttpMethod.Get, path))
             {
-                var response = new BitFlyerResponse<T>();
+                var responseObject = new BitFlyerResponse<T>();
                 try
                 {
-                    response.ParseResponseMessage(path, _client.SendAsync(request).Result);
-                    TotalReceivedMessageChars += response.Json.Length;
+                    var response = await _client.SendAsync(request);
+                    responseObject.Set(response.StatusCode, await response.Content.ReadAsStringAsync());
+                    TotalReceivedMessageChars += responseObject.Json.Length;
                     if (_apiLimitter.CheckLimitReached())
                     {
                         Debug.Print("API limit reached.");
-                        Thread.Sleep(ApiLimitterPenaltyMs);
+                        await Task.Delay(ApiLimitterPenaltyMs);
                     }
-                    return response;
+                    return responseObject;
                 }
                 catch (AggregateException aex)
                 {
                     var ex = aex.InnerException;
-                    response.Exception = ex;
+                    responseObject.Exception = ex;
                     if (ex is TaskCanceledException) // Caused timedout
                     {
-                        response.StatusCode = HttpStatusCode.RequestTimeout;
+                        responseObject.StatusCode = HttpStatusCode.RequestTimeout;
                     }
                     else if (ex is HttpRequestException)
                     {
                         if (ex.InnerException is WebException)
                         {
-                            response.ErrorMessage = ((WebException)ex.InnerException).Status.ToString();
-                            response.StatusCode = HttpStatusCode.InternalServerError;
+                            responseObject.ErrorMessage = ((WebException)ex.InnerException).Status.ToString();
+                            responseObject.StatusCode = HttpStatusCode.InternalServerError;
                         }
                     }
                     else if (ex is WebException)
@@ -280,23 +280,23 @@ namespace BitFlyerDotNet.LightningApi
                         var resp = we.Response as HttpWebResponse;
                         if (resp != null)
                         {
-                            response.StatusCode = resp.StatusCode;
+                            responseObject.StatusCode = resp.StatusCode;
                         }
                         else
                         {
-                            response.StatusCode = HttpStatusCode.NoContent;
+                            responseObject.StatusCode = HttpStatusCode.NoContent;
                         }
                     }
                     else
                     {
                         throw ex;
                     }
-                    return response;
+                    return responseObject;
                 }
             }
         }
 
-        internal BitFlyerResponse<T> PrivateGet<T>(string apiName, string queryParameters = "")
+        internal async Task<BitFlyerResponse<T>> PrivateGetAsync<T>(string apiName, string queryParameters = "")
         {
             if (!IsAuthenticated)
             {
@@ -319,21 +319,22 @@ namespace BitFlyerDotNet.LightningApi
                 request.Headers.Add("ACCESS-TIMESTAMP", timestamp);
                 request.Headers.Add("ACCESS-SIGN", sign);
 
-                var response = new BitFlyerResponse<T>();
+                var responseObject = new BitFlyerResponse<T>();
                 try
                 {
-                    response.ParseResponseMessage(text, _client.SendAsync(request).Result);
-                    TotalReceivedMessageChars += response.Json.Length;
-                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    var response = await _client.SendAsync(request);
+                    responseObject.Set(response.StatusCode, await response.Content.ReadAsStringAsync());
+                    TotalReceivedMessageChars += responseObject.Json.Length;
+                    if (responseObject.StatusCode == HttpStatusCode.Unauthorized)
                     {
                         throw new BitFlyerUnauthorizedException($"{apiName}: Permission denied.");
                     }
                     if (_apiLimitter.CheckLimitReached())
                     {
                         Debug.Print("API limit reached.");
-                        Thread.Sleep(ApiLimitterPenaltyMs);
+                        await Task.Delay(ApiLimitterPenaltyMs);
                     }
-                    return response;
+                    return responseObject;
                 }
                 catch (BitFlyerUnauthorizedException)
                 {
@@ -342,17 +343,17 @@ namespace BitFlyerDotNet.LightningApi
                 catch (AggregateException aex)
                 {
                     var ex = aex.InnerException;
-                    response.Exception = ex;
+                    responseObject.Exception = ex;
                     if (ex is TaskCanceledException) // Caused timedout
                     {
-                        response.StatusCode = HttpStatusCode.RequestTimeout;
+                        responseObject.StatusCode = HttpStatusCode.RequestTimeout;
                     }
                     else if (ex is HttpRequestException)
                     {
                         if (ex.InnerException is WebException)
                         {
-                            response.ErrorMessage = ((WebException)ex.InnerException).Status.ToString();
-                            response.StatusCode = HttpStatusCode.InternalServerError;
+                            responseObject.ErrorMessage = ((WebException)ex.InnerException).Status.ToString();
+                            responseObject.StatusCode = HttpStatusCode.InternalServerError;
                         }
                     }
                     else if (ex is WebException)
@@ -361,30 +362,30 @@ namespace BitFlyerDotNet.LightningApi
                         var resp = we.Response as HttpWebResponse;
                         if (resp != null)
                         {
-                            response.StatusCode = resp.StatusCode;
+                            responseObject.StatusCode = resp.StatusCode;
                         }
                         else
                         {
-                            response.StatusCode = HttpStatusCode.NoContent;
+                            responseObject.StatusCode = HttpStatusCode.NoContent;
                         }
                     }
                     else
                     {
                         throw ex;
                     }
-                    return response;
+                    return responseObject;
                 }
             }
         }
 
-        internal BitFlyerResponse<T> PrivatePost<T>(string apiName, object request)
+        internal async Task<BitFlyerResponse<T>> PrivatePostAsync<T>(string apiName, object requestObject)
         {
             if (!IsAuthenticated)
             {
                 throw new NotSupportedException("Access key and secret required.");
             }
 
-            var body = JsonConvert.SerializeObject(request, JsonSerializeSettings);
+            var body = JsonConvert.SerializeObject(requestObject, JsonSerializeSettings);
             if (!ConfirmCallback(apiName, body))
             {
                 return new BitFlyerResponse<T>();
@@ -395,21 +396,22 @@ namespace BitFlyerDotNet.LightningApi
 
             var text = timestamp + "POST" + path + body;
             var sign = BitConverter.ToString(_hash.ComputeHash(Encoding.UTF8.GetBytes(text))).Replace("-", string.Empty).ToLower();
-            using (var message = new HttpRequestMessage(HttpMethod.Post, path))
+            using (var request = new HttpRequestMessage(HttpMethod.Post, path))
             using (var content = new StringContent(body))
             {
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                message.Content = content;
-                message.Headers.Clear();
-                message.Headers.Add("ACCESS-KEY", _apiKey);
-                message.Headers.Add("ACCESS-TIMESTAMP", timestamp);
-                message.Headers.Add("ACCESS-SIGN", sign);
+                request.Content = content;
+                request.Headers.Clear();
+                request.Headers.Add("ACCESS-KEY", _apiKey);
+                request.Headers.Add("ACCESS-TIMESTAMP", timestamp);
+                request.Headers.Add("ACCESS-SIGN", sign);
 
-                var response = new BitFlyerResponse<T>();
+                var responseObject = new BitFlyerResponse<T>();
                 try
                 {
-                    response.ParseResponseMessage(text, _client.SendAsync(message).Result);
-                    TotalReceivedMessageChars += response.Json.Length;
+                    var response = await _client.SendAsync(request);
+                    responseObject.Set(response.StatusCode, await response.Content.ReadAsStringAsync());
+                    TotalReceivedMessageChars += responseObject.Json.Length;
                     switch (apiName)
                     {
                         case nameof(SendChildOrder):
@@ -418,26 +420,26 @@ namespace BitFlyerDotNet.LightningApi
                             if (_orderApiLimitter.CheckLimitReached())
                             {
                                 Debug.Print("Order API limit reached.");
-                                Thread.Sleep(OrderApiLimitPenaltyMs);
+                                await Task.Delay(OrderApiLimitPenaltyMs);
                             }
                             break;
                     }
-                    return response;
+                    return responseObject;
                 }
                 catch (AggregateException aex)
                 {
                     var ex = aex.InnerException;
-                    response.Exception = ex;
+                    responseObject.Exception = ex;
                     if (ex is TaskCanceledException) // Caused timedout
                     {
-                        response.StatusCode = HttpStatusCode.RequestTimeout;
+                        responseObject.StatusCode = HttpStatusCode.RequestTimeout;
                     }
                     else if (ex is HttpRequestException)
                     {
                         if (ex.InnerException is WebException)
                         {
-                            response.ErrorMessage = ((WebException)ex.InnerException).Status.ToString();
-                            response.StatusCode = HttpStatusCode.InternalServerError;
+                            responseObject.ErrorMessage = ((WebException)ex.InnerException).Status.ToString();
+                            responseObject.StatusCode = HttpStatusCode.InternalServerError;
                         }
                     }
                     else if (ex is WebException)
@@ -446,18 +448,18 @@ namespace BitFlyerDotNet.LightningApi
                         var resp = we.Response as HttpWebResponse;
                         if (resp != null)
                         {
-                            response.StatusCode = resp.StatusCode;
+                            responseObject.StatusCode = resp.StatusCode;
                         }
                         else
                         {
-                            response.StatusCode = HttpStatusCode.NoContent;
+                            responseObject.StatusCode = HttpStatusCode.NoContent;
                         }
                     }
                     else
                     {
                         throw ex;
                     }
-                    return response;
+                    return responseObject;
                 }
             }
         }

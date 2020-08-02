@@ -14,7 +14,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<string[]> GetPermissions()
         {
-            return PrivateGet<string[]>(nameof(GetPermissions));
+            return PrivateGetAsync<string[]>(nameof(GetPermissions)).Result;
         }
     }
 }

@@ -27,7 +27,7 @@ namespace BitFlyerDotNet.LightningApi
         [Obsolete("This method is obsolete. Use GetHealth instead.", false)]
         public BitFlyerResponse<BfMarketHealth> GetMarketHealth(BfProductCode productCode)
         {
-            return Get<BfMarketHealth>("gethealth", "product_code=" + productCode.ToEnumString());
+            return GetAsync<BfMarketHealth>("gethealth", "product_code=" + productCode.ToEnumString()).Result;
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfMarketHealth> GetHealth(BfProductCode productCode)
         {
-            return Get<BfMarketHealth>(nameof(GetHealth), "product_code=" + productCode.ToEnumString());
+            return GetAsync<BfMarketHealth>(nameof(GetHealth), "product_code=" + productCode.ToEnumString()).Result;
         }
     }
 }

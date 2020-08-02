@@ -61,7 +61,7 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(childOrderAcceptanceId) ? "&child_order_acceptance_id=" + childOrderAcceptanceId : ""
             );
 
-            return PrivateGet<BfPrivateExecution[]>("getexecutions", query);
+            return PrivateGetAsync<BfPrivateExecution[]>("getexecutions", query).Result;
         }
     }
 }
