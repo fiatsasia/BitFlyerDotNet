@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace BitFlyerDotNet.LightningApi
@@ -48,8 +49,18 @@ namespace BitFlyerDotNet.LightningApi
         ETHJPY,
     }
 
-    public static class BfProductCodeExtension
+    public static class BfProductCodeEx
     {
+        static Dictionary<string, BfProductCode> _originalTable = new Dictionary<string, BfProductCode>();
+
+        static BfProductCodeEx()
+        {
+            foreach (BfProductCode e in Enum.GetValues(typeof(BfProductCode)))
+            {
+                _originalTable.Add(e.ToEnumString(), e);
+            }
+        }
+
         public static decimal MinimumOrderSize(this BfProductCode productCode)
         {
             switch (productCode)
@@ -63,6 +74,8 @@ namespace BitFlyerDotNet.LightningApi
                     return 0.001m;
             }
         }
+
+        public static BfProductCode Parse(string s) => _originalTable[s];
     }
 
     public enum BfMarketType

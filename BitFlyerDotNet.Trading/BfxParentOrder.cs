@@ -43,6 +43,7 @@ namespace BitFlyerDotNet.Trading
         public string? ChildOrderId => throw new NotImplementedException();
         public BfxOrderState State => throw new NotImplementedException();
         public string? OrderFailedReason => throw new NotImplementedException();
+        public DateTime LastUpdatedTime => throw new NotImplementedException();
 
         // Request
         public BfParentOrderRequest? Request { get; }

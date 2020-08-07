@@ -40,6 +40,8 @@ namespace BitFlyerDotNet.Trading
             Order.Request.Parameters.ForEach(e => { e.ProductCode = _market.ProductCode; });
             try
             {
+                ChangeState(BfxOrderTransactionState.SendingOrder);
+                NotifyEvent(BfxOrderTransactionEventType.OrderSending);
                 for (var retry = 0; retry <= _market.Config.OrderRetryMax; retry++)
                 {
                     DebugEx.Trace();
@@ -47,6 +49,7 @@ namespace BitFlyerDotNet.Trading
                     if (!resp.IsError)
                     {
                         Order.Update(resp.GetContent());
+                        ChangeState(BfxOrderTransactionState.WaitingOrderAccepted);
                         NotifyEvent(BfxOrderTransactionEventType.OrderSent, resp);
                         return resp.GetContent().ParentOrderAcceptanceId;
                     }
@@ -56,6 +59,8 @@ namespace BitFlyerDotNet.Trading
                 }
 
                 DebugEx.Trace("SendOrderRequest - Retried out");
+                ChangeState(BfxOrderTransactionState.Idle);
+                NotifyEvent(BfxOrderTransactionEventType.OrderSendFailed);
                 throw new BitFlyerDotNetException();
             }
             catch (Exception ex)
@@ -82,10 +87,23 @@ namespace BitFlyerDotNet.Trading
             }
 
             DebugEx.EnterMethod();
+            ChangeState(BfxOrderTransactionState.SendingCancel);
+            NotifyEvent(BfxOrderTransactionEventType.CancelSending);
             try
             {
                 DebugEx.Trace();
-                return await _market.Client.CancelParentOrderAsync(productCode: _market.ProductCode, parentOrderAcceptanceId: Order.ParentOrderAcceptanceId);
+                var resp = await _market.Client.CancelParentOrderAsync(productCode: _market.ProductCode, parentOrderAcceptanceId: Order.ParentOrderAcceptanceId);
+                if (resp.IsError)
+                {
+                    ChangeState(BfxOrderTransactionState.Idle);
+                    NotifyEvent(BfxOrderTransactionEventType.CancelSendFailed, resp);
+                }
+                else
+                {
+                    ChangeState(BfxOrderTransactionState.CancelAccepted);
+                    NotifyEvent(BfxOrderTransactionEventType.CancelSent, resp);
+                }
+                return resp;
             }
             catch
             {
@@ -103,7 +121,7 @@ namespace BitFlyerDotNet.Trading
         {
             // 注文送信中なら送信をキャンセル
             // 注文送信済みならキャンセルを送信
-            SendCancelOrderRequestAsync();
+            SendCancelOrderRequestAsync().Wait();
         }
 
         public void OnParentOrderEvent(BfParentOrderEvent poe)
@@ -118,15 +136,23 @@ namespace BitFlyerDotNet.Trading
             switch (poe.EventType)
             {
                 case BfOrderEventType.Order: // Order accepted
+                    ChangeState(BfxOrderTransactionState.Idle);
+                    NotifyEvent(BfxOrderTransactionEventType.Ordered, poe);
                     break;
 
                 case BfOrderEventType.OrderFailed:
+                    ChangeState(BfxOrderTransactionState.Idle);
+                    NotifyEvent(BfxOrderTransactionEventType.OrderFailed, poe);
                     break;
 
                 case BfOrderEventType.Cancel:
+                    ChangeState(BfxOrderTransactionState.Idle);
+                    NotifyEvent(BfxOrderTransactionEventType.Canceled, poe);
                     break;
 
                 case BfOrderEventType.CancelFailed:
+                    ChangeState(BfxOrderTransactionState.Idle);
+                    NotifyEvent(BfxOrderTransactionEventType.CancelFailed, poe);
                     break;
 
                 case BfOrderEventType.Trigger:
@@ -142,19 +168,46 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
+        void NotifyEvent(BfxOrderTransactionEventType oet)
+        {
+            OrderTransactionEvent?.Invoke(this, new BfxParentOrderTransactionEventArgs
+            {
+                EventType = oet,
+                State = State,
+                Time = _market.ServerTime,
+                Order = Order,
+            });
+        }
+
+        void NotifyEvent(BfxOrderTransactionEventType oet, BfParentOrderEvent poe)
+        {
+            OrderTransactionEvent?.Invoke(this, new BfxParentOrderTransactionEventArgs
+            {
+                EventType = oet,
+                State = State,
+                Time = poe.EventDate,
+                Order = Order,
+
+                OrderEvent = poe,
+            });
+        }
+
         public override void OnChildOrderEvent(BfChildOrderEvent coe)
         {
             Order.Update(coe);
         }
 
-        void NotifyEvent(BfxOrderTransactionEventType oet, BfChildOrderEvent coe)
-        {
-            throw new NotImplementedException();
-        }
-
         void NotifyEvent(BfxOrderTransactionEventType oet, IBitFlyerResponse resp)
         {
-            throw new NotImplementedException();
+            OrderTransactionEvent?.Invoke(this, new BfxParentOrderTransactionEventArgs
+            {
+                EventType = oet,
+                State = State,
+                Time = _market.ServerTime,
+                Order = Order,
+
+                Response = resp,
+            });
         }
     }
 }

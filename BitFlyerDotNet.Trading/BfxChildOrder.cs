@@ -43,6 +43,7 @@ namespace BitFlyerDotNet.Trading
         public string? AcceptanceId => ChildOrderAcceptanceId;
         public string? Id => ChildOrderId;
         public BfxOrderState State { get; internal set; } = BfxOrderState.Unknown;
+        public DateTime LastUpdatedTime { get; private set; }
 
         // Other fields
         public string? OrderFailedReason { get; }
@@ -120,6 +121,8 @@ namespace BitFlyerDotNet.Trading
                 case BfOrderState.Rejected: // GetChildOrders probably does not return failed order.
                     throw new NotSupportedException();
             }
+
+            LastUpdatedTime = order.ChildOrderDate;
         }
 
         // Market/Limit get from market
@@ -127,6 +130,10 @@ namespace BitFlyerDotNet.Trading
             : this(productCode, order)
         {
             _executions.AddRange(execs.Select(e => new BfxExecution(e)));
+            if (_executions.Count > 0)
+            {
+                LastUpdatedTime = _executions.Last().Time;
+            }
         }
 
         // Market/Limit/Stop/StopLimit/Trail of parent order
@@ -210,12 +217,14 @@ namespace BitFlyerDotNet.Trading
             _executions.AddRange(execs.Select(e => new BfxExecution(e)));
             ExecutedSize = _executions.Sum(e => e.Size);
             State = OrderSize > ExecutedSize ? BfxOrderState.Executing : BfxOrderState.Executed;
+            LastUpdatedTime = _executions.Last().Time;
         }
 
         public void Update(BfChildOrderEvent coe)
         {
             ChildOrderAcceptanceId = coe.ChildOrderAcceptanceId;
             ChildOrderId = coe.ChildOrderId;
+            LastUpdatedTime = coe.EventDate;
 
             switch (coe.EventType)
             {

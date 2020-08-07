@@ -4,8 +4,6 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using BitFlyerDotNet.LightningApi;
@@ -185,11 +183,6 @@ namespace BitFlyerDotNet.Trading
                 case BfOrderEventType.Unknown:
                     throw new NotSupportedException();
             }
-        }
-
-        void ChangeState(BfxOrderTransactionState state)
-        {
-            State = state;
         }
 
         void NotifyEvent(BfxOrderTransactionEventType oet)

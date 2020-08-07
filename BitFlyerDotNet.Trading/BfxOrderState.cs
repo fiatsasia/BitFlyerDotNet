@@ -40,4 +40,24 @@ namespace BitFlyerDotNet.Trading
 
         Expired,
     }
+
+    public static class BfxOrderStateExtensions
+    {
+        public static bool IsCompleted(this BfxOrderState state)
+        {
+            switch (state)
+            {
+                case BfxOrderState.Ordered:
+                case BfxOrderState.OrderFailed:
+                case BfxOrderState.Executed:
+                case BfxOrderState.Canceled:
+                case BfxOrderState.CancelFailed:
+                case BfxOrderState.Expired:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+    }
 }

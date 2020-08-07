@@ -47,5 +47,11 @@ namespace BitFlyerDotNet.Trading
                     break;
             }
         }
+
+        protected virtual void ChangeState(BfxOrderTransactionState state)
+        {
+            State = state;
+        }
+
     }
 }

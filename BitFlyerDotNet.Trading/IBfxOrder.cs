@@ -4,8 +4,6 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
@@ -22,6 +20,11 @@ namespace BitFlyerDotNet.Trading
         string? Id { get; }
         DateTime? OrderDate { get; }
         DateTime? ExpireDate { get; }
+
+        BfxOrderState State { get; }
+        decimal? ExecutedSize { get; }
+        decimal? ExecutedPrice { get; }
+        DateTime LastUpdatedTime { get; }
     }
 
     public interface IBfxExecution
