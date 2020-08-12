@@ -6,11 +6,20 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
     public interface IBfxOrderTransaction
     {
-        void CancelOrder();
+        void Cancel();
+    }
+
+    internal interface IBfxParentOrderTransaction
+    {
+    }
+
+    internal interface IBfxChildOrderTransaction
+    {
     }
 }

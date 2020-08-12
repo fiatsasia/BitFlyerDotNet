@@ -10,112 +10,74 @@ using System.Xml.Linq;
 using System.Reactive.Linq;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
+using System.Text;
 
 namespace TradingApiTests
 {
-    class Program
+    partial class Program
     {
         const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
-        const decimal UnexecuteGap = 50000m;
+        const decimal UnexecutableGap = 50000m;
         const string TimeFormat = "yyyy/MM/dd HH:mm:ss.ffff";
 
         static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
+        const char ESCAPE = (char)0x1b;
 
+        static BfxAccount _account;
+        static BfxMarket _market;
         static Dictionary<string, string> Properties;
         static Queue<IBfxOrderTransaction> _transactions = new Queue<IBfxOrderTransaction>();
+        static decimal _orderSize;
 
         static void Main(string[] args)
         {
             LoadSettings(args[0]);
 
-            using (var account = new BfxAccount(Properties["ApiKey"], Properties["ApiSecret"]))
-            using (var market = account.GetMarket(ProductCode))
+            using (_account = new BfxAccount(Properties["ApiKey"], Properties["ApiSecret"]))
+            using (_market = _account.GetMarket(ProductCode))
             {
-                account.PositionChanged += OnPositionChanged;
+                _account.PositionChanged += OnPositionChanged;
+                _orderSize = _market.MinimumOrderSize;
 
                 // Call event handler on another thread
                 //market.OrderTransactionEvent += OnOrderTransactionEvent;
-                Observable.FromEventPattern<BfxOrderTransactionEventArgs>(market, nameof(market.OrderTransactionEvent))
+                Observable.FromEventPattern<BfxOrderTransactionEventArgs>(_market, nameof(_market.OrderTransactionEvent))
                 .ObserveOn(System.Reactive.Concurrency.Scheduler.Default)
                 .Subscribe(e =>
                 {
                     OnOrderTransactionEvent(e.Sender, e.EventArgs);
                 });
 
-                market.Open();
+                _market.Open();
                 while (true)
                 {
-                    Console.WriteLine("========================================================================");
-                    Console.WriteLine("B)uy best-bid price");
-                    Console.WriteLine("S)ell best-ask price");
-                    Console.WriteLine("3) Stop sell unexecutable price");
-                    Console.WriteLine("4) IFD unexecutable price");
-                    Console.WriteLine("C)ancel last order");
-                    Console.WriteLine("6) Limit sell unexecutable price");
+                    Console.WriteLine("===================================================================");
+                    Console.WriteLine("S)imple orders");
+                    Console.WriteLine("C)onditional orders");
                     Console.WriteLine("");
-                    Console.WriteLine("Q)uit");
-                    Console.WriteLine("========================================================================");
+                    Console.Write("Main>");
 
-                    switch (GetCh())
+                    try
                     {
-                        case 'B':
-                            _transactions.Enqueue(market.PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, market.Ticker.BestBidPrice, market.MinimumOrderSize)));
-                            break;
+                        switch (GetCh())
+                        {
+                            case 'S':
+                                SimpleOrders();
+                                break;
 
-                        case 'S':
-                            _transactions.Enqueue(market.PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Sell, market.Ticker.BestAskPrice, market.MinimumOrderSize)));
-                            break;
+                            case 'C':
+                                ConditionalOrders();
+                                break;
 
-                        case '3':
-                            _transactions.Enqueue(market.PlaceOrder(BfxOrder.StopLimit(
-                                BfTradeSide.Sell,
-                                market.Ticker.BestAskPrice + UnexecuteGap,
-                                market.Ticker.BestAskPrice + UnexecuteGap,
-                                market.MinimumOrderSize
-                            )));
-                            break;
-
-                        case '4':
-                            _transactions.Enqueue(market.PlaceOrder(BfxOrder.IFD(
-                                BfxOrder.LimitPrice(
-                                    BfTradeSide.Sell,
-                                    market.Ticker.BestAskPrice + UnexecuteGap,
-                                    market.MinimumOrderSize
-                                ),
-                                BfxOrder.StopLimit(
-                                    BfTradeSide.Sell,
-                                    market.Ticker.BestAskPrice + UnexecuteGap,
-                                    market.Ticker.BestAskPrice + UnexecuteGap,
-                                    market.MinimumOrderSize
-                                )
-                            )));
-                            break;
-
-                        case 'C':
-                            _transactions.Dequeue().CancelOrder();
-                            break;
-
-                        case '6':
-                            _transactions.Enqueue(market.PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Sell, market.Ticker.BestAskPrice + UnexecuteGap, market.MinimumOrderSize)));
-                            break;
-
-                        case 'Q':
-                            return;
+                            case ESCAPE:
+                                return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
                     }
                 }
-            }
-        }
-
-        static void OnPositionChanged(object sender, BfxPositionChangedEventArgs e)
-        {
-            var pos = e.Position;
-            if (e.IsOpened)
-            {
-                Console.WriteLine($"{pos.Open} Position Opened");
-            }
-            else // Closed
-            {
-                Console.WriteLine($"{pos.Close} Position Closed : P:{pos.Profit} NP:{pos.NetProfit}");
             }
         }
 
@@ -126,31 +88,85 @@ namespace TradingApiTests
             Properties = xml.Element("RunSettings").Element("TestRunParameters").Elements("Parameter").ToDictionary(e => e.Attribute("name").Value, e => e.Attribute("value").Value);
         }
 
-        private static void OnOrderTransactionEvent(object sender, BfxOrderTransactionEventArgs evt)
+        static BfTradeSide SelectSide()
         {
-            var time = evt.Time.ToString(TimeFormat);
-            var eventMessage = evt.EventType.ToDisplayString();
-            var orderMessageElements = new List<string>
+            Console.Write("B)uy S)ell : ");
+            while (true)
             {
-                $"{evt.Order.ProductCode}",
-                $"{evt.Order.OrderType}",
-            };
-            if (evt.Order.Side.HasValue)
-            {
-                orderMessageElements.Add($"{evt.Order.Side}");
-            }
-            if (evt.Order.OrderPrice.HasValue)
-            {
-                orderMessageElements.Add($"Price:{evt.Order.OrderPrice}");
-            }
-            if (evt.Order.OrderSize.HasValue)
-            {
-                orderMessageElements.Add($"Size:{evt.Order.OrderSize}");
-            }
-            var orderMessage = string.Join(' ', orderMessageElements);
+                switch (GetCh())
+                {
+                    case 'B':
+                        return BfTradeSide.Buy;
 
-            //Console.WriteLine($"{time} Event:{evt.EventType} Tran:{evt.State} Order:{evt.OrderState}");
-            Console.WriteLine($"{time} {eventMessage} {orderMessage}");
+                    case 'S':
+                        return BfTradeSide.Sell;
+
+                    case ESCAPE:
+                        return BfTradeSide.Unknown;
+                }
+            }
+        }
+
+        static void OnPositionChanged(object sender, BfxPositionChangedEventArgs ev)
+        {
+            var pos = ev.Position;
+            if (ev.IsOpened)
+            {
+                Console.WriteLine($"{pos.Open.ToString(TimeFormat)} 建玉発生　　 {pos.Side} P:{pos.OpenPrice} S:{pos.Size} TS:{_account.Positions.TotalSize}");
+            }
+            else // Closed
+            {
+                Console.WriteLine($"{pos.Close.Value.ToString(TimeFormat)} 建玉決済　　 {pos.Side} P:{pos.ClosePrice} S:{pos.Size} TS:{_account.Positions.TotalSize} PT:{pos.Profit} NP:{pos.NetProfit}");
+            }
+        }
+
+        private static void OnOrderTransactionEvent(object sender, BfxOrderTransactionEventArgs ev)
+        {
+            var sb = new List<string>();
+            sb.Add(ev.Time.ToString(TimeFormat));
+
+            IBfxOrder order;
+            if (ev.EventType != BfxOrderTransactionEventType.ChildOrderEvent)
+            {
+                order = ev.Order;
+                sb.Add(ev.EventType.ToDisplayString());
+            }
+            else
+            {
+                order = ev.Order.Children[ev.ChildOrderIndex];
+                sb.Add(ev.ChildEventType.ToChildDisplayString());
+            }
+
+            sb.Add($"{order.ProductCode}");
+            sb.Add($"{order.OrderType}");
+            if (order.Side.HasValue)
+            {
+                sb.Add($"{order.Side}");
+            }
+            if (order.OrderPrice.HasValue)
+            {
+                sb.Add($"P:{order.OrderPrice}");
+            }
+            if (order.OrderSize.HasValue)
+            {
+                sb.Add($"S:{order.OrderSize}");
+            }
+            if (order.ExecutedPrice.HasValue)
+            {
+                sb.Add($"EP:{order.ExecutedPrice}");
+            }
+            if (order.ExecutedSize.HasValue)
+            {
+                sb.Add($"ES:{order.ExecutedSize}");
+            }
+            Console.WriteLine(string.Join(' ', sb));
+
+            switch (ev.EventType)
+            {
+                case BfxOrderTransactionEventType.Completed:
+                    _transactions.Dequeue();
+                    break;
+            }
         }
     }
 }

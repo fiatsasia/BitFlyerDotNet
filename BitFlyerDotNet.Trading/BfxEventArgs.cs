@@ -4,7 +4,6 @@
 //
 
 using System;
-using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
@@ -26,42 +25,15 @@ namespace BitFlyerDotNet.Trading
         public BfxOrderState OrderState { get; internal set; }
         public DateTime Time { get; internal set; }
 
-        public IBfxOrder Order { get; internal set; }
-    }
+        public IBfxOrder Order { get; }
+        public object? Parameter { get; set; }
 
-    public class BfxChildOrderTransactionEventArgs : BfxOrderTransactionEventArgs
-    {
-        public BfChildOrderEvent OrderEvent { get; internal set; }
-        public IBitFlyerResponse Response { get; internal set; }
+        public BfxOrderTransactionEventType ChildEventType { get; internal set; }
+        public int ChildOrderIndex { get; internal set; }
 
-        public string ChildOrderAcceptanceId
+        public BfxOrderTransactionEventArgs(IBfxOrder order)
         {
-            get
-            {
-                if (Response is BitFlyerResponse<BfChildOrderResponse> resp)
-                {
-                    return resp.GetContent().ChildOrderAcceptanceId;
-                }
-                else if (OrderEvent != null)
-                {
-                    return OrderEvent.ChildOrderAcceptanceId;
-                }
-                else
-                {
-                    return string.Empty;
-                }
-            }
+            Order = order;
         }
-    }
-
-    public class BfxParentOrderTransactionEventArgs : BfxOrderTransactionEventArgs
-    {
-        public BfParentOrderEvent OrderEvent { get; internal set; }
-        public IBitFlyerResponse Response { get; internal set; }
-    }
-
-    public class BfxOrderEventArgs : EventArgs
-    {
-        public BfxOrderTransactionEventType EventType { get; internal set; }
     }
 }

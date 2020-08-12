@@ -3,6 +3,7 @@
 // https://www.fiats.asia/
 //
 
+using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -24,7 +25,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<string> CancelAllChildOrders(BfCancelAllChildOrdersRequest request)
         {
-            return PrivatePostAsync<string>(nameof(CancelAllChildOrders), request).Result;
+            return PrivatePostAsync<string>(nameof(CancelAllChildOrders), request, CancellationToken.None).Result;
         }
 
         /// <summary>

@@ -3,6 +3,7 @@
 // https://www.fiats.asia/
 //
 
+using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -39,7 +40,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfWithdrawRequest request)
         {
-            return PrivatePostAsync<BfWithdrawResponse>(nameof(Withdraw), request).Result;
+            return PrivatePostAsync<BfWithdrawResponse>(nameof(Withdraw), request, CancellationToken.None).Result;
         }
 
         /// <summary>

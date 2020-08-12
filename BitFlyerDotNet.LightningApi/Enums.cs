@@ -21,6 +21,8 @@ namespace BitFlyerDotNet.LightningApi
         LSK,
         XRP,
         BAT,
+        XLM,
+        XEM,
     }
 
     public enum BfProductCode
@@ -51,6 +53,20 @@ namespace BitFlyerDotNet.LightningApi
 
     public static class BfProductCodeEx
     {
+        static Dictionary<BfProductCode, int> _priceDecimals = new Dictionary<BfProductCode, int>
+        {
+            { BfProductCode.BTCJPY, 1 },
+            { BfProductCode.FXBTCJPY, 1 },
+            { BfProductCode.ETHBTC, 5 },
+            { BfProductCode.BCHBTC, 5 },
+            { BfProductCode.BTCUSD, 2 },
+            { BfProductCode.BTCEUR, 2 },
+            { BfProductCode.BTCJPYMAT1WK, 1 },
+            { BfProductCode.BTCJPYMAT2WK, 1 },
+            { BfProductCode.BTCJPYMAT3M, 1 },
+            { BfProductCode.ETHJPY, 1 },
+        };
+
         static Dictionary<string, BfProductCode> _originalTable = new Dictionary<string, BfProductCode>();
 
         static BfProductCodeEx()
@@ -76,6 +92,8 @@ namespace BitFlyerDotNet.LightningApi
         }
 
         public static BfProductCode Parse(string s) => _originalTable[s];
+
+        public static int GetPriceDecimals(this BfProductCode productCode) => _priceDecimals[productCode];
     }
 
     public enum BfMarketType
@@ -216,6 +234,12 @@ namespace BitFlyerDotNet.LightningApi
 
     public static class BfOrderTypeExtension
     {
+        // Send:
+        //   BfParentOrderRequest.OrderMethod
+        // Receive:
+        //   BfParentOrder.ParentOrderType
+        //   BfParentOrderDetail.OrderMethod
+        //   BfParentOrderEvent.ParentOrderType
         public static bool IsOrderMethod(this BfOrderType orderType)
         {
             return
@@ -225,6 +249,13 @@ namespace BitFlyerDotNet.LightningApi
                 orderType == BfOrderType.IFDOCO;
         }
 
+        // Send:
+        //   BfParentOrderRequestParameter.ConditionType
+        //   BfParentOrderParameter.ConditionType
+        // Receive:
+        //   BfChildOrder.ChildOrderType
+        //   BfChildOrderEvent.ChildOrderType
+        //   BfParentOrderEvent.ChildOrderType
         public static bool IsConditionType(this BfOrderType orderType)
         {
             return
@@ -235,18 +266,9 @@ namespace BitFlyerDotNet.LightningApi
                 orderType == BfOrderType.Trail;
         }
 
-        public static bool IsConditional(this BfOrderType orderType)
-        {
-            return
-                orderType == BfOrderType.Stop ||
-                orderType == BfOrderType.StopLimit ||
-                orderType == BfOrderType.Trail ||
-                orderType == BfOrderType.IFD ||
-                orderType == BfOrderType.OCO ||
-                orderType == BfOrderType.IFDOCO;
-        }
-
-        public static bool IsSimple(this BfOrderType orderType)
+        // Send:
+        //   BfChildOrderRequest.ChildOrderType
+        public static bool IsChildOrderType(this BfOrderType orderType)
         {
             return
                 orderType == BfOrderType.Market ||
@@ -277,6 +299,10 @@ namespace BitFlyerDotNet.LightningApi
         Rejected,
     }
 
+    /// <summary>
+    /// Order Event Type
+    /// <see href="https://scrapbox.io/BitFlyerDotNet/ChildOrderEvent">Online help</see>
+    /// </summary>
     public enum BfOrderEventType
     {
         Unknown,

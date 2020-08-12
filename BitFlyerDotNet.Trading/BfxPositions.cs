@@ -4,8 +4,8 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Generic;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
@@ -22,20 +22,20 @@ namespace BitFlyerDotNet.Trading
         public decimal SwapForDifference { get; }
         public decimal SwapPointAccumulate { get; }
 
-        internal BfxPositionChange(BfxPosition pos, BfChildOrderEvent? evt = default)
+        internal BfxPositionChange(BfxPosition pos, BfChildOrderEvent? ev = default)
         {
             Open = pos.Open;
-            Close = evt?.EventDate;
+            Close = ev?.EventDate;
             Side = pos.OpenSize > 0m ? BfTradeSide.Buy : BfTradeSide.Sell;
             OpenPrice = pos.Price;
-            ClosePrice = evt?.Price;
+            ClosePrice = ev?.Price;
             Size = Math.Abs(pos.CurrentSize);
             Commission = pos.Commission;
             SwapForDifference = pos.SwapForDifference;
             SwapPointAccumulate = pos.SwapPointAccumulate;
         }
 
-        public decimal? Profit => (ClosePrice - OpenPrice) * (Side == BfTradeSide.Buy ? Size : -Size);
+        public decimal? Profit => ClosePrice.HasValue ? Math.Floor((ClosePrice.Value - OpenPrice) * (Side == BfTradeSide.Buy ? Size : -Size)) : default;
         public decimal? NetProfit => Profit - Commission - SwapForDifference - SwapPointAccumulate;
     }
 
@@ -44,6 +44,7 @@ namespace BitFlyerDotNet.Trading
         public DateTime Open { get; private set; }
         public decimal Price { get; private set; }
         public decimal OpenSize { get; private set; }
+        public BfTradeSide Side => OpenSize > decimal.Zero ? BfTradeSide.Buy : BfTradeSide.Sell;
 
         public decimal CurrentSize { get; private set; }
         public decimal SwapPointAccumulate { get; }
@@ -65,17 +66,17 @@ namespace BitFlyerDotNet.Trading
             _sfd = pos.SwapForDifference;
         }
 
-        public BfxPosition(BfChildOrderEvent evt, decimal size)
+        public BfxPosition(BfChildOrderEvent ev, decimal size)
         {
-            Open = evt.EventDate;
-            Price = evt.Price;
-            CurrentSize = OpenSize = evt.Side == BfTradeSide.Buy ? size : -size;
-            _commission = evt.Commission;
-            _sfd = evt.SwapForDifference;
+            Open = ev.EventDate;
+            Price = ev.Price;
+            CurrentSize = OpenSize = ev.Side == BfTradeSide.Buy ? size : -size;
+            _commission = ev.Commission;
+            _sfd = ev.SwapForDifference;
         }
 
-        public BfxPosition(BfChildOrderEvent evt)
-            : this(evt, evt.Size)
+        public BfxPosition(BfChildOrderEvent ev)
+            : this(ev, ev.Size)
         {
         }
 
@@ -99,17 +100,20 @@ namespace BitFlyerDotNet.Trading
     {
         Queue<BfxPosition> _q = new Queue<BfxPosition>();
 
+        public decimal TotalSize => Math.Abs(_q.Sum(e => e.CurrentSize));
+        public BfTradeSide Side => _q.Count == 0 ? BfTradeSide.Unknown : _q.Peek().Side;
+
         public void Update(BfPosition[] positions)
         {
             positions.ForEach(e => _q.Enqueue(new BfxPosition(e)));
         }
 
-        public BfxPositionChange[] Update(BfChildOrderEvent evt)
+        public BfxPositionChange[] Update(BfChildOrderEvent ev)
         {
-            var executedSize = evt.Side == BfTradeSide.Buy ? evt.Size : -evt.Size;
+            var executedSize = ev.Side == BfTradeSide.Buy ? ev.Size : -ev.Size;
             if (_q.Count == 0 || Math.Sign(_q.Peek().OpenSize) == Math.Sign(executedSize))
             {
-                var pos = new BfxPosition(evt);
+                var pos = new BfxPosition(ev);
                 _q.Enqueue(pos);
                 return new BfxPositionChange[] { new BfxPositionChange(pos) };
             }
@@ -134,11 +138,11 @@ namespace BitFlyerDotNet.Trading
                 }
             }
             var result = new List<BfxPositionChange>();
-            closedPos.ForEach(e => result.Add(new BfxPositionChange(e, evt)));
+            closedPos.ForEach(e => result.Add(new BfxPositionChange(e, ev)));
 
             if (closeSize > 0m)
             {
-                var pos = new BfxPosition(evt, Math.Abs(closeSize));
+                var pos = new BfxPosition(ev, Math.Abs(closeSize));
                 _q.Enqueue(pos);
                 result.Add(new BfxPositionChange(pos));
             }

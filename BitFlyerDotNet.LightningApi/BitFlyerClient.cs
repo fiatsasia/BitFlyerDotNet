@@ -5,6 +5,7 @@
 
 using System;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Net;
@@ -336,10 +337,6 @@ namespace BitFlyerDotNet.LightningApi
                     }
                     return responseObject;
                 }
-                catch (BitFlyerUnauthorizedException)
-                {
-                    throw;
-                }
                 catch (AggregateException aex)
                 {
                     var ex = aex.InnerException;
@@ -378,7 +375,7 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        internal async Task<BitFlyerResponse<T>> PrivatePostAsync<T>(string apiName, object requestObject)
+        internal async Task<BitFlyerResponse<T>> PrivatePostAsync<T>(string apiName, object requestObject, CancellationToken ct)
         {
             if (!IsAuthenticated)
             {
@@ -409,7 +406,7 @@ namespace BitFlyerDotNet.LightningApi
                 var responseObject = new BitFlyerResponse<T>();
                 try
                 {
-                    var response = await _client.SendAsync(request);
+                    var response = await _client.SendAsync(request, ct);
                     responseObject.Set(response.StatusCode, await response.Content.ReadAsStringAsync());
                     TotalReceivedMessageChars += responseObject.Json.Length;
                     switch (apiName)
@@ -433,6 +430,7 @@ namespace BitFlyerDotNet.LightningApi
                     if (ex is TaskCanceledException) // Caused timedout
                     {
                         responseObject.StatusCode = HttpStatusCode.RequestTimeout;
+                        Debug.WriteLine("BitFlyerlient: Request timedout");
                     }
                     else if (ex is HttpRequestException)
                     {
@@ -440,6 +438,7 @@ namespace BitFlyerDotNet.LightningApi
                         {
                             responseObject.ErrorMessage = ((WebException)ex.InnerException).Status.ToString();
                             responseObject.StatusCode = HttpStatusCode.InternalServerError;
+                            Debug.WriteLine($"BitFlyerlient: Internal Server Error {responseObject.ErrorMessage}");
                         }
                     }
                     else if (ex is WebException)
@@ -454,9 +453,11 @@ namespace BitFlyerDotNet.LightningApi
                         {
                             responseObject.StatusCode = HttpStatusCode.NoContent;
                         }
+                        Debug.WriteLine($"BitFlyerlient: WebException {responseObject.StatusCode}");
                     }
                     else
                     {
+                        Debug.WriteLine($"BitFlyerlient: Unexpected exception {ex.Message}");
                         throw ex;
                     }
                     return responseObject;

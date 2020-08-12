@@ -3,25 +3,32 @@
 // https://www.fiats.asia/
 //
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
     public abstract class BfxOrderTransaction : IBfxOrderTransaction
     {
+        public abstract string? Id { get; }
         public BfxOrderTransactionState State { get; protected set; } = BfxOrderTransactionState.Idle;
         public abstract BfxOrderState OrderState { get; }
 
         public abstract void OnChildOrderEvent(BfChildOrderEvent coe);
 
-        protected abstract Task<IBitFlyerResponse> SendCancelOrderRequestAsync();
-        protected abstract void TryAbortSendingOrder();
+        protected abstract void SendCancelOrderRequestAsync();
+        protected abstract void CancelTransaction();
 
-        public virtual void CancelOrder()
+        string _derived;
+
+        public BfxOrderTransaction()
+        {
+#pragma warning disable CS0184 // 'is' 式の指定された式は指定された型ではありません
+            _derived = (GetType() is BfxParentOrderTransaction) ? "Parent" : "Child";
+#pragma warning restore CS0184 // 'is' 式の指定された式は指定された型ではありません
+        }
+
+        public virtual void Cancel()
         {
             switch (State)
             {
@@ -32,26 +39,27 @@ namespace BitFlyerDotNet.Trading
                     }
                     break;
 
+                case BfxOrderTransactionState.SendingOrder:
+                    CancelTransaction();
+                    break;
+
                 case BfxOrderTransactionState.WaitingOrderAccepted:
-                case BfxOrderTransactionState.OrderAccepted:
                     SendCancelOrderRequestAsync();
                     break;
 
                 case BfxOrderTransactionState.SendingCancel:
-                case BfxOrderTransactionState.CancelAccepted:
-                case BfxOrderTransactionState.WaitingCancelCompleted:
+                    CancelTransaction();
                     break;
 
-                case BfxOrderTransactionState.SendingOrder:
-                    TryAbortSendingOrder();
+                case BfxOrderTransactionState.CancelAccepted:
                     break;
             }
         }
 
         protected virtual void ChangeState(BfxOrderTransactionState state)
         {
+            Debug.WriteLine($"{_derived} transaction state changed: {State} -> {state}");
             State = state;
         }
-
     }
 }

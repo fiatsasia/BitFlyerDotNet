@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -247,7 +248,7 @@ namespace BitFlyerDotNet.LightningApi
         public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest request)
         {
             Validate(ref request);
-            return PrivatePostAsync<BfParentOrderResponse>(nameof(SendParentOrder), request).Result;
+            return PrivatePostAsync<BfParentOrderResponse>(nameof(SendParentOrder), request, CancellationToken.None).Result;
         }
 
         /// <summary>
@@ -256,10 +257,10 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<BitFlyerResponse<BfParentOrderResponse>> SendParentOrderAsync(BfParentOrderRequest request)
+        public async Task<BitFlyerResponse<BfParentOrderResponse>> SendParentOrderAsync(BfParentOrderRequest request, CancellationToken ct)
         {
             Validate(ref request);
-            return await PrivatePostAsync<BfParentOrderResponse>(nameof(SendParentOrder), request);
+            return await PrivatePostAsync<BfParentOrderResponse>(nameof(SendParentOrder), request, ct);
         }
     }
 }

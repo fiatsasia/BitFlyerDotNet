@@ -3,9 +3,6 @@
 // https://www.fiats.asia/
 //
 
-using System;
-using BitFlyerDotNet.LightningApi;
-
 namespace BitFlyerDotNet.Trading
 {
     public enum BfxOrderTransactionState
@@ -14,10 +11,8 @@ namespace BitFlyerDotNet.Trading
 
         SendingOrder,
         WaitingOrderAccepted,
-        OrderAccepted,
 
         SendingCancel,
-        WaitingCancelCompleted,
         CancelAccepted,
     }
 
@@ -38,6 +33,7 @@ namespace BitFlyerDotNet.Trading
         Canceled,
         CancelFailed,
 
+        Completed,
         Expired,
     }
 

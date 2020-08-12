@@ -11,47 +11,20 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxChildOrder : IBfxChildOrder
+    public class BfxChildOrder : BfxOrder
     {
-        // Request fields
-        public BfProductCode ProductCode { get; private set; }
-        public BfOrderType OrderType { get; }
-        public BfTradeSide? Side { get; }
-        public decimal? OrderPrice { get; } // Missing if market price order
-        public decimal? OrderSize { get; }
-        public decimal? TriggerPrice { get; }
-        public decimal? TrailOffset { get; }
-        public int MinuteToExpire { get; }
-        public BfTimeInForce TimeInForce { get; }
+        public override string? AcceptanceId => ChildOrderAcceptanceId;
+        public override string? OrderId => ChildOrderId;
+        public override IBfxExecution[] Executions => _executions.ToArray();
 
         // Response fields
         public string? ChildOrderAcceptanceId { get; private set; }
-
-        // Confirmed fields
         public string? ChildOrderId { get; private set; }
-        public DateTime? OrderDate { get; private set; }
-        public DateTime? ExpireDate { get; private set; }
 
-        // Execution fields
-        public decimal? ExecutedSize { get; private set; }
-        public decimal? ExecutedPrice { get; private set; }
-        public decimal? Commission { get; private set; }
-        public decimal? SfdCollectedAmount => _executions.Sum(e => e.SfdCollectedAmount);
-        public IBfxExecution[] Executions => _executions.ToArray();
-
-        // Simple order fields
-        public string? AcceptanceId => ChildOrderAcceptanceId;
-        public string? Id => ChildOrderId;
-        public BfxOrderState State { get; internal set; } = BfxOrderState.Unknown;
-        public DateTime LastUpdatedTime { get; private set; }
-
-        // Other fields
-        public string? OrderFailedReason { get; }
+        internal BfChildOrderRequest? Request { get; }
 
         // Private properties
         List<BfxExecution> _executions = new List<BfxExecution>();
-
-        internal BfChildOrderRequest? Request { get; }
 
         #region Constructors
         // Market/Limit
@@ -69,8 +42,6 @@ namespace BitFlyerDotNet.Trading
             }
             MinuteToExpire = request.MinuteToExpire;
             TimeInForce = request.TimeInForce;
-
-            State = BfxOrderState.Outstanding;
         }
 
         public BfxChildOrder(BfProductCode productCode, BfChildOrder order)
@@ -103,19 +74,19 @@ namespace BitFlyerDotNet.Trading
             switch (order.ChildOrderState)
             {
                 case BfOrderState.Active:
-                    State = ExecutedSize == 0 ? BfxOrderState.Ordered : BfxOrderState.Executing;
+                    ChangeState(ExecutedSize == 0 ? BfxOrderState.Ordered : BfxOrderState.Executing);
                     break;
 
                 case BfOrderState.Completed:
-                    State = BfxOrderState.Executed;
+                    ChangeState(BfxOrderState.Executed);
                     break;
 
                 case BfOrderState.Expired:
-                    State = BfxOrderState.Expired;
+                    ChangeState(BfxOrderState.Expired);
                     break;
 
                 case BfOrderState.Canceled:
-                    State = BfxOrderState.Canceled;
+                    ChangeState(BfxOrderState.Canceled);
                     break;
 
                 case BfOrderState.Rejected: // GetChildOrders probably does not return failed order.
@@ -137,7 +108,7 @@ namespace BitFlyerDotNet.Trading
         }
 
         // Market/Limit/Stop/StopLimit/Trail of parent order
-        public BfxChildOrder(BfParentOrderRequestParameter request, int minuteToExpire, BfTimeInForce timeInForce)
+        public BfxChildOrder(BfParentOrderRequestParameter request)
         {
             ProductCode = request.ProductCode;
             OrderType = request.ConditionType;
@@ -155,10 +126,6 @@ namespace BitFlyerDotNet.Trading
             {
                 TrailOffset = request.Offset;
             }
-            MinuteToExpire = minuteToExpire;
-            TimeInForce = timeInForce;
-
-            State = BfxOrderState.Outstanding;
 
             // ChildOrderAcceptanceId will be update when update order event
         }
@@ -187,24 +154,30 @@ namespace BitFlyerDotNet.Trading
             }
             MinuteToExpire = detail.MinuteToExpire;
 
-            State = BfxOrderState.Unknown;
+            ChangeState(BfxOrderState.Unknown);
         }
         #endregion Constructors
 
-        internal void ApplyProductCode(BfProductCode prodctCode)
+        internal override void ApplyParameters(BfProductCode productCode, int minutesToExpire, BfTimeInForce timeInForce)
         {
             if (Request != null)
             {
-                Request.ProductCode = prodctCode;
+                Request.ProductCode = productCode;
+                Request.MinuteToExpire = minutesToExpire;
+                Request.TimeInForce = TimeInForce;
             }
-            ProductCode = prodctCode;
+            ProductCode = productCode;
+            MinuteToExpire = minutesToExpire;
+            TimeInForce = TimeInForce;
+
+            ChangeState(BfxOrderState.Outstanding);
         }
 
         #region Update orders
         public void Update(BfChildOrderResponse response)
         {
-            State = BfxOrderState.Ordering;
             ChildOrderAcceptanceId = response.ChildOrderAcceptanceId;
+            ChangeState(BfxOrderState.Ordering);
         }
 
         public void Update(BfPrivateExecution[] execs)
@@ -216,67 +189,78 @@ namespace BitFlyerDotNet.Trading
 
             _executions.AddRange(execs.Select(e => new BfxExecution(e)));
             ExecutedSize = _executions.Sum(e => e.Size);
-            State = OrderSize > ExecutedSize ? BfxOrderState.Executing : BfxOrderState.Executed;
+            ChangeState(OrderSize > ExecutedSize ? BfxOrderState.Executing : BfxOrderState.Executed);
             LastUpdatedTime = _executions.Last().Time;
         }
 
         public void Update(BfChildOrderEvent coe)
         {
-            ChildOrderAcceptanceId = coe.ChildOrderAcceptanceId;
-            ChildOrderId = coe.ChildOrderId;
-            LastUpdatedTime = coe.EventDate;
+            if (coe.ChildOrderType == BfOrderType.Unknown)
+            {
+                Debug.WriteLine($"ChildOrderAcceptanceId: {coe.ChildOrderAcceptanceId} ChildOrderId: {ChildOrderId} EventDate: {coe.EventDate}");
+                ChildOrderAcceptanceId = coe.ChildOrderAcceptanceId;
+                LastUpdatedTime = coe.EventDate;
+            }
+            else
+            {
+                ChildOrderAcceptanceId = coe.ChildOrderAcceptanceId;
+                ChildOrderId = coe.ChildOrderId;
+                LastUpdatedTime = coe.EventDate;
+            }
 
             switch (coe.EventType)
             {
                 case BfOrderEventType.Order:
                     OrderDate = coe.EventDate; // Is it same value to real ordered date ?
                     ExpireDate = coe.ExpireDate;
-                    State = BfxOrderState.Ordered;
+                    ChangeState(BfxOrderState.Ordered);
                     break;
 
                 case BfOrderEventType.OrderFailed:
-                    State = BfxOrderState.OrderFailed;
+                    ChangeState(BfxOrderState.OrderFailed);
                     break;
 
                 case BfOrderEventType.Cancel:
-                    State = BfxOrderState.Canceled;
+                    ChangeState(BfxOrderState.Canceled);
                     break;
 
                 case BfOrderEventType.CancelFailed:
-                    State = BfxOrderState.CancelFailed;
+                    ChangeState(BfxOrderState.CancelFailed);
                     break;
 
                 case BfOrderEventType.Execution:
                     _executions.Add(new BfxExecution(coe));
-                    if (!ExecutedSize.HasValue)
-                    {
-                        ExecutedSize = coe.Size;
-                    }
-                    else
-                    {
-                        ExecutedSize += ExecutedSize.Value;
-                    }
-                    State = OrderSize > ExecutedSize ? BfxOrderState.Executing : BfxOrderState.Executed;
+                    ExecutedSize = _executions.Sum(e => e.Size);
+                    ExecutedPrice = Math.Round(_executions.Sum(e => e.Price * e.Size) / ExecutedSize.Value, ProductCode.GetPriceDecimals(), MidpointRounding.ToEven);
+                    ChangeState(OrderSize > ExecutedSize ? BfxOrderState.Executing : BfxOrderState.Executed);
                     break;
 
                 case BfOrderEventType.Expire:
-                    State = BfxOrderState.Expired;
+                    ChangeState(BfxOrderState.Expired);
                     break;
 
+                case BfOrderEventType.Unknown:
                 case BfOrderEventType.Trigger: // Parent order only
                 case BfOrderEventType.Complete: // Parent order only
                     throw new NotSupportedException();
             }
         }
 
+        // Update by parent order event
         public void Update(BfParentOrderEvent poe)
         {
             if (poe.EventType != BfOrderEventType.Trigger)
             {
-                throw new ArgumentException();
+                return;
             }
 
             ChildOrderAcceptanceId = poe.ChildOrderAcceptanceId;
+        }
+
+        void ChangeState(BfxOrderState state)
+        {
+            Debug.WriteLine($"Child order status changed: {ChildOrderAcceptanceId} {State} -> {state}");
+            State = state;
         }
         #endregion Update orders
     }

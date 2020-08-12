@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -74,7 +75,7 @@ namespace BitFlyerDotNet.LightningApi
     {
         void Validate(ref BfChildOrderRequest request)
         {
-            if (!request.ChildOrderType.IsSimple())
+            if (!request.ChildOrderType.IsChildOrderType())
             {
                 throw new ArgumentException($"Invalid {nameof(BfChildOrderRequest.ChildOrderType)} is {request.ChildOrderType}");
             }
@@ -99,7 +100,7 @@ namespace BitFlyerDotNet.LightningApi
         public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(BfChildOrderRequest request)
         {
             Validate(ref request);
-            return PrivatePostAsync<BfChildOrderResponse>(nameof(SendChildOrder), request).Result;
+            return PrivatePostAsync<BfChildOrderResponse>(nameof(SendChildOrder), request, CancellationToken.None).Result;
         }
 
         /// <summary>
@@ -108,10 +109,10 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(BfChildOrderRequest request)
+        public async Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(BfChildOrderRequest request, CancellationToken ct)
         {
             Validate(ref request);
-            return await PrivatePostAsync<BfChildOrderResponse>(nameof(SendChildOrder), request);
+            return await PrivatePostAsync<BfChildOrderResponse>(nameof(SendChildOrder), request, ct);
         }
 
         /// <summary>
@@ -167,8 +168,10 @@ namespace BitFlyerDotNet.LightningApi
             BfTradeSide side,
             decimal price,
             decimal size,
-            int minuteToExpire = 0,
-            BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+            int minuteToExpire,
+            BfTimeInForce timeInForce,
+            CancellationToken ct
+        )
         {
             var request = new BfChildOrderRequest
             {
@@ -181,7 +184,7 @@ namespace BitFlyerDotNet.LightningApi
                 TimeInForce = timeInForce,
             };
             Validate(ref request);
-            return await SendChildOrderAsync(request);
+            return await SendChildOrderAsync(request, ct);
         }
     }
 }

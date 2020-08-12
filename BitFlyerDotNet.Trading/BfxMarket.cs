@@ -4,9 +4,8 @@
 //
 
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using BitFlyerDotNet.LightningApi;
@@ -25,12 +24,6 @@ namespace BitFlyerDotNet.Trading
 
         public decimal MinimumOrderSize => ProductCode.MinimumOrderSize();
 
-        // Trade informations
-        public IEnumerable<BfxChildOrderTransaction> ChildOrderTransactions => _childOrderTransactions.Values;
-        public IEnumerable<BfxChildOrder> ChildOrders => _childOrderTransactions.Values.Select(e => e.Order);
-        public IEnumerable<BfxParentOrderTransaction> ParentOrderTransactions => _parentOrderTransactions.Values;
-        public IEnumerable<BfxParentOrder> ParentOrders => _parentOrderTransactions.Values.Select(e => e.Order);
-
         // Events
         public event Action<BfxTicker>? TickerChanged;
         public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionEvent;
@@ -38,8 +31,8 @@ namespace BitFlyerDotNet.Trading
         // Private properties
         CompositeDisposable _disposables = new CompositeDisposable();
         BfxAccount _account;
-        ConcurrentDictionary<string, BfxChildOrderTransaction> _childOrderTransactions = new ConcurrentDictionary<string, BfxChildOrderTransaction>();
-        ConcurrentDictionary<string, BfxParentOrderTransaction> _parentOrderTransactions = new ConcurrentDictionary<string, BfxParentOrderTransaction>();
+        ConcurrentDictionary<string, IBfxChildOrderTransaction> _childOrderTransactions = new ConcurrentDictionary<string, IBfxChildOrderTransaction>();
+        ConcurrentDictionary<string, IBfxParentOrderTransaction> _parentOrderTransactions = new ConcurrentDictionary<string, IBfxParentOrderTransaction>();
 
         public BfxMarket(BfxAccount account, BfProductCode productCode, BfxConfiguration config)
         {
@@ -82,7 +75,7 @@ namespace BitFlyerDotNet.Trading
             {
                 var execs = Client.GetPrivateExecutions(ProductCode, childOrderId: child.ChildOrderId).GetContent();
                 var order = new BfxChildOrder(ProductCode, child, execs);
-                _childOrderTransactions.TryAdd(child.ChildOrderAcceptanceId, new BfxChildOrderTransaction(this, order));
+                _childOrderTransactions.TryAdd(child.ChildOrderAcceptanceId, new BfxChildOrderTransaction(this, order, OnOrderTransactionEvent));
             }
 
             // Load parent orders
@@ -90,13 +83,13 @@ namespace BitFlyerDotNet.Trading
             {
                 var detail = Client.GetParentOrder(ProductCode, parentOrderId: parentOrder.ParentOrderId).GetContent();
                 var xParentOrder = new BfxParentOrder(ProductCode, parentOrder, detail);
-                var parentTran = new BfxParentOrderTransaction(this, xParentOrder);
+                var parentTran = new BfxParentOrderTransaction(this, xParentOrder, OnOrderTransactionEvent);
 
                 var childOrders = Client.GetChildOrders(ProductCode, parentOrderId: parentOrder.ParentOrderId).GetContent();
                 foreach (var childOrder in childOrders)
                 {
                     var xChildOrder = new BfxChildOrder(ProductCode, childOrder);
-                    var childTran = new BfxChildOrderTransaction(this, xChildOrder, parentTran);
+                    var childTran = new BfxChildOrderTransaction(this, xChildOrder, parentTran, OnOrderTransactionEvent);
                     _childOrderTransactions[childOrder.ChildOrderAcceptanceId] = childTran; // overwrite
                 }
                 _parentOrderTransactions.TryAdd(parentOrder.ParentOrderAcceptanceId, parentTran);
@@ -111,119 +104,167 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        public IBfxOrderTransaction PlaceOrder(IBfxOrder order)
+        internal void ForwardChildOrderEvents(BfChildOrderEvent coe)
         {
+            var tran = _childOrderTransactions.GetOrAdd(coe.ChildOrderAcceptanceId, key => new BfxChildTransactionPlaceHolder());
+            if (tran is BfxChildTransactionPlaceHolder placeHolder)
+            {
+                Debug.WriteLine($"--Child transaction place holder found or placed. {coe.ChildOrderAcceptanceId} {coe.EventType}");
+                placeHolder.ChildOrderEvents.Add(coe);
+                return;
+            }
+
+            if (!(tran is BfxChildOrderTransaction childTran))
+            {
+                throw new ApplicationException();
+            }
+
+            if (childTran.Parent != null)
+            {
+                childTran.Parent.OnChildOrderEvent(coe);
+            }
+            else
+            {
+                childTran.OnChildOrderEvent(coe);
+            }
+        }
+
+        internal void ForwardParentOrderEvents(BfParentOrderEvent poe)
+        {
+            // Sometimes parent order event arraives faster than send order process completes.
+            var tran = _parentOrderTransactions.GetOrAdd(poe.ParentOrderAcceptanceId, key => new BfxParentTransactionPlaceHolder());
+            if (tran is BfxParentTransactionPlaceHolder placeHolder)
+            {
+                Debug.WriteLine($"--Parent transaction place holder found or placed. {poe.ParentOrderAcceptanceId} {poe.EventType}");
+                placeHolder.ParentOrderEvents.Add(poe);
+                return;
+            }
+
+            if (!(tran is BfxParentOrderTransaction parentTran))
+            {
+                throw new ApplicationException();
+            }
+
+            parentTran.OnParentOrderEvent(poe);
+
+            if (poe.EventType == BfOrderEventType.Trigger)
+            {
+                if (!(parentTran.Order.Children[poe.ChildOrderIndex - 1] is BfxChildOrder childOrder))
+                {
+                    throw new ApplicationException();
+                }
+
+                if (childOrder.ChildOrderAcceptanceId != null)
+                {
+                    var childTran = new BfxChildOrderTransaction(this, childOrder, parentTran, OnOrderTransactionEvent);
+                    _childOrderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId, childTran, (key, value) =>
+                    {
+                        Debug.WriteLine("--Child transaction place holder found and merged.");
+                        if (!(value is BfxChildTransactionPlaceHolder placeHolder))
+                        {
+                            throw new ApplicationException();
+                        }
+                        placeHolder.ChildOrderEvents.ForEach(coe => parentTran.OnChildOrderEvent(coe));
+                        return childTran;
+                    });
+                }
+            }
+        }
+
+        public IBfxOrderTransaction PlaceOrder(IBfxOrder order, TimeSpan periodToExpire, BfTimeInForce timeInForce)
+        {
+            TryOpen();
             switch (order)
             {
                 case BfxChildOrder child:
-                    return SendChildOrder(child);
+                    return SendChildOrder(child, periodToExpire, timeInForce);
 
                 case BfxParentOrder parent:
-                    return SendParentOrder(parent);
+                    return SendParentOrder(parent, periodToExpire, timeInForce);
 
                 default:
                     throw new NotSupportedException();
             }
         }
 
-        // Called from Account - Assign child event to child or parent transaction
-        internal void RedirectChildOrderEvents(BfChildOrderEvent coe)
+        public IBfxOrderTransaction PlaceOrder(IBfxOrder order)
         {
-            if (_childOrderTransactions.TryGetValue(coe.ChildOrderAcceptanceId, out var tran))
-            {
-                if (tran.Parent == null)
-                {
-                    tran.OnChildOrderEvent(coe);
-                }
-                else
-                {
-                    tran.Parent.OnChildOrderEvent(coe);
-                }
-            }
+            return PlaceOrder(order, TimeSpan.Zero, BfTimeInForce.NotSpecified);
         }
 
-        #region Child order
-        BfxChildOrderTransaction SendChildOrder(BfxChildOrder order)
+        BfxChildOrderTransaction SendChildOrder(BfxChildOrder order, TimeSpan periodToExpire, BfTimeInForce timeInForce)
         {
-            TryOpen();
-            var trans = new BfxChildOrderTransaction(this, order);
-            trans.OrderTransactionEvent += OnChildOrderTransactionEvent;
-            var id = trans.SendOrderRequestAsync().Result;
-            if (!_childOrderTransactions.TryAdd(id, trans))
-            {
-                throw new Exception();
-            }
+            order.ApplyParameters(ProductCode, Convert.ToInt32(periodToExpire.TotalMinutes), timeInForce);
+            var trans = new BfxChildOrderTransaction(this, order, OnOrderTransactionEvent);
+            _ = trans.SendOrderRequestAsync();
             return trans;
         }
 
-        // Called from ChildOrderTransaction
-        void OnChildOrderTransactionEvent(object sender, BfxChildOrderTransactionEventArgs evt)
+        BfxParentOrderTransaction SendParentOrder(BfxParentOrder order, TimeSpan periodToExpire, BfTimeInForce timeInForce)
         {
-            if (!(sender is BfxChildOrderTransaction tran))
-            {
-                throw new ArgumentException();
-            }
-            OrderTransactionEvent?.Invoke(sender, evt);
-        }
-        #endregion Child Order
-
-        #region Parent Order
-        BfxParentOrderTransaction SendParentOrder(BfxParentOrder order)
-        {
-            TryOpen();
-            var trans = new BfxParentOrderTransaction(this, order);
-            var id = trans.SendOrderRequestAsync().Result;
-            if (!_parentOrderTransactions.TryAdd(id, trans))
-            {
-                throw new Exception();
-            }
-            trans.OrderTransactionEvent += OnParentOrderTransactionEvent;
+            order.ApplyParameters(ProductCode, Convert.ToInt32(periodToExpire.TotalMinutes), timeInForce);
+            var trans = new BfxParentOrderTransaction(this, order, OnOrderTransactionEvent);
+            _ = trans.SendOrderRequestAsync();
             return trans;
         }
 
-        // Called from account
-        internal void RedirectParentOrderEvents(BfParentOrderEvent poe)
+        internal void RegisterTransaction(BfxChildOrderTransaction tran)
         {
-            if (_parentOrderTransactions.TryGetValue(poe.ChildOrderAcceptanceId, out var tran))
+            if (tran.Id == null)
             {
-                tran.OnParentOrderEvent(poe);
+                throw new ApplicationException();
+            }
 
-                if (poe.EventType == BfOrderEventType.Trigger)
+            _childOrderTransactions.AddOrUpdate(tran.Id, tran, (key, value) =>
+            {
+                Debug.WriteLine("--Child transaction place holder found after order sent.");
+                if (!(value is BfxChildTransactionPlaceHolder placeHolder))
                 {
-                    var childOrder = tran.Order.Children[poe.ChildOrderIndex] as BfxChildOrder;
-                    if (childOrder != null && childOrder.ChildOrderAcceptanceId != null)
+                    throw new ApplicationException();
+                }
+                placeHolder.ChildOrderEvents.ForEach(coe => tran.OnChildOrderEvent(coe));
+                return tran;
+            });
+        }
+
+        internal void RegisterTransaction(BfxParentOrderTransaction tran)
+        {
+            if (tran.Id == null)
+            {
+                throw new ApplicationException();
+            }
+
+            _parentOrderTransactions.AddOrUpdate(tran.Id, tran, (key, value) =>
+            {
+                Debug.WriteLine("--Parent transaction place holder found after order sent.");
+                if (!(value is BfxParentTransactionPlaceHolder placeHolder))
+                {
+                    throw new ApplicationException();
+                }
+                foreach (var poe in placeHolder.ParentOrderEvents)
+                {
+                    tran.OnParentOrderEvent(poe);
+                    if (poe.EventType == BfOrderEventType.Trigger)
                     {
-                        var childTran = new BfxChildOrderTransaction(this, childOrder, tran);
-                        _childOrderTransactions.TryAdd(childOrder.ChildOrderAcceptanceId, childTran);
+                        var childTran = new BfxChildOrderTransaction(this, (BfxChildOrder)tran.Order.Children[poe.ChildOrderIndex - 1], tran, OnOrderTransactionEvent);
+                        RegisterTransaction(childTran);
                     }
                 }
-
-                return; // Children of parent orders (Probably never receive)
-            }
+                return tran;
+            });
         }
 
-        // Called from ParentOrderTransaction
-        void OnParentOrderTransactionEvent(object sender, BfxParentOrderTransactionEventArgs ev)
+        void OnOrderTransactionEvent(object sender, BfxOrderTransactionEventArgs ev)
         {
-            // 1. ChildOrderEventを初めて処理した場合、_descendants にトランザクションを登録する。
-            // 2.
-
-            var tran = sender as BfxParentOrderTransaction;
             switch (ev.EventType)
             {
                 case BfxOrderTransactionEventType.OrderSent:
-                    // 1. _parentOrderTransactions に登録
                     break;
 
-                case BfxOrderTransactionEventType.Ordered:
-                    // 1. クライアントに通知
-                    break;
-
-                case BfxOrderTransactionEventType.PartiallyExecuted:
-                case BfxOrderTransactionEventType.Executed:
-                    break;
+                // トランザクション削除
             }
+
+            OrderTransactionEvent?.Invoke(sender, ev);
         }
-        #endregion Parent Order
     }
 }

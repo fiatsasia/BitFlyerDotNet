@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -41,7 +42,7 @@ namespace BitFlyerDotNet.LightningApi
         public BitFlyerResponse<string> CancelParentOrder(BfCancelParentOrderRequest request)
         {
             Validate(ref request);
-            return PrivatePostAsync<string>(nameof(CancelParentOrder), request).Result;
+            return PrivatePostAsync<string>(nameof(CancelParentOrder), request, CancellationToken.None).Result;
         }
 
         /// <summary>
@@ -50,10 +51,10 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<BitFlyerResponse<string>> CancelParentOrderAsync(BfCancelParentOrderRequest request)
+        public async Task<BitFlyerResponse<string>> CancelParentOrderAsync(BfCancelParentOrderRequest request, CancellationToken ct)
         {
             Validate(ref request);
-            return await PrivatePostAsync<string>(nameof(CancelParentOrder), request);
+            return await PrivatePostAsync<string>(nameof(CancelParentOrder), request, ct);
         }
 
         /// <summary>
@@ -73,7 +74,7 @@ namespace BitFlyerDotNet.LightningApi
                 ParentOrderAcceptanceId = parentOrderAcceptanceId
             };
             Validate(ref request);
-            return PrivatePostAsync<string>(nameof(CancelParentOrder), request).Result;
+            return PrivatePostAsync<string>(nameof(CancelParentOrder), request, CancellationToken.None).Result;
         }
 
         /// <summary>
@@ -84,7 +85,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="parentOrderId"></param>
         /// <param name="parentOrderAcceptanceId"></param>
         /// <returns></returns>
-        public async Task<BitFlyerResponse<string>> CancelParentOrderAsync(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
+        public async Task<BitFlyerResponse<string>> CancelParentOrderAsync(BfProductCode productCode, string parentOrderId, string parentOrderAcceptanceId, CancellationToken ct)
         {
             var request = new BfCancelParentOrderRequest
             {
@@ -93,7 +94,7 @@ namespace BitFlyerDotNet.LightningApi
                 ParentOrderAcceptanceId = parentOrderAcceptanceId
             };
             Validate(ref request);
-            return await PrivatePostAsync<string>(nameof(CancelParentOrder), request);
+            return await PrivatePostAsync<string>(nameof(CancelParentOrder), request, ct);
         }
     }
 }
