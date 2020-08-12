@@ -10,11 +10,11 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BfOrderBookSnapshot
     {
-        List<(decimal Price, decimal Size)> _bids = new List<(decimal Price, decimal Size)>();
-        public IReadOnlyList<(decimal Price, decimal Size)> Bids => _bids;
+        List<KeyValuePair<decimal, decimal>> _bids = new List<KeyValuePair<decimal, decimal>>();
+        public IReadOnlyList<(decimal Price, decimal Size)> Bids => _bids.Select(e => (Price: e.Key, Size: e.Value)).ToList();
 
-        List<(decimal Price, decimal Size)> _asks = new List<(decimal Price, decimal Size)>();
-        public IReadOnlyList<(decimal Price, decimal Size)> Asks => _asks;
+        List<KeyValuePair<decimal, decimal>> _asks = new List<KeyValuePair<decimal, decimal>>();
+        public IReadOnlyList<(decimal Price, decimal Size)> Asks => _asks.Select(e => (Price: e.Key, Size: e.Value)).ToList();
 
         public decimal MidPrice { get; private set; }
 
@@ -25,8 +25,8 @@ namespace BitFlyerDotNet.LightningApi
             int size
         )
         {
-            asks.Take(size).ForEach(e => _asks.Add((e.Key, e.Value)));
-            bids.TakeLast(size).ForEach(e => _bids.Add((e.Key, e.Value)));
+            _asks.AddRange(asks.Take(size));
+            _bids.AddRange(bids.TakeLast(size));
             MidPrice = midPrice;
         }
     }

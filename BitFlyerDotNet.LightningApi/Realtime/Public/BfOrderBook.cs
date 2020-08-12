@@ -28,81 +28,92 @@ namespace BitFlyerDotNet.LightningApi
 
         static readonly KeyValuePair<decimal, decimal> DefaultElement = new KeyValuePair<decimal, decimal>(decimal.Zero, decimal.Zero);
 
+        object _lockObject = new object();
+
         public void Reset(BfBoard orders)
         {
-            MidPrice = unchecked((double)orders.MidPrice);
-
-            TotalBidDepth = 0;
-            _bids.Clear(); orders.Bids.ForEach(e =>
+            lock (_lockObject)
             {
-                _bids.Add(e.Price, e.Size);
-                TotalBidDepth += unchecked((double)e.Size);
-            });
-            _bestBid = _bids.Last();
+                MidPrice = unchecked((double)orders.MidPrice);
 
-            TotalAskDepth = 0;
-            _asks.Clear(); orders.Asks.ForEach(e =>
-            {
-                _asks.Add(e.Price, e.Size);
-                TotalAskDepth += unchecked((double)e.Size);
-            });
-            _bestAsk = _asks.First();
+                TotalBidDepth = 0;
+                _bids.Clear(); orders.Bids.ForEach(e =>
+                {
+                    _bids.Add(e.Price, e.Size);
+                    TotalBidDepth += unchecked((double)e.Size);
+                });
+                _bestBid = _bids.Last();
+
+                TotalAskDepth = 0;
+                _asks.Clear(); orders.Asks.ForEach(e =>
+                {
+                    _asks.Add(e.Price, e.Size);
+                    TotalAskDepth += unchecked((double)e.Size);
+                });
+                _bestAsk = _asks.First();
+            }
         }
 
         public void UpdateDelta(BfBoard orders)
         {
-            MidPrice = unchecked((double)orders.MidPrice);
-
-            foreach (var bid in orders.Bids)
+            lock (_lockObject)
             {
-                if (bid.Size == decimal.Zero)
+                MidPrice = unchecked((double)orders.MidPrice);
+
+                foreach (var bid in orders.Bids)
                 {
-                    _bids.Remove(bid.Price);
+                    if (bid.Size == decimal.Zero)
+                    {
+                        _bids.Remove(bid.Price);
+                    }
+                    else
+                    {
+                        _bids[bid.Price] = bid.Size;
+                    }
+                }
+
+                if (_bids.Count() == 0)
+                {
+                    _bestBid = DefaultElement;
+                    TotalBidDepth = 0;
                 }
                 else
                 {
-                    _bids[bid.Price] = bid.Size;
+                    _bestBid = _bids.Last();
+                    TotalBidDepth = unchecked((double)_bids.Values.Sum());
                 }
-            }
 
-            if (_bids.Count() == 0)
-            {
-                _bestBid = DefaultElement;
-                TotalBidDepth = 0;
-            }
-            else
-            {
-                _bestBid = _bids.Last();
-                TotalBidDepth = unchecked((double)_bids.Values.Sum());
-            }
-
-            foreach (var ask in orders.Asks)
-            {
-                if (ask.Size == decimal.Zero)
+                foreach (var ask in orders.Asks)
                 {
-                    _asks.Remove(ask.Price);
+                    if (ask.Size == decimal.Zero)
+                    {
+                        _asks.Remove(ask.Price);
+                    }
+                    else
+                    {
+                        _asks[ask.Price] = ask.Size;
+                    }
+                }
+
+                if (_asks.Count() == 0)
+                {
+                    _bestAsk = DefaultElement;
+                    TotalAskDepth = 0;
                 }
                 else
                 {
-                    _asks[ask.Price] = ask.Size;
+                    _bestAsk = _asks.First();
+                    TotalAskDepth = unchecked((double)_asks.Values.Sum());
                 }
-            }
-
-            if (_asks.Count() == 0)
-            {
-                _bestAsk = DefaultElement;
-                TotalAskDepth = 0;
-            }
-            else
-            {
-                _bestAsk = _asks.First();
-                TotalAskDepth = unchecked((double)_asks.Values.Sum());
             }
         }
 
         public BfOrderBookSnapshot GetSnapshot(int size)
         {
-            return new BfOrderBookSnapshot(_bids, _asks, unchecked((decimal)MidPrice), size);
+            lock (_lockObject)
+            {
+                return new BfOrderBookSnapshot(_bids, _asks, unchecked((decimal)MidPrice), size);
+            }
         }
     }
 }
