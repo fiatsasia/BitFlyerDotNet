@@ -23,9 +23,7 @@ namespace BitFlyerDotNet.Trading
 
         public BfxOrderTransaction()
         {
-#pragma warning disable CS0184 // 'is' 式の指定された式は指定された型ではありません
-            _derived = (GetType() is BfxParentOrderTransaction) ? "Parent" : "Child";
-#pragma warning restore CS0184 // 'is' 式の指定された式は指定された型ではありません
+            _derived = GetType().Name == nameof(BfxParentOrderTransaction) ? "Parent" : "Child";
         }
 
         public virtual void Cancel()

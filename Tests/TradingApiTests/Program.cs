@@ -107,6 +107,29 @@ namespace TradingApiTests
             }
         }
 
+        static void PlaceOrder(IBfxOrder order)
+        {
+            _transactions.Enqueue(_market.PlaceOrder(order));
+        }
+
+        static void CancelOrder()
+        {
+            _transactions.Dequeue().Cancel();
+        }
+
+        static void PlaceOrder(IBfxOrder order, TimeSpan timeToExpore, BfTimeInForce timeInForce)
+        {
+            _transactions.Enqueue(_market.PlaceOrder(order, timeToExpore, timeInForce));
+        }
+
+        static void ClosePositions()
+        {
+            if (_account.Positions.TotalSize > 0m)
+            {
+                _transactions.Enqueue(_market.PlaceOrder(BfxOrder.MarketPrice(_account.Positions.Side.Opposite(), _account.Positions.TotalSize)));
+            }
+        }
+
         static void OnPositionChanged(object sender, BfxPositionChangedEventArgs ev)
         {
             var pos = ev.Position;

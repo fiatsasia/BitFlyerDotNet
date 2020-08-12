@@ -22,51 +22,30 @@ namespace TradingApiTests
                 Console.WriteLine("O)CO unexecutable price");
                 Console.WriteLine("L)imit IFDOCO");
                 Console.WriteLine("E)xpire test");
-                Console.WriteLine("T)ime in force test (FOK)");
+                Console.WriteLine("F)OK test");
                 Console.WriteLine("C)ancel last order");
+                Console.WriteLine("X) Close position");
                 Console.WriteLine();
                 Console.Write("Main/Conditional Orders>");
 
                 switch (GetCh())
                 {
                     case 'S':
-                        _transactions.Enqueue(_market.PlaceOrder(BfxOrder.StopLimit(
-                            BfTradeSide.Sell,
-                            _market.Ticker.BestAskPrice + UnexecutableGap,
-                            _market.Ticker.BestAskPrice + UnexecutableGap,
-                            _orderSize
-                        )));
+                        PlaceOrder(BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize));
                         break;
 
                     case 'I':
-                        _transactions.Enqueue(_market.PlaceOrder(BfxOrder.IFD(
-                            BfxOrder.LimitPrice(
-                                BfTradeSide.Sell,
-                                _market.Ticker.BestAskPrice + UnexecutableGap,
-                                _orderSize
-                            ),
-                            BfxOrder.StopLimit(
-                                BfTradeSide.Sell,
-                                _market.Ticker.BestAskPrice + UnexecutableGap,
-                                _market.Ticker.BestAskPrice + UnexecutableGap,
-                                _orderSize
-                            )
-                        )));
+                        PlaceOrder(BfxOrder.IFD(
+                            BfxOrder.LimitPrice(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
+                            BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize)
+                        ));
                         break;
 
                     case 'O':
-                        _transactions.Enqueue(_market.PlaceOrder(BfxOrder.OCO(
-                            BfxOrder.LimitPrice(
-                                BfTradeSide.Sell,
-                                _market.Ticker.BestAskPrice + UnexecutableGap,
-                                _orderSize
-                            ),
-                            BfxOrder.LimitPrice(
-                                BfTradeSide.Buy,
-                                _market.Ticker.BestBidPrice - UnexecutableGap,
-                                _orderSize
-                            )
-                        )));
+                        PlaceOrder(BfxOrder.OCO(
+                            BfxOrder.LimitPrice(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
+                            BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize)
+                        ));
                         break;
 
                     case 'L':
@@ -74,54 +53,49 @@ namespace TradingApiTests
                         {
                             case BfTradeSide.Buy:
                                 {
-                                    var buyPrice = _market.Ticker.BestBidPrice;
-                                    _transactions.Enqueue(_market.PlaceOrder(BfxOrder.IFDOCO(
+                                    var buyPrice = _market.BestBidPrice;
+                                    PlaceOrder(BfxOrder.IFDOCO(
                                         BfxOrder.LimitPrice(BfTradeSide.Buy, buyPrice, _orderSize),
                                         BfxOrder.StopLimit(BfTradeSide.Sell, buyPrice - PnLGap, buyPrice - PnLGap, _orderSize),
                                         BfxOrder.LimitPrice(BfTradeSide.Sell, buyPrice + PnLGap, _orderSize)
-                                    )));
+                                    ));
                                 }
                                 break;
 
                             case BfTradeSide.Sell:
                                 {
-                                    var sellPrice = _market.Ticker.BestAskPrice;
-                                    _transactions.Enqueue(_market.PlaceOrder(BfxOrder.IFDOCO(
+                                    var sellPrice = _market.BestAskPrice;
+                                    PlaceOrder(BfxOrder.IFDOCO(
                                         BfxOrder.LimitPrice(BfTradeSide.Sell, sellPrice, _orderSize),
                                         BfxOrder.StopLimit(BfTradeSide.Buy, sellPrice + PnLGap, sellPrice + PnLGap, _orderSize),
                                         BfxOrder.LimitPrice(BfTradeSide.Buy, sellPrice - PnLGap, _orderSize)
-                                    )));
+                                    ));
                                 }
                                 break;
                         }
                         break;
 
                     case 'E':
-                        _transactions.Enqueue(_market.PlaceOrder(BfxOrder.StopLimit(
-                                BfTradeSide.Sell,
-                                _market.Ticker.BestAskPrice + UnexecutableGap,
-                                _market.Ticker.BestAskPrice + UnexecutableGap,
-                                _orderSize
-                            ),
+                        PlaceOrder(
+                            BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize),
                             TimeSpan.FromMinutes(1),
                             BfTimeInForce.NotSpecified
-                        ));
+                        );
                         break;
 
-                    case 'T':
-                        _transactions.Enqueue(_market.PlaceOrder(BfxOrder.StopLimit(
-                                BfTradeSide.Sell,
-                                _market.Ticker.BestAskPrice + UnexecutableGap,
-                                _market.Ticker.BestAskPrice + UnexecutableGap,
-                                _orderSize
-                            ),
+                    case 'F':
+                        PlaceOrder(BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize),
                             TimeSpan.Zero,
                             BfTimeInForce.FOK
-                        ));
+                        );
                         break;
 
                     case 'C':
-                        _transactions.Dequeue().Cancel();
+                        CancelOrder();
+                        break;
+
+                    case 'X':
+                        ClosePositions();
                         break;
 
                     case ESCAPE:

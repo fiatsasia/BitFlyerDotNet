@@ -21,6 +21,7 @@ namespace TradingApiTests
                 Console.WriteLine("E)xpire test");
                 Console.WriteLine("T)ime in force test (FOK)");
                 Console.WriteLine("C)ancel last order");
+                Console.WriteLine("X) Close position");
                 Console.WriteLine();
                 Console.Write("Main/Simple Orders>");
 
@@ -30,11 +31,11 @@ namespace TradingApiTests
                         switch(SelectSide())
                         {
                             case BfTradeSide.Buy:
-                                _transactions.Enqueue(_market.PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.Ticker.BestBidPrice, _orderSize)));
+                                PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice, _orderSize));
                                 break;
 
                             case BfTradeSide.Sell:
-                                _transactions.Enqueue(_market.PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Sell, _market.Ticker.BestAskPrice, _orderSize)));
+                                PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Sell, _market.BestAskPrice, _orderSize));
                                 break;
                         }
                         break;
@@ -43,11 +44,11 @@ namespace TradingApiTests
                         switch (SelectSide())
                         {
                             case BfTradeSide.Buy:
-                                _transactions.Enqueue(_market.PlaceOrder(BfxOrder.MarketPrice(BfTradeSide.Buy, _orderSize)));
+                                PlaceOrder(BfxOrder.MarketPrice(BfTradeSide.Buy, _orderSize));
                                 break;
 
                             case BfTradeSide.Sell:
-                                _transactions.Enqueue(_market.PlaceOrder(BfxOrder.MarketPrice(BfTradeSide.Sell, _orderSize)));
+                                PlaceOrder(BfxOrder.MarketPrice(BfTradeSide.Sell, _orderSize));
                                 break;
                         }
                         break;
@@ -56,31 +57,29 @@ namespace TradingApiTests
                         switch (SelectSide())
                         {
                             case BfTradeSide.Buy:
-                                _transactions.Enqueue(_market.PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.Ticker.BestBidPrice - UnexecutableGap, _orderSize)));
+                                PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize));
                                 break;
 
                             case BfTradeSide.Sell:
-                                _transactions.Enqueue(_market.PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Sell, _market.Ticker.BestAskPrice + UnexecutableGap, _orderSize)));
+                                PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize));
                                 break;
                         }
                         break;
 
                     case 'E':
-                        _transactions.Enqueue(_market.PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.Ticker.BestBidPrice - UnexecutableGap, _orderSize),
-                            TimeSpan.FromMinutes(1),
-                            BfTimeInForce.NotSpecified
-                        ));
+                        PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.FromMinutes(1), BfTimeInForce.NotSpecified);
                         break;
 
                     case 'T':
-                        _transactions.Enqueue(_market.PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.Ticker.BestBidPrice - UnexecutableGap, _orderSize),
-                            TimeSpan.Zero,
-                            BfTimeInForce.FOK
-                        ));
+                        PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.Zero, BfTimeInForce.FOK);
                         break;
 
                     case 'C':
-                        _transactions.Dequeue().Cancel();
+                        CancelOrder();
+                        break;
+
+                    case 'X':
+                        ClosePositions();
                         break;
 
                     case ESCAPE:

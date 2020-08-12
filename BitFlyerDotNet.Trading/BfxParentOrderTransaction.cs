@@ -135,6 +135,7 @@ namespace BitFlyerDotNet.Trading
                     break;
 
                 case BfOrderEventType.Trigger:
+                    Debug.WriteLine($"Trigger {poe.Side} P:{poe.Price} S:{poe.Size}");
                     break;
 
                 case BfOrderEventType.Expire:
@@ -174,12 +175,7 @@ namespace BitFlyerDotNet.Trading
                     break;
 
                 case BfOrderEventType.CancelFailed:
-                    if (coe.ChildOrderType == BfOrderType.Unknown)
-                    {
-                        Debug.WriteLine("Dirty Cancel Failed event received.");
-                        break; // Skip "dirty" event See https://scrapbox.io/BitFlyerDotNet/ChildOrderEvent
-                    }
-                    NotifyChildOrderEvent(BfxOrderTransactionEventType.CancelFailed, childOrderIndex, coe);
+                    
                     break;
 
                 case BfOrderEventType.Execution:
@@ -192,7 +188,7 @@ namespace BitFlyerDotNet.Trading
 
                 case BfOrderEventType.Unknown:
                 case BfOrderEventType.Complete:
-                case BfOrderEventType.Trigger: // Not happened when Simple Order ?
+                case BfOrderEventType.Trigger:
                     throw new NotSupportedException();
             }
         }

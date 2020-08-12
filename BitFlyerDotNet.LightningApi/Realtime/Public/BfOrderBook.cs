@@ -20,8 +20,6 @@ namespace BitFlyerDotNet.LightningApi
         public decimal BestBidSize => _bestBid.Value;
         public decimal BestAskPrice => _bestAsk.Key;
         public decimal BestAskSize => _bestAsk.Value;
-        public IReadOnlyList<(decimal Price, decimal Size)> Bids => _bids.Select(e => (Price: e.Key, Size: e.Value)).ToList();
-        public IReadOnlyList<(decimal Price, decimal Size)> Asks => _asks.Select(e => (Price: e.Key, Size: e.Value)).ToList();
 
         public double TotalBidDepth { get; private set; }
         public double TotalAskDepth { get; private set; }

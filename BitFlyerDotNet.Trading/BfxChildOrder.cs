@@ -195,18 +195,15 @@ namespace BitFlyerDotNet.Trading
 
         public void Update(BfChildOrderEvent coe)
         {
-            if (coe.ChildOrderType == BfOrderType.Unknown)
+            if (!string.IsNullOrEmpty(coe.ChildOrderAcceptanceId))
             {
-                Debug.WriteLine($"ChildOrderAcceptanceId: {coe.ChildOrderAcceptanceId} ChildOrderId: {ChildOrderId} EventDate: {coe.EventDate}");
                 ChildOrderAcceptanceId = coe.ChildOrderAcceptanceId;
-                LastUpdatedTime = coe.EventDate;
             }
-            else
+            if (!string.IsNullOrEmpty(coe.ChildOrderId))
             {
-                ChildOrderAcceptanceId = coe.ChildOrderAcceptanceId;
                 ChildOrderId = coe.ChildOrderId;
-                LastUpdatedTime = coe.EventDate;
             }
+            LastUpdatedTime = coe.EventDate;
 
             switch (coe.EventType)
             {
@@ -225,7 +222,14 @@ namespace BitFlyerDotNet.Trading
                     break;
 
                 case BfOrderEventType.CancelFailed:
-                    ChangeState(BfxOrderState.CancelFailed);
+                    switch (State)
+                    {
+                        case BfxOrderState.Canceling: // Cancel child order from client
+                            ChangeState(BfxOrderState.CancelFailed);
+                            break;
+
+
+                    }
                     break;
 
                 case BfOrderEventType.Execution:

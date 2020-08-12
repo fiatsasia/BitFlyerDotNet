@@ -45,7 +45,7 @@ namespace RealtimeApiTests
             {
                 Console.WriteLine("========================================================================");
                 Console.WriteLine("E)xecution               T)icker                 O)rderBook");
-                Console.WriteLine("C)hild Order Events      P)arent Order Events");
+                Console.WriteLine("C)hild Order Events      P)arent Order Events    B)oard");
                 Console.WriteLine();
                 Console.WriteLine("D)etail                  S)top                   Q)uit");
                 Console.WriteLine("========================================================================");
@@ -61,7 +61,7 @@ namespace RealtimeApiTests
                         break;
 
                     case 'O':
-                        _factory.GetOrderBookSource(ProductCode).Subscribe(ob => { Console.Write("."); }).AddTo(_disposables);
+                        _factory.GetOrderBookSource(ProductCode).Select(e => e.GetSnapshot(100)).Subscribe(ob => { Console.Write("."); }).AddTo(_disposables);
                         break;
 
                     case 'C': // To fire child-order-event, use bitFlyer Lightning browser operation
