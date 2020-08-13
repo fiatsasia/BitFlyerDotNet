@@ -4,14 +4,15 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
     public interface IBfxOrderTransaction
     {
+        Guid Id { get; }
+        DateTime OpenTime { get; }
+
+        bool IsCancelable { get; }
         void Cancel();
     }
 

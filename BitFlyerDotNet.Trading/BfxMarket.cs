@@ -161,7 +161,7 @@ namespace BitFlyerDotNet.Trading
                     var childTran = new BfxChildOrderTransaction(this, childOrder, parentTran, OnOrderTransactionEvent);
                     _childOrderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId, childTran, (key, value) =>
                     {
-                        Debug.WriteLine("--Child transaction place holder found and merged.");
+                        Debug.WriteLine($"--Child transaction place holder found and merged. {childOrder.ChildOrderAcceptanceId} {poe.EventType}");
                         if (!(value is BfxChildTransactionPlaceHolder placeHolder))
                         {
                             throw new ApplicationException();
@@ -212,14 +212,14 @@ namespace BitFlyerDotNet.Trading
 
         internal void RegisterTransaction(BfxChildOrderTransaction tran)
         {
-            if (tran.Id == null)
+            if (tran.MarketId == null)
             {
                 throw new ApplicationException();
             }
 
-            _childOrderTransactions.AddOrUpdate(tran.Id, tran, (key, value) =>
+            _childOrderTransactions.AddOrUpdate(tran.MarketId, tran, (key, value) =>
             {
-                Debug.WriteLine("--Child transaction place holder found after order sent.");
+                Debug.WriteLine($"--Child transaction place holder found after order sent. {tran.MarketId}");
                 if (!(value is BfxChildTransactionPlaceHolder placeHolder))
                 {
                     throw new ApplicationException();
@@ -231,14 +231,14 @@ namespace BitFlyerDotNet.Trading
 
         internal void RegisterTransaction(BfxParentOrderTransaction tran)
         {
-            if (tran.Id == null)
+            if (tran.MarketId == null)
             {
                 throw new ApplicationException();
             }
 
-            _parentOrderTransactions.AddOrUpdate(tran.Id, tran, (key, value) =>
+            _parentOrderTransactions.AddOrUpdate(tran.MarketId, tran, (key, value) =>
             {
-                Debug.WriteLine("--Parent transaction place holder found after order sent.");
+                Debug.WriteLine($"--Parent transaction place holder found after order sent. {tran.MarketId}");
                 if (!(value is BfxParentTransactionPlaceHolder placeHolder))
                 {
                     throw new ApplicationException();

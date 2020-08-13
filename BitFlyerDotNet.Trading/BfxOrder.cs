@@ -62,7 +62,7 @@ namespace BitFlyerDotNet.Trading
             return order;
         }
 
-        public static IBfxOrder StopLoss(BfTradeSide side, decimal triggerPrice, decimal size)
+        public static IBfxOrder Stop(BfTradeSide side, decimal triggerPrice, decimal size)
         {
             var request = BfParentOrderRequest.Stop(BfProductCode.Unknown, side, triggerPrice, size, 0, BfTimeInForce.NotSpecified);
             var order = new BfxParentOrder(request);
@@ -76,7 +76,7 @@ namespace BitFlyerDotNet.Trading
             return order;
         }
 
-        public static IBfxOrder TrailingStop(BfTradeSide side, decimal trailingOffset, decimal size)
+        public static IBfxOrder Trailing(BfTradeSide side, decimal trailingOffset, decimal size)
         {
             var request = BfParentOrderRequest.Trail(BfProductCode.Unknown, side, trailingOffset, size, 0, BfTimeInForce.NotSpecified);
             var order = new BfxParentOrder(request);

@@ -17,10 +17,10 @@ namespace TradingApiTests
         {
             while (true)
             {
-                Console.WriteLine("S)top sell unexecutable price");
                 Console.WriteLine("I)FD unexecutable price");
                 Console.WriteLine("O)CO unexecutable price");
                 Console.WriteLine("L)imit IFDOCO");
+                Console.WriteLine("T)railing IFDOCO");
                 Console.WriteLine("E)xpire test");
                 Console.WriteLine("F)OK test");
                 Console.WriteLine("C)ancel last order");
@@ -30,10 +30,6 @@ namespace TradingApiTests
 
                 switch (GetCh())
                 {
-                    case 'S':
-                        PlaceOrder(BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize));
-                        break;
-
                     case 'I':
                         PlaceOrder(BfxOrder.IFD(
                             BfxOrder.LimitPrice(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
@@ -75,16 +71,46 @@ namespace TradingApiTests
                         }
                         break;
 
+                    case 'T':
+                        switch (SelectSide())
+                        {
+                            case BfTradeSide.Buy:
+                                {
+                                    var buyPrice = _market.BestBidPrice;
+                                    PlaceOrder(BfxOrder.IFDOCO(
+                                        BfxOrder.LimitPrice(BfTradeSide.Buy, buyPrice, _orderSize),
+                                        BfxOrder.Trailing(BfTradeSide.Sell, PnLGap, _orderSize),
+                                        BfxOrder.LimitPrice(BfTradeSide.Sell, buyPrice + PnLGap * 2, _orderSize)
+                                    ));
+                                }
+                                break;
+
+                            case BfTradeSide.Sell:
+                                {
+                                    var sellPrice = _market.BestAskPrice;
+                                    PlaceOrder(BfxOrder.IFDOCO(
+                                        BfxOrder.LimitPrice(BfTradeSide.Sell, sellPrice, _orderSize),
+                                        BfxOrder.Trailing(BfTradeSide.Buy, PnLGap, _orderSize),
+                                        BfxOrder.LimitPrice(BfTradeSide.Buy, sellPrice - PnLGap * 2, _orderSize)
+                                    ));
+                                }
+                                break;
+                        }
+                        break;
+
                     case 'E':
-                        PlaceOrder(
-                            BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize),
+                        PlaceOrder(BfxOrder.OCO(
+                            BfxOrder.LimitPrice(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
+                            BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize)),
                             TimeSpan.FromMinutes(1),
                             BfTimeInForce.NotSpecified
                         );
                         break;
 
                     case 'F':
-                        PlaceOrder(BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize),
+                        PlaceOrder(BfxOrder.OCO(
+                            BfxOrder.LimitPrice(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
+                            BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize)),
                             TimeSpan.Zero,
                             BfTimeInForce.FOK
                         );

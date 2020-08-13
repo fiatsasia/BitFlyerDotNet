@@ -17,9 +17,11 @@ namespace TradingApiTests
             {
                 Console.WriteLine("L)imit price order best ask/bid price");
                 Console.WriteLine("M)arket price order");
-                Console.WriteLine("U)nexecutable limit price order");
+                Console.WriteLine("S)top");
+                Console.WriteLine("O)Stop limit");
+                Console.WriteLine("T)railing");
                 Console.WriteLine("E)xpire test");
-                Console.WriteLine("T)ime in force test (FOK)");
+                Console.WriteLine("F)OK");
                 Console.WriteLine("C)ancel last order");
                 Console.WriteLine("X) Close position");
                 Console.WriteLine();
@@ -53,15 +55,23 @@ namespace TradingApiTests
                         }
                         break;
 
-                    case 'U':
+                    case 'S':
+                        PlaceOrder(BfxOrder.Stop(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize));
+                        break;
+
+                    case 'O':
+                        PlaceOrder(BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize));
+                        break;
+
+                    case 'T': // Trailing stop
                         switch (SelectSide())
                         {
                             case BfTradeSide.Buy:
-                                PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize));
+                                PlaceOrder(BfxOrder.Trailing(BfTradeSide.Buy, PnLGap * 2, _orderSize));
                                 break;
 
                             case BfTradeSide.Sell:
-                                PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize));
+                                PlaceOrder(BfxOrder.Trailing(BfTradeSide.Sell, PnLGap * 2, _orderSize));
                                 break;
                         }
                         break;
@@ -70,7 +80,7 @@ namespace TradingApiTests
                         PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.FromMinutes(1), BfTimeInForce.NotSpecified);
                         break;
 
-                    case 'T':
+                    case 'F':
                         PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.Zero, BfTimeInForce.FOK);
                         break;
 

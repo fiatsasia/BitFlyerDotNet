@@ -6,11 +6,11 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Xml.Linq;
 using System.Reactive.Linq;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
-using System.Text;
 
 namespace TradingApiTests
 {
@@ -26,7 +26,7 @@ namespace TradingApiTests
         static BfxAccount _account;
         static BfxMarket _market;
         static Dictionary<string, string> Properties;
-        static Queue<IBfxOrderTransaction> _transactions = new Queue<IBfxOrderTransaction>();
+        static ConcurrentDictionary<Guid, IBfxOrderTransaction> _transactions = new ConcurrentDictionary<Guid, IBfxOrderTransaction>();
         static decimal _orderSize;
 
         static void Main(string[] args)
@@ -109,24 +109,31 @@ namespace TradingApiTests
 
         static void PlaceOrder(IBfxOrder order)
         {
-            _transactions.Enqueue(_market.PlaceOrder(order));
-        }
-
-        static void CancelOrder()
-        {
-            _transactions.Dequeue().Cancel();
+            var tran = _market.PlaceOrder(order);
+            _transactions[tran.Id] = tran;
         }
 
         static void PlaceOrder(IBfxOrder order, TimeSpan timeToExpore, BfTimeInForce timeInForce)
         {
-            _transactions.Enqueue(_market.PlaceOrder(order, timeToExpore, timeInForce));
+            var tran = _market.PlaceOrder(order, timeToExpore, timeInForce);
+            _transactions[tran.Id] = tran;
+        }
+
+        static void CancelOrder()
+        {
+            var tran = _transactions.Values.Where(e => e.IsCancelable).OrderBy(e => e.OpenTime).FirstOrDefault();
+            if (tran != null)
+            {
+                tran.Cancel();
+            }
         }
 
         static void ClosePositions()
         {
             if (_account.Positions.TotalSize > 0m)
             {
-                _transactions.Enqueue(_market.PlaceOrder(BfxOrder.MarketPrice(_account.Positions.Side.Opposite(), _account.Positions.TotalSize)));
+                var tran = _market.PlaceOrder(BfxOrder.MarketPrice(_account.Positions.Side.Opposite(), _account.Positions.TotalSize));
+                _transactions[tran.Id] = tran;
             }
         }
 
@@ -183,13 +190,6 @@ namespace TradingApiTests
                 sb.Add($"ES:{order.ExecutedSize}");
             }
             Console.WriteLine(string.Join(' ', sb));
-
-            switch (ev.EventType)
-            {
-                case BfxOrderTransactionEventType.Completed:
-                    _transactions.Dequeue();
-                    break;
-            }
         }
     }
 }

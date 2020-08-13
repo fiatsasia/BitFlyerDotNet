@@ -9,9 +9,8 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 
 ### Environment 
 - Solution and Projects are for Visual Studio 2019 and 2019 for Mac.
-- .NET Standard 2.x for libraries.
-- .NET Framework 4.71, .NET Core 3.0 and Xamarin Forms for sample applications.
-- Sample applications are tested on iOS, Android, MacOS and Windows desktop. 
+- .NET Standard 2.0 for libraries.
+- .NET Framework 4.71, .NET Core 3.1 for sample applications.
 - [Reactive Extensions (Rx.NET)](http://reactivex.io/)
 - [JSON.NET](https://www.newtonsoft.com/json)
 - Entity Framework Core and [SQLite](https://www.sqlite.org/index.html)
@@ -29,9 +28,8 @@ PM> Install-Package BitFlyerDotNet.LightningApi
 ```
 PM> Install-Package BitFlyerDotNet.Trading
 ```
-- Class library for trading applications
-- Quick confirm executed order
-- Error retry, safe cancel, prevent order duplication 
+- Class library for trading applications.
+- Transaction based order management. 
 ### BitFlyerDotNet.Historical
 - BitFlyerDotNet.Historical contains BitFlyer.DotNet.LightningAPI
 ```

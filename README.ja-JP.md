@@ -12,9 +12,8 @@ BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/
 
 ### 環境
 - Visual Studio 2019 / for Mac 2019 用ソリューション、プロジェクト
-- .NET Standard 2.x (ライブラリで使用)
-- .NET Framework 4.71, .NET Core 3.0, Xamarin Forms (サンプルで使用)
-- Xamrin Forms サンプルは iOS, Android, MacOS, Windows で動作確認済み。 
+- .NET Standard 2.0 (ライブラリで使用)
+- .NET Framework 4.71, .NET Core 3.1 (サンプルで使用)
 - [Reactive Extensions (Rx.NET)](http://reactivex.io/)
 - [JSON.NET](https://www.newtonsoft.com/json)
 - Entity Framework Core and [SQLite](https://www.sqlite.org/index.html)
@@ -32,8 +31,7 @@ PM> Install-Package BitFlyerDotNet.LightningApi
 PM> Install-Package BitFlyerDotNet.Trading
 ```
 - 取引アプリケーション構築用クラスライブラリ
-- 取引約定のリアルタイム検出機能
-- エラーリトライ、セーフキャンセル、二重発注防止
+- トランザクションベースの取引管理
 ### BitFlyerDotNet.Historical
 - BitFlyerDotNet.Historical は BitFlyer.DotNet.LightningAPI を含みます。
 ```

@@ -48,6 +48,7 @@ namespace BitFlyerDotNet.Trading
                 case BfxOrderState.Executed:
                 case BfxOrderState.Canceled:
                 case BfxOrderState.CancelFailed:
+                case BfxOrderState.Completed:
                 case BfxOrderState.Expired:
                     return true;
 

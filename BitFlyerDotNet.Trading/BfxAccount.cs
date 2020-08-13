@@ -4,11 +4,11 @@
 //
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Reactive.Linq;
-using BitFlyerDotNet.LightningApi;
 using System.Reactive.Disposables;
-using System.Linq;
+using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
