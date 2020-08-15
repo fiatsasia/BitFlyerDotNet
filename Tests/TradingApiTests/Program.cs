@@ -8,7 +8,9 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Xml.Linq;
+using System.Threading.Tasks;
 using System.Reactive.Linq;
+using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
 
@@ -34,19 +36,11 @@ namespace TradingApiTests
             LoadSettings(args[0]);
 
             using (_account = new BfxAccount(Properties["ApiKey"], Properties["ApiSecret"]))
-            using (_market = _account.GetMarket(ProductCode))
             {
+                _market = _account.GetMarket(ProductCode);
                 _account.PositionChanged += OnPositionChanged;
-                _orderSize = _market.MinimumOrderSize;
-
-                // Call event handler on another thread
-                //market.OrderTransactionEvent += OnOrderTransactionEvent;
-                Observable.FromEventPattern<BfxOrderTransactionEventArgs>(_market, nameof(_market.OrderTransactionEvent))
-                .ObserveOn(System.Reactive.Concurrency.Scheduler.Default)
-                .Subscribe(e =>
-                {
-                    OnOrderTransactionEvent(e.Sender, e.EventArgs);
-                });
+                _orderSize = ProductCode.MinimumOrderSize();
+                _market.OrderTransactionEvent += OnOrderTransactionEvent;
 
                 _market.Open();
                 while (true)
@@ -54,6 +48,7 @@ namespace TradingApiTests
                     Console.WriteLine("===================================================================");
                     Console.WriteLine("S)imple orders");
                     Console.WriteLine("C)onditional orders");
+                    Console.WriteLine("F)ind orders");
                     Console.WriteLine("");
                     Console.Write("Main>");
 
@@ -67,6 +62,10 @@ namespace TradingApiTests
 
                             case 'C':
                                 ConditionalOrders();
+                                break;
+
+                            case 'F':
+                                FindOrders();
                                 break;
 
                             case ESCAPE:
@@ -137,16 +136,54 @@ namespace TradingApiTests
             }
         }
 
+        static void FindOrders()
+        {
+            Console.Write("Child order acceptance ID : ");
+            var coai = Console.ReadLine();
+            Console.Write("A)ctive Comp)leted C)anceled E)xpired R)ejected");
+            BfOrderState state;
+            switch (GetCh())
+            {
+                case 'A':
+                    state = BfOrderState.Active;
+                    break;
+
+                case 'P':
+                    state = BfOrderState.Completed;
+                    break;
+
+                case 'C':
+                    state = BfOrderState.Canceled;
+                    break;
+
+                case 'E':
+                    state = BfOrderState.Expired;
+                    break;
+
+                case 'R':
+                    state = BfOrderState.Rejected;
+                    break;
+
+                default:
+                    state = BfOrderState.Unknown;
+                    break;
+            }
+
+            var resp = _account.Client.GetChildOrders(ProductCode, orderState: state, childOrderAcceptanceId: coai);
+            var jobject = JsonConvert.DeserializeObject(resp.Json);
+            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+        }
+
         static void OnPositionChanged(object sender, BfxPositionChangedEventArgs ev)
         {
             var pos = ev.Position;
             if (ev.IsOpened)
             {
-                Console.WriteLine($"{pos.Open.ToString(TimeFormat)} 建玉発生　　 {pos.Side} P:{pos.OpenPrice} S:{pos.Size} TS:{_account.Positions.TotalSize}");
+                Console.WriteLine($"{pos.Open.ToString(TimeFormat)} Position opened {pos.Side} P:{pos.OpenPrice} S:{pos.Size} TS:{_account.Positions.TotalSize}");
             }
             else // Closed
             {
-                Console.WriteLine($"{pos.Close.Value.ToString(TimeFormat)} 建玉決済　　 {pos.Side} P:{pos.ClosePrice} S:{pos.Size} TS:{_account.Positions.TotalSize} PT:{pos.Profit} NP:{pos.NetProfit}");
+                Console.WriteLine($"{pos.Close.Value.ToString(TimeFormat)} Position closed {pos.Side} P:{pos.ClosePrice} S:{pos.Size} TS:{_account.Positions.TotalSize} PT:{pos.Profit} NP:{pos.NetProfit}");
             }
         }
 
@@ -159,12 +196,24 @@ namespace TradingApiTests
             if (ev.EventType != BfxOrderTransactionEventType.ChildOrderEvent)
             {
                 order = ev.Order;
-                sb.Add(ev.EventType.ToDisplayString());
+                sb.Add(ev.EventType.ToString());
+                if (ev.EventType == BfxOrderTransactionEventType.Canceled && _account.Positions.TotalSize > 0m)
+                {
+                    Task.Run(() =>
+                    {
+                        Console.WriteLine($"Position is alive. size:{_account.Positions.TotalSize}");
+                        Console.Write("Close positions ? (y/n)");
+                        if (GetCh() == 'Y')
+                        {
+                            ClosePositions();
+                        }
+                    });
+                }
             }
             else
             {
                 order = ev.Order.Children[ev.ChildOrderIndex];
-                sb.Add(ev.ChildEventType.ToChildDisplayString());
+                sb.Add(ev.ChildEventType.ToString());
             }
 
             sb.Add($"{order.ProductCode}");

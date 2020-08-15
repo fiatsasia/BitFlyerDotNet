@@ -145,6 +145,7 @@ namespace BitFlyerDotNet.Trading
                     Debug.WriteLine($"BfOrderEventType.Complete received. count = {CompletedCount}");
                     switch (OrderType)
                     {
+                        case BfOrderType.IFD:
                         case BfOrderType.IFDOCO:
                             if (CompletedCount == 2)
                             {

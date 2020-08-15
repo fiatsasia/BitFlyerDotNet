@@ -24,8 +24,6 @@ namespace BitFlyerDotNet.Trading
         public decimal BestBidPrice => Ticker?.BestBidPrice ?? decimal.Zero;
         public DateTime ServerTime { get { return DateTime.UtcNow + (Ticker?.ServerTimeDiff ?? TimeSpan.Zero); } }
 
-        public decimal MinimumOrderSize => ProductCode.MinimumOrderSize();
-
         // Events
         public event Action<BfxTicker>? TickerChanged;
         public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionEvent;
@@ -161,7 +159,7 @@ namespace BitFlyerDotNet.Trading
                     var childTran = new BfxChildOrderTransaction(this, childOrder, parentTran, OnOrderTransactionEvent);
                     _childOrderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId, childTran, (key, value) =>
                     {
-                        Debug.WriteLine($"--Child transaction place holder found and merged. {childOrder.ChildOrderAcceptanceId} {poe.EventType}");
+                        Debug.WriteLine($"--Child transaction place holder found and merged to parent. {childOrder.ChildOrderAcceptanceId} Parent.{poe.EventType}");
                         if (!(value is BfxChildTransactionPlaceHolder placeHolder))
                         {
                             throw new ApplicationException();

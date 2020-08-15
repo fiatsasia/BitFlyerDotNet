@@ -22,6 +22,7 @@ namespace TradingApiTests
                 Console.WriteLine("T)railing");
                 Console.WriteLine("E)xpire test");
                 Console.WriteLine("F)OK");
+                Console.WriteLine("U)nexecutable order");
                 Console.WriteLine("C)ancel last order");
                 Console.WriteLine("X) Close position");
                 Console.WriteLine();
@@ -63,7 +64,7 @@ namespace TradingApiTests
                         PlaceOrder(BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize));
                         break;
 
-                    case 'T': // Trailing stop
+                    case 'T':
                         switch (SelectSide())
                         {
                             case BfTradeSide.Buy:
@@ -82,6 +83,10 @@ namespace TradingApiTests
 
                     case 'F':
                         PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.Zero, BfTimeInForce.FOK);
+                        break;
+
+                    case 'U':
+                        PlaceOrder(BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize));
                         break;
 
                     case 'C':

@@ -11,13 +11,13 @@ namespace TradingApiTests
 {
     partial class Program
     {
-        const decimal PnLGap = 500m;
+        const decimal PnLGap = 1000m;
 
         static void ConditionalOrders()
         {
             while (true)
             {
-                Console.WriteLine("I)FD unexecutable price");
+                Console.WriteLine("I)FD trailing");
                 Console.WriteLine("O)CO unexecutable price");
                 Console.WriteLine("L)imit IFDOCO");
                 Console.WriteLine("T)railing IFDOCO");
@@ -31,10 +31,28 @@ namespace TradingApiTests
                 switch (GetCh())
                 {
                     case 'I':
-                        PlaceOrder(BfxOrder.IFD(
-                            BfxOrder.LimitPrice(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
-                            BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize)
-                        ));
+                        switch (SelectSide())
+                        {
+                            case BfTradeSide.Buy:
+                                {
+                                    var buyPrice = _market.BestBidPrice;
+                                    PlaceOrder(BfxOrder.IFD(
+                                        BfxOrder.LimitPrice(BfTradeSide.Buy, buyPrice, _orderSize),
+                                        BfxOrder.Trailing(BfTradeSide.Sell, PnLGap, _orderSize)
+                                    ));
+                                }
+                                break;
+
+                            case BfTradeSide.Sell:
+                                {
+                                    var sellPrice = _market.BestAskPrice;
+                                    PlaceOrder(BfxOrder.IFD(
+                                        BfxOrder.LimitPrice(BfTradeSide.Sell, sellPrice, _orderSize),
+                                        BfxOrder.Trailing(BfTradeSide.Buy, PnLGap, _orderSize)
+                                    ));
+                                }
+                                break;
+                        }
                         break;
 
                     case 'O':
