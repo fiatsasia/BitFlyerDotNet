@@ -22,6 +22,7 @@ namespace BitFlyerDotNet.Trading
         public BfxTicker? Ticker { get; private set; }
         public decimal BestAskPrice => Ticker?.BestAskPrice ?? decimal.Zero;
         public decimal BestBidPrice => Ticker?.BestBidPrice ?? decimal.Zero;
+        public decimal LastTradedPrice => Ticker?.LastTradedPrice ?? decimal.Zero;
         public DateTime ServerTime { get { return DateTime.UtcNow + (Ticker?.ServerTimeDiff ?? TimeSpan.Zero); } }
 
         // Events

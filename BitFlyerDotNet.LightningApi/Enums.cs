@@ -77,7 +77,7 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        public static decimal MinimumOrderSize(this BfProductCode productCode)
+        public static decimal GetMinimumOrderSize(this BfProductCode productCode)
         {
             switch (productCode)
             {
@@ -116,7 +116,7 @@ namespace BitFlyerDotNet.LightningApi
     }
     public static class BfTradeSideExtensions
     {
-        public static BfTradeSide Opposite(this BfTradeSide side)
+        public static BfTradeSide GetOpposite(this BfTradeSide side)
         {
             if (side != BfTradeSide.Buy && side != BfTradeSide.Sell)
             {
@@ -273,6 +273,20 @@ namespace BitFlyerDotNet.LightningApi
             return
                 orderType == BfOrderType.Market ||
                 orderType == BfOrderType.Limit;
+        }
+
+        public static bool IsOrderPriceValid(this BfOrderType orderType)
+        {
+            return
+                orderType == BfOrderType.Limit ||
+                orderType == BfOrderType.StopLimit;
+        }
+
+        public static bool IsTriggerPriceValid(this BfOrderType orderType)
+        {
+            return
+                orderType == BfOrderType.Stop ||
+                orderType == BfOrderType.StopLimit;
         }
     }
 

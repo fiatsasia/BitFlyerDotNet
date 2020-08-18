@@ -20,7 +20,7 @@ namespace OrderApiTests
         static CompositeDisposable _disposables = new CompositeDisposable();
 
         const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
-        static readonly decimal OrderSize = ProductCode.MinimumOrderSize();
+        static readonly decimal OrderSize = ProductCode.GetMinimumOrderSize();
         const decimal UnexecuteGap = 50000m;
         static BitFlyerClient _client;
         static RealtimeSourceFactory _factory;

@@ -39,7 +39,7 @@ namespace TradingApiTests
             {
                 _market = _account.GetMarket(ProductCode);
                 _account.PositionChanged += OnPositionChanged;
-                _orderSize = ProductCode.MinimumOrderSize();
+                _orderSize = ProductCode.GetMinimumOrderSize();
                 _market.OrderTransactionEvent += OnOrderTransactionEvent;
 
                 _market.Open();
@@ -131,7 +131,7 @@ namespace TradingApiTests
         {
             if (_account.Positions.TotalSize > 0m)
             {
-                var tran = _market.PlaceOrder(BfxOrder.MarketPrice(_account.Positions.Side.Opposite(), _account.Positions.TotalSize));
+                var tran = _market.PlaceOrder(BfxOrder.MarketPrice(_account.Positions.Side.GetOpposite(), _account.Positions.TotalSize));
                 _transactions[tran.Id] = tran;
             }
         }

@@ -99,7 +99,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public static BfParentOrderRequestParameter Trail(BfProductCode productCode, BfTradeSide side, decimal offset, decimal size)
         {
-            if (size > offset)
+            if (offset <= 0m)
             {
                 throw new ArgumentException();
             }

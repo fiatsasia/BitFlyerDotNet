@@ -18,6 +18,7 @@ namespace RealtimeApiTests
     {
         static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
         static CompositeDisposable _disposables = new CompositeDisposable();
+        static Dictionary<string, string> Properties;
 
         const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
         static RealtimeSourceFactory _factory;
@@ -91,7 +92,6 @@ namespace RealtimeApiTests
             }
         }
 
-        static Dictionary<string, string> Properties;
         static void LoadRunsettings(string filePath)
         {
             var xml = XDocument.Load(filePath);
