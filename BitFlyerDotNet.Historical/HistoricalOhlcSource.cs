@@ -7,15 +7,14 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
-using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    public class HistoricalOhlcSource : IObservable<IOhlcvv<decimal>>
+    public class HistoricalOhlcSource : IObservable<IOhlcvv>
     {
         IOhlcCache _cache;
-        IObservable<IOhlcvv<decimal>> _source;
+        IObservable<IOhlcvv> _source;
         CompositeDisposable _disposable = new CompositeDisposable();
 
         public HistoricalOhlcSource(ICacheFactory cacheFactory, BfProductCode productCode, TimeSpan frameSpan, DateTime endFrom, TimeSpan span, string cacheFolderBasePath)
@@ -27,7 +26,7 @@ namespace BitFlyerDotNet.Historical
             var startTo = endFrom - span + frameSpan;
             var end = endFrom - span + frameSpan;
 
-            _source = Observable.Create<IOhlcvv<decimal>>(observer =>
+            _source = Observable.Create<IOhlcvv>(observer =>
             {
                 var query = _cache.GetOhlcsBackward(endFrom, span);
                 if (query.Count() == requestedCount)
@@ -51,7 +50,7 @@ namespace BitFlyerDotNet.Historical
             // Cryptowatchの取得リミットに到達していた場合の対処
         }
 
-        public IDisposable Subscribe(IObserver<IOhlcvv<decimal>> observer)
+        public IDisposable Subscribe(IObserver<IOhlcvv> observer)
         {
             return _source.Subscribe(observer).AddTo(_disposable);
         }

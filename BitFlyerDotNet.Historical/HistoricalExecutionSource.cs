@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
-using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical

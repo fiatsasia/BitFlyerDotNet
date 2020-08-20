@@ -6,7 +6,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -166,7 +165,7 @@ namespace BitFlyerDotNet.Historical
         }
     }
 
-    class DbHistoricalOhlc : IOhlcvv<decimal>
+    class DbHistoricalOhlc : IOhlcvv
     {
         [Key]
         [Column(Order = 0)]
@@ -216,14 +215,14 @@ namespace BitFlyerDotNet.Historical
 
         public Type GetBaseType()
         {
-            return ExecutionCount == 0 ? typeof(IOhlcvv<decimal>) : typeof(IBfOhlc);
+            return ExecutionCount == 0 ? typeof(IOhlcvv) : typeof(IBfOhlc);
         }
 
         public DbHistoricalOhlc()
         {
         }
 
-        public DbHistoricalOhlc(IOhlcvv<decimal> ohlc, TimeSpan frameSpan)
+        public DbHistoricalOhlc(IOhlcvv ohlc, TimeSpan frameSpan)
         {
             Start = ohlc.Start;
             Open = ohlc.Open;

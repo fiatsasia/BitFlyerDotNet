@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 using System.Reactive.Linq;
-using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical

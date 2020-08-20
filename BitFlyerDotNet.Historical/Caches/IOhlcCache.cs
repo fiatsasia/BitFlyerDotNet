@@ -5,14 +5,13 @@
 
 using System;
 using System.Collections.Generic;
-using Financier;
 
 namespace BitFlyerDotNet.Historical
 {
     public interface IOhlcCache
     {
-        IEnumerable<IOhlcvv<decimal>> GetOhlcsBackward(DateTime endFrom, TimeSpan span);
-        void Add(IOhlcvv<decimal> ohlc);
+        IEnumerable<IOhlcvv> GetOhlcsBackward(DateTime endFrom, TimeSpan span);
+        void Add(IOhlcvv ohlc);
         void SaveChanges();
     }
 }

@@ -1,10 +1,12 @@
+//==============================================================================
+// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// https://www.fiats.asia/
+//
+
 using System;
 using System.Threading;
-using System.IO;
 using System.Linq;
-using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Financier;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Historical;
 
@@ -104,6 +106,14 @@ namespace HistoricalApiTests
                 completed.Set();
             });
             completed.WaitOne();
+        }
+    }
+
+    static class DateTimeExtensions
+    {
+        public static DateTime Round(this DateTime dt, TimeSpan unit)
+        {
+            return new DateTime(dt.Ticks / unit.Ticks * unit.Ticks, dt.Kind);
         }
     }
 }

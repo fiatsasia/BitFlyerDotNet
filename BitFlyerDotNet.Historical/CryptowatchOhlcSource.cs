@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Financier;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -61,7 +60,7 @@ namespace BitFlyerDotNet.Historical
             _client.BaseAddress = new Uri(_baseUri);
         }
 
-        class Ohlc : IOhlcvv<decimal>
+        class Ohlc : IOhlcvv
         {
             public DateTime Start { get; set; }
             public decimal Open { get; set; }
@@ -93,7 +92,7 @@ namespace BitFlyerDotNet.Historical
             return ohlcs;
         }
 
-        public static IEnumerable<IOhlcvv<decimal>> Get(BfProductCode productCode, TimeSpan frameSpan, DateTime beforeClose, DateTime afterClose)
+        public static IEnumerable<IOhlcvv> Get(BfProductCode productCode, TimeSpan frameSpan, DateTime beforeClose, DateTime afterClose)
         {
             if (!_productSymbols.ContainsKey(productCode))
             {

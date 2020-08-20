@@ -14,9 +14,9 @@ using Newtonsoft.Json;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    internal static class EnumUtil
+    static class EnumUtil
     {
-        internal static string ToEnumString<TEnum>(this TEnum type) where TEnum : struct
+        public static string ToEnumString<TEnum>(this TEnum type) where TEnum : struct
         {
             var enumType = typeof(TEnum);
             var name = Enum.GetName(enumType, type);
@@ -25,7 +25,7 @@ namespace BitFlyerDotNet.LightningApi
         }
     }
 
-    internal static class RxUtil
+    static class RxUtil
     {
         public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
         {

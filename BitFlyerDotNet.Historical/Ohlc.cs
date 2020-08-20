@@ -3,11 +3,22 @@
 // https://www.fiats.asia/
 //
 
-using Financier;
+using System;
 
 namespace BitFlyerDotNet.Historical
 {
-    public interface IBfOhlc : IOhlcvv<decimal>
+    public interface IOhlcvv
+    {
+        DateTime Start { get; }
+        decimal Open { get; }
+        decimal High { get; }
+        decimal Low { get; }
+        decimal Close { get; }
+        double Volume { get; }
+        double VWAP { get; }
+    }
+
+    public interface IBfOhlc : IOhlcvv
     {
         int ExecutionCount { get; }
         double BuyVolume { get; }
