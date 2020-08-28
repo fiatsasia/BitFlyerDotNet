@@ -27,7 +27,7 @@ namespace BitFlyerDotNet.Trading
 
         // Events
         public event Action<BfxTicker>? TickerChanged;
-        public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionEvent;
+        public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionChanged;
 
         // Private properties
         CompositeDisposable _disposables = new CompositeDisposable();
@@ -265,7 +265,7 @@ namespace BitFlyerDotNet.Trading
                 // トランザクション削除
             }
 
-            OrderTransactionEvent?.Invoke(sender, ev);
+            OrderTransactionChanged?.Invoke(sender, ev);
         }
     }
 }

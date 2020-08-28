@@ -17,7 +17,7 @@ namespace BitFlyerDotNet.Trading
         public BitFlyerClient Client { get; private set; }
         public RealtimeSourceFactory RealtimeSource { get; private set; }
 
-        public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;
+        public event EventHandler<BfxPositionEventArgs>? PositionChanged;
 
         CompositeDisposable _disposables = new CompositeDisposable();
         Dictionary<string, BfProductCode> _marketSymbols = new Dictionary<string, BfProductCode>();
@@ -51,7 +51,7 @@ namespace BitFlyerDotNet.Trading
                 _markets[productCode].ForwardChildOrderEvents(coe);
                 if (productCode == BfProductCode.FXBTCJPY && coe.EventType == BfOrderEventType.Execution)
                 {
-                    Positions.Update(coe).ForEach(e => PositionChanged?.Invoke(this, new BfxPositionChangedEventArgs(e)));
+                    Positions.Update(coe).ForEach(e => PositionChanged?.Invoke(this, new BfxPositionEventArgs(e)));
                 }
             });
 

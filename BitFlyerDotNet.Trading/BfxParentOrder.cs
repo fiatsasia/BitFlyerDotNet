@@ -112,6 +112,7 @@ namespace BitFlyerDotNet.Trading
         public void Update(BfParentOrderEvent poe)
         {
             _orderMethod = poe.ParentOrderType;
+            LastUpdatedTime = poe.EventDate;
             switch (poe.EventType)
             {
                 case BfOrderEventType.Order:

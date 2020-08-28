@@ -55,7 +55,7 @@ namespace BitFlyerDotNet.Trading
         DateTime? ExpireDate { get; }           // ---- 5--8  Requested/Completed
 
         BfxOrderState State { get; }            // ---- 5--   5:ChildOrderState
-        DateTime LastUpdatedTime { get; }
+        DateTime? LastUpdatedTime { get; }
 
         IBfxOrder[] Children { get; }
     }

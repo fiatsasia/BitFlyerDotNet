@@ -40,7 +40,7 @@ namespace TradingApiTests
                 _market = _account.GetMarket(ProductCode);
                 _account.PositionChanged += OnPositionChanged;
                 _orderSize = ProductCode.GetMinimumOrderSize();
-                _market.OrderTransactionEvent += OnOrderTransactionEvent;
+                _market.OrderTransactionChanged += OnOrderTransactionChanged;
 
                 _market.Open();
                 while (true)
@@ -174,10 +174,10 @@ namespace TradingApiTests
             Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
-        static void OnPositionChanged(object sender, BfxPositionChangedEventArgs ev)
+        static void OnPositionChanged(object sender, BfxPositionEventArgs ev)
         {
             var pos = ev.Position;
-            if (ev.IsOpened)
+            if (pos.IsOpened)
             {
                 Console.WriteLine($"{pos.Open.ToString(TimeFormat)} Position opened {pos.Side} P:{pos.OpenPrice} S:{pos.Size} TS:{_account.Positions.TotalSize}");
             }
@@ -187,7 +187,7 @@ namespace TradingApiTests
             }
         }
 
-        private static void OnOrderTransactionEvent(object sender, BfxOrderTransactionEventArgs ev)
+        private static void OnOrderTransactionChanged(object sender, BfxOrderTransactionEventArgs ev)
         {
             var sb = new List<string>();
             sb.Add(ev.Time.ToString(TimeFormat));

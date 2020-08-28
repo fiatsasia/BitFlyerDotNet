@@ -7,12 +7,12 @@ using System;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxPositionChangedEventArgs : EventArgs
+    public class BfxPositionEventArgs : EventArgs
     {
-        public BfxPositionChange Position { get; internal set; }
-        public bool IsOpened => Position.Close == null;
+        public BfxPositionEventType EventType { get; internal set; }
+        public BfxPosition Position { get; internal set; }
 
-        public BfxPositionChangedEventArgs(BfxPositionChange pos)
+        public BfxPositionEventArgs(BfxPosition pos)
         {
             Position = pos;
         }
