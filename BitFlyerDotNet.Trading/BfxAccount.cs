@@ -51,7 +51,7 @@ namespace BitFlyerDotNet.Trading
                 _markets[productCode].ForwardChildOrderEvents(coe);
                 if (productCode == BfProductCode.FXBTCJPY && coe.EventType == BfOrderEventType.Execution)
                 {
-                    Positions.Update(coe).ForEach(e => PositionChanged?.Invoke(this, new BfxPositionEventArgs(e)));
+                    Positions.Update(coe).ForEach(e => PositionChanged?.Invoke(this, new BfxPositionEventArgs(coe.EventDate, e)));
                 }
             });
 

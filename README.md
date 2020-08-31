@@ -5,7 +5,7 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 **BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
 
 ### Updates
-- Version 3.0.0 - [BitFlyerDotNet Site](https://scrapbox.io/BitFlyerDotNet/Updates)
+- [BitFlyerDotNet Site](https://scrapbox.io/BitFlyerDotNet/Updates)
 
 ### Environment 
 - Solution and Projects are for Visual Studio 2019 and 2019 for Mac.

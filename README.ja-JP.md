@@ -8,7 +8,7 @@ BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/
 **[BitFlyerDotNet日本語版解説サイト](https://scrapbox.io/BitFlyerDotNet/)**
 
 ### 更新履歴
-- Version 3.0.0 - [BitFlyerDotNetサイト](https://scrapbox.io/BitFlyerDotNet/更新履歴)
+- [BitFlyerDotNetサイト](https://scrapbox.io/BitFlyerDotNet/更新履歴)
 
 ### 環境
 - Visual Studio 2019 / for Mac 2019 用ソリューション、プロジェクト
