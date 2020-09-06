@@ -33,12 +33,30 @@ namespace BitFlyerDotNet.LightningApi
         AutoResetEvent _closedEvent = new AutoResetEvent(false);
         ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new ConcurrentDictionary<string, IRealtimeSource>();
 
+        string _uri;
         string _apiKey;
         HMACSHA256 _hash;
 
         public WebSocketChannels(string uri)
         {
-            _webSocket = new WebSocket(uri);
+            _uri = uri;
+            CreateWebSocket();
+        }
+
+        public WebSocketChannels(string uri, string apiKey, string apiSecret)
+            : this(uri)
+        {
+            _apiKey = apiKey;
+            _hash = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret));
+        }
+
+        void CreateWebSocket()
+        {
+            Debug.WriteLine("Creating WebSocket...");
+            _webSocket?.Dispose();
+            _opened = false;
+
+            _webSocket = new WebSocket(_uri);
             _webSocket.Security.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
             _reconnectionTimer = new Timer(OnReconnection);
 
@@ -49,13 +67,6 @@ namespace BitFlyerDotNet.LightningApi
             _webSocket.Error += OnError;
 
             _openedEvent.Reset();
-        }
-
-        public WebSocketChannels(string uri, string apiKey, string apiSecret)
-            : this(uri)
-        {
-            _apiKey = apiKey;
-            _hash = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret));
         }
 
         public void Dispose()
@@ -72,6 +83,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             if (!_opened)
             {
+                Debug.WriteLine("Opening WebSocket...");
                 _opened = true;
 
                 _webSocket.OpenAsync();
@@ -86,6 +98,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public void Close()
         {
+            Debug.WriteLine("Closing WebSocket...");
             _opened = false;
             _webSocket.CloseAsync();
             _closedEvent.WaitOne(1000);
@@ -148,6 +161,12 @@ namespace BitFlyerDotNet.LightningApi
             _reconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
             if (_webSocketSources.Count > 0)
             {
+                if (!string.IsNullOrEmpty(_apiKey) && _hash != null)
+                {
+                    Debug.WriteLine("{0} WebSocket recover authentication.", DateTime.Now);
+                    Authenticate();
+                }
+
                 Debug.WriteLine("{0} WebSocket recover subscriptions.", DateTime.Now);
                 _webSocketSources.Values.ForEach(source => { source.Subscribe(); }); // resubscribe
             }
@@ -229,7 +248,9 @@ namespace BitFlyerDotNet.LightningApi
                 case WebSocketState.Closed:
                     try
                     {
-                        _webSocket.Open(); // Does it need auth if authenticated ?
+                        //CreateWebSocket();
+                        //TryOpen();
+                        _webSocket.Open();
                     }
                     catch (Exception ex)
                     {

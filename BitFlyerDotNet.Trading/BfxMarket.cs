@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.Linq;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reactive.Linq;
@@ -19,14 +20,14 @@ namespace BitFlyerDotNet.Trading
         public BfxConfiguration Config { get; private set; }
         public BitFlyerClient Client => _account.Client;
         public RealtimeSourceFactory RealtimeSource => _account.RealtimeSource;
-        public BfxTicker? Ticker { get; private set; }
-        public decimal BestAskPrice => Ticker?.BestAskPrice ?? decimal.Zero;
-        public decimal BestBidPrice => Ticker?.BestBidPrice ?? decimal.Zero;
-        public decimal LastTradedPrice => Ticker?.LastTradedPrice ?? decimal.Zero;
-        public DateTime ServerTime { get { return DateTime.UtcNow + (Ticker?.ServerTimeDiff ?? TimeSpan.Zero); } }
+        public decimal BestAskPrice { get; private set; }
+        public decimal BestBidPrice { get; private set; }
+        public decimal LastTradedPrice { get; private set; }
+
+        TimeSpan _serverTimeSpan;
+        public DateTime ServerTime => DateTime.UtcNow + _serverTimeSpan;
 
         // Events
-        public event Action<BfxTicker>? TickerChanged;
         public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionChanged;
 
         // Private properties
@@ -40,6 +41,8 @@ namespace BitFlyerDotNet.Trading
             _account = account;
             ProductCode = productCode;
             Config = config ?? new BfxConfiguration();
+
+            _serverTimeSpan = TimeSpan.Zero;
         }
 
         public BfxMarket(BfxAccount account, BfProductCode productCode)
@@ -56,17 +59,9 @@ namespace BitFlyerDotNet.Trading
 
         public void Open()
         {
-            StartTicker();
             //LoadMarketInformations();
-        }
-
-        public void StartTicker()
-        {
-            new BfxTickerSource(this).Subscribe(ticker =>
-            {
-                Ticker = ticker;
-                TickerChanged?.Invoke(ticker);
-            }).AddTo(_disposables);
+            RealtimeSource.GetExecutionSource(ProductCode).Subscribe(e => { _serverTimeSpan = e.ExecutedTime - DateTime.UtcNow; LastTradedPrice = e.Price; }).AddTo(_disposables);
+            RealtimeSource.GetOrderBookSource(ProductCode).Subscribe(e => { BestAskPrice = e.BestAskPrice; BestBidPrice = e.BestBidPrice; }).AddTo(_disposables);
         }
 
         public void LoadMarketInformations()
@@ -165,7 +160,9 @@ namespace BitFlyerDotNet.Trading
                         {
                             throw new ApplicationException();
                         }
-                        placeHolder.ChildOrderEvents.ForEach(coe => parentTran.OnChildOrderEvent(coe));
+
+                        // ToList() prevents "Collection was modified; enumeration operation may not execute."
+                        placeHolder.ChildOrderEvents.ToList().ForEach(coe => parentTran.OnChildOrderEvent(coe));
                         return childTran;
                     });
                 }
@@ -223,7 +220,9 @@ namespace BitFlyerDotNet.Trading
                 {
                     throw new ApplicationException();
                 }
-                placeHolder.ChildOrderEvents.ForEach(coe => tran.OnChildOrderEvent(coe));
+
+                // ToList() prevents "Collection was modified; enumeration operation may not execute."
+                placeHolder.ChildOrderEvents.ToList().ForEach(coe => tran.OnChildOrderEvent(coe));
                 return tran;
             });
         }

@@ -35,6 +35,7 @@ namespace BitFlyerDotNet.Trading
 
         public BfxOrderTransactionEventType ChildEventType { get; internal set; }
         public int ChildOrderIndex { get; internal set; }
+        public IBfxOrder ChildOrder => Order.Children[ChildOrderIndex];
 
         public BfxOrderTransactionEventArgs(IBfxOrder order)
         {
