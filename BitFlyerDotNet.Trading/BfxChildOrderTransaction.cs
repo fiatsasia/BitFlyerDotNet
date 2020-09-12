@@ -8,16 +8,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using BitFlyerDotNet.LightningApi;
+using System.Linq;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxChildOrderTransaction : BfxOrderTransaction, IBfxChildOrderTransaction
+    public class BfxChildOrderTransaction : BfxOrderTransaction
     {
         // Public properties
-        public override string? MarketId => Order.AcceptanceId;
-        public BfxChildOrder Order { get; private set; }
+        public override string MarketId => _order.ChildOrderAcceptanceId;
+        public override IBfxOrder Order => _order;
         public override BfxOrderState OrderState => Order.State;
-        public BfxParentOrderTransaction? Parent { get; }
+        public BfxParentOrderTransaction Parent { get; }
+        public override bool HasParent => Parent != null;
 
         protected override void CancelTransaction() => _cts.Cancel();
 
@@ -26,11 +28,12 @@ namespace BitFlyerDotNet.Trading
 
         // Private properties
         CancellationTokenSource _cts = new CancellationTokenSource();
+        BfxChildOrder _order;
 
-        public BfxChildOrderTransaction(BfxMarket market, BfxChildOrder order, BfxParentOrderTransaction? parent, EventHandler<BfxOrderTransactionEventArgs> handler)
+        public BfxChildOrderTransaction(BfxMarket market, BfxChildOrder order, BfxParentOrderTransaction parent, EventHandler<BfxOrderTransactionEventArgs> handler)
             : base(market)
         {
-            Order = order;
+            _order = order;
             Parent = parent;
             OrderTransactionEvent = handler;
         }
@@ -38,14 +41,44 @@ namespace BitFlyerDotNet.Trading
         public BfxChildOrderTransaction(BfxMarket market, BfxChildOrder order, EventHandler<BfxOrderTransactionEventArgs> handler)
             : base(market)
         {
-            Order = order;
+            _order = order;
             OrderTransactionEvent = handler;
+            Market.RealtimeSource.ConnectionSuspended += OnRealtimeConnectionSuspended;
+            Market.RealtimeSource.ConnectionResumed += OnRealtimeConnectionResumed;
+        }
+
+        void OnRealtimeConnectionSuspended()
+        {
+        }
+
+        void OnRealtimeConnectionResumed()
+        {
+            if (string.IsNullOrEmpty(_order.ChildOrderAcceptanceId))
+            {
+                return;
+            }
+            var order = Market.Client.GetChildOrders(Market.ProductCode, childOrderAcceptanceId: _order.ChildOrderAcceptanceId).GetContent().FirstOrDefault();
+            if (order == null)
+            {
+                return;
+            }
+
+            Debug.WriteLine($"{DateTime.Now} Found standalone order. {order.ChildOrderType} {order.ChildOrderState}");
+            var oldExecSize = Order.ExecutedSize.HasValue ? Order.ExecutedSize.Value : 0m;
+            _order.Update(order);
+
+            if (order.ExecutedSize > oldExecSize)
+            {
+                Debug.WriteLine($"{DateTime.Now} Found additional execs. size:{order.ExecutedSize}");
+                var execs = Market.Client.GetPrivateExecutions(Market.ProductCode, childOrderAcceptanceId: order.ChildOrderAcceptanceId).GetContent();
+                _order.Update(execs);
+            }
         }
 
         // - 経過時間でリトライ終了のオプション
         public async Task SendOrderRequestAsync()
         {
-            if (Order.Request == null)
+            if (_order.Request == null)
             {
                 throw new BitFlyerDotNetException();
             }
@@ -57,10 +90,10 @@ namespace BitFlyerDotNet.Trading
                 for (var retry = 0; retry <= Market.Config.OrderRetryMax; retry++)
                 {
                     _cts.Token.ThrowIfCancellationRequested();
-                    var resp = await Market.Client.SendChildOrderAsync(Order.Request, _cts.Token);
+                    var resp = await Market.Client.SendChildOrderAsync(_order.Request, _cts.Token);
                     if (!resp.IsError)
                     {
-                        Order.Update(resp.GetContent());
+                        _order.Update(resp.GetContent());
                         ChangeState(BfxOrderTransactionState.WaitingOrderAccepted);
                         NotifyEvent(BfxOrderTransactionEventType.OrderSent, Market.ServerTime, resp);
                         Market.RegisterTransaction(this);
@@ -96,7 +129,7 @@ namespace BitFlyerDotNet.Trading
             try
             {
                 _cts.Token.ThrowIfCancellationRequested();
-                var resp = await Market.Client.CancelChildOrderAsync(Market.ProductCode, string.Empty, Order.ChildOrderAcceptanceId, _cts.Token);
+                var resp = await Market.Client.CancelChildOrderAsync(Market.ProductCode, string.Empty, _order.ChildOrderAcceptanceId, _cts.Token);
                 if (!resp.IsError)
                 {
                     ChangeState(BfxOrderTransactionState.CancelAccepted);
@@ -118,12 +151,12 @@ namespace BitFlyerDotNet.Trading
         // Call from BfxMarket
         public override void OnChildOrderEvent(BfChildOrderEvent coe)
         {
-            if (coe.ChildOrderAcceptanceId != Order.ChildOrderAcceptanceId)
+            if (coe.ChildOrderAcceptanceId != _order.ChildOrderAcceptanceId)
             {
                 throw new ArgumentException();
             }
 
-            Order.Update(coe);
+            _order.Update(coe);
 
             switch (coe.EventType)
             {
@@ -159,6 +192,16 @@ namespace BitFlyerDotNet.Trading
                 case BfOrderEventType.Complete:
                 case BfOrderEventType.Trigger: // Not happened when Simple Order ?
                     throw new NotSupportedException();
+            }
+        }
+
+        protected override void ChangeState(BfxOrderTransactionState state)
+        {
+            base.ChangeState(state);
+            if (state == BfxOrderTransactionState.Closed)
+            {
+                Market.RealtimeSource.ConnectionSuspended -= OnRealtimeConnectionSuspended;
+                Market.RealtimeSource.ConnectionResumed -= OnRealtimeConnectionResumed;
             }
         }
 

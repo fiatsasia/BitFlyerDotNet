@@ -36,9 +36,6 @@ namespace BitFlyerDotNet.Trading
         decimal? TriggerPrice { get; }          // --3- -6--   OrderType is Stop or Stop Limit
         decimal? TrailOffset { get; }           // --3- -6--   Offset; OrderType is Trailing stop
 
-        string? AcceptanceId { get; }           // -2-- 5--8    ChildOrderAcceptanceId, ParentOrderAcceptanceId
-        string? OrderId { get; }                // ---- 5--8    ChildOrderId, ParentOrderId
-
         // Order Execution
         decimal? ExecutedSize { get; }          // ---- 5--
         decimal? ExecutedPrice { get; }         // ---- 5--   5:AveragePrice
@@ -46,7 +43,7 @@ namespace BitFlyerDotNet.Trading
         decimal? SfdCollectedAmount { get; }    // ---- ---8
         IBfxExecution[] Executions { get; }     // ---- ---8    ExecutionId, Price, Size, EventDate
 
-        string? OrderFailedReason { get; }      // ---- ---8
+        string OrderFailedReason { get; }      // ---- ---8
 
         int MinuteToExpire { get; }             // 1--4 --7-
         BfTimeInForce TimeInForce { get; }      // 1--4 ----

@@ -12,12 +12,13 @@ namespace TradingApiTests
     partial class Program
     {
         const decimal PnLGap = 1000m;
+        const decimal TrailingOffset = 3000m;
 
         static void ConditionalOrders()
         {
             while (true)
             {
-                Console.WriteLine("I)FD trailing");
+                Console.WriteLine("I)FDOCO trailing");
                 Console.WriteLine("O)CO unexecutable price");
                 Console.WriteLine("L)imit IFDOCO");
                 Console.WriteLine("T)railing IFDOCO");
@@ -34,23 +35,19 @@ namespace TradingApiTests
                         switch (SelectSide())
                         {
                             case BfTradeSide.Buy:
-                                {
-                                    var buyPrice = _market.BestBidPrice;
-                                    PlaceOrder(BfxOrder.IFD(
-                                        BfxOrder.LimitPrice(BfTradeSide.Buy, buyPrice, _orderSize),
-                                        BfxOrder.Trailing(BfTradeSide.Sell, PnLGap, _orderSize)
-                                    ));
-                                }
+                                PlaceOrder(BfxOrder.IFDOCO(
+                                    BfxOrder.LimitPrice(BfTradeSide.Buy, _market.BestBidPrice, _orderSize),
+                                    BfxOrder.Trailing(BfTradeSide.Sell, TrailingOffset, _orderSize),
+                                    BfxOrder.Stop(BfTradeSide.Sell, _market.BestAskPrice - PnLGap, _orderSize)
+                                ));
                                 break;
 
                             case BfTradeSide.Sell:
-                                {
-                                    var sellPrice = _market.BestAskPrice;
-                                    PlaceOrder(BfxOrder.IFD(
-                                        BfxOrder.LimitPrice(BfTradeSide.Sell, sellPrice, _orderSize),
-                                        BfxOrder.Trailing(BfTradeSide.Buy, PnLGap, _orderSize)
-                                    ));
-                                }
+                                PlaceOrder(BfxOrder.IFDOCO(
+                                    BfxOrder.LimitPrice(BfTradeSide.Sell, _market.BestAskPrice, _orderSize),
+                                    BfxOrder.Trailing(BfTradeSide.Buy, TrailingOffset, _orderSize),
+                                    BfxOrder.Stop(BfTradeSide.Buy, _market.BestBidPrice + PnLGap, _orderSize)
+                                ));
                                 break;
                         }
                         break;

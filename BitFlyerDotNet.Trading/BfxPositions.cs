@@ -105,8 +105,14 @@ namespace BitFlyerDotNet.Trading
         public decimal TotalSize => Math.Abs(_q.Sum(e => e.CurrentSize));
         public BfTradeSide Side => _q.Count == 0 ? BfTradeSide.Unknown : _q.Peek().Side;
 
+        public IEnumerable<BfxPosition> GetActivePositions()
+        {
+            return _q.ToList().Select(e => new BfxPosition(e));
+        }
+
         public void Update(BfPosition[] positions)
         {
+            _q.Clear();
             positions.ForEach(e => _q.Enqueue(new BfxPositionElement(e)));
         }
 

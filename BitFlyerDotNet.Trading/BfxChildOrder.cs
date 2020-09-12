@@ -13,13 +13,11 @@ namespace BitFlyerDotNet.Trading
 {
     public class BfxChildOrder : BfxOrder
     {
-        public override string? AcceptanceId => ChildOrderAcceptanceId;
-        public override string? OrderId => ChildOrderId;
         public override IBfxExecution[] Executions => _executions.ToArray();
 
         // Response fields
-        public string? ChildOrderAcceptanceId { get; private set; }
-        public string? ChildOrderId { get; private set; }
+        public string ChildOrderAcceptanceId { get; private set; } = string.Empty;
+        public string ChildOrderId { get; private set; } = string.Empty;
 
         internal BfChildOrderRequest? Request { get; }
 
@@ -44,6 +42,7 @@ namespace BitFlyerDotNet.Trading
             TimeInForce = request.TimeInForce;
         }
 
+        // Market/Limit get from market
         public BfxChildOrder(BfProductCode productCode, BfChildOrder order)
         {
             Request = default;
@@ -58,53 +57,8 @@ namespace BitFlyerDotNet.Trading
                 OrderPrice = order.Price;
             }
 
-            // Accepted
-            ChildOrderAcceptanceId = order.ChildOrderAcceptanceId;
-
-            // Confirmed
-            ChildOrderId = order.ChildOrderId;
-            OrderDate = order.ChildOrderDate;
-            ExpireDate = order.ExpireDate;
-
-            // Execution
-            ExecutedSize = order.ExecutedSize;
-            ExecutedPrice = order.AveragePrice;
-            Commission = order.TotalCommission;
-
-            switch (order.ChildOrderState)
-            {
-                case BfOrderState.Active:
-                    ChangeState(ExecutedSize == 0 ? BfxOrderState.Ordered : BfxOrderState.Executing);
-                    break;
-
-                case BfOrderState.Completed:
-                    ChangeState(BfxOrderState.Executed);
-                    break;
-
-                case BfOrderState.Expired:
-                    ChangeState(BfxOrderState.Expired);
-                    break;
-
-                case BfOrderState.Canceled:
-                    ChangeState(BfxOrderState.Canceled);
-                    break;
-
-                case BfOrderState.Rejected: // GetChildOrders probably does not return failed order.
-                    throw new NotSupportedException();
-            }
-
+            Update(order);
             LastUpdatedTime = order.ChildOrderDate;
-        }
-
-        // Market/Limit get from market
-        public BfxChildOrder(BfProductCode productCode, BfChildOrder order, BfPrivateExecution[] execs)
-            : this(productCode, order)
-        {
-            _executions.AddRange(execs.Select(e => new BfxExecution(e)));
-            if (_executions.Count > 0)
-            {
-                LastUpdatedTime = _executions.Last().Time;
-            }
         }
 
         // Market/Limit/Stop/StopLimit/Trail of parent order
@@ -131,29 +85,10 @@ namespace BitFlyerDotNet.Trading
         }
 
         // Market/Limit/Stop/StopLimit/Trail of parent order from market
-        public BfxChildOrder(BfProductCode productCode, BfParentOrderDetail detail, int childIndex)
+        public BfxChildOrder(BfProductCode productCode, BfParentOrderParameter order)
         {
             ProductCode = productCode;
-
-            // Parameter
-            var element = detail.Parameters[childIndex];
-            OrderType = element.ConditionType;
-            Side = element.Side;
-            OrderSize = element.Size;
-            if (OrderType == BfOrderType.Limit || OrderType == BfOrderType.StopLimit)
-            {
-                OrderPrice = element.Price;
-            }
-            if (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit)
-            {
-                TriggerPrice = element.TriggerPrice;    // TriggetPrice is present in ParentOrderParameter only
-            }
-            if (OrderType == BfOrderType.Trail)
-            {
-                TrailOffset = element.Offset;           // Offset is present in ParentOrderParameter only
-            }
-            MinuteToExpire = detail.MinuteToExpire;
-
+            Update(order);
             ChangeState(BfxOrderState.Unknown);
         }
         #endregion Constructors
@@ -187,10 +122,64 @@ namespace BitFlyerDotNet.Trading
                 return;
             }
 
+            _executions.Clear();
             _executions.AddRange(execs.Select(e => new BfxExecution(e)));
             ExecutedSize = _executions.Sum(e => e.Size);
             ChangeState(OrderSize > ExecutedSize ? BfxOrderState.Executing : BfxOrderState.Executed);
             LastUpdatedTime = _executions.Last().Time;
+        }
+
+        public void Update(BfParentOrderParameter order)
+        {
+            OrderType = order.ConditionType;
+            Side = order.Side;
+            OrderSize = order.Size;
+            if (OrderType == BfOrderType.Limit || OrderType == BfOrderType.StopLimit)
+            {
+                OrderPrice = order.Price;
+            }
+            if (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit)
+            {
+                TriggerPrice = order.TriggerPrice;    // TriggetPrice is present in ParentOrderParameter only
+            }
+            if (OrderType == BfOrderType.Trail)
+            {
+                TrailOffset = order.Offset;           // Offset is present in ParentOrderParameter only
+            }
+        }
+
+        public void Update(BfChildOrder order)
+        {
+            ChildOrderAcceptanceId = order.ChildOrderAcceptanceId;
+            ChildOrderId = order.ChildOrderId;
+            OrderDate = order.ChildOrderDate;
+            ExpireDate = order.ExpireDate;
+
+            ExecutedSize = order.ExecutedSize;
+            ExecutedPrice = order.AveragePrice;
+            Commission = order.TotalCommission;
+
+            switch (order.ChildOrderState)
+            {
+                case BfOrderState.Active:
+                    ChangeState(ExecutedSize == 0m ? BfxOrderState.Ordered : BfxOrderState.Executing);
+                    break;
+
+                case BfOrderState.Completed:
+                    ChangeState(BfxOrderState.Executed);
+                    break;
+
+                case BfOrderState.Canceled:
+                    ChangeState(BfxOrderState.Canceled);
+                    break;
+
+                case BfOrderState.Expired:
+                    ChangeState(BfxOrderState.Expired);
+                    break;
+
+                default:
+                    throw new ArgumentException("Unexpected order status");
+            }
         }
 
         public void Update(BfChildOrderEvent coe)
@@ -227,8 +216,6 @@ namespace BitFlyerDotNet.Trading
                         case BfxOrderState.Canceling: // Cancel child order from client
                             ChangeState(BfxOrderState.CancelFailed);
                             break;
-
-
                     }
                     break;
 

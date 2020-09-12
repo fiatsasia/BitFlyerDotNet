@@ -27,7 +27,14 @@ namespace BitFlyerDotNet.Trading
         public BfxAccount(string apiKey, string apiSecret)
         {
             Client = new BitFlyerClient(apiKey, apiSecret).AddTo(_disposables);
-            RealtimeSource = new RealtimeSourceFactory(apiKey, apiSecret).AddTo(_disposables);
+            RealtimeSource = new RealtimeSourceFactory(apiKey, apiSecret, Client).AddTo(_disposables);
+            RealtimeSource.ConnectionResumed += OnRealtimeConnectionResumed;
+        }
+
+        private void OnRealtimeConnectionResumed()
+        {
+            // ポジション情報の再読み込み後、遅延したイベントを受信しないのか？
+            Positions.Update(Client.GetPositions(BfProductCode.FXBTCJPY).GetContent());
         }
 
         public void Dispose()

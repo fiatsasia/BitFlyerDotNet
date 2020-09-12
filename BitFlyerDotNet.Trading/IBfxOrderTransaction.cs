@@ -11,16 +11,11 @@ namespace BitFlyerDotNet.Trading
     {
         Guid Id { get; }
         DateTime OpenTime { get; }
+        BfxOrderTransactionState State { get; }
+        IBfxOrder Order { get; }
 
         bool IsCancelable { get; }
         void Cancel();
-    }
-
-    internal interface IBfxParentOrderTransaction
-    {
-    }
-
-    internal interface IBfxChildOrderTransaction
-    {
+        bool HasParent { get; }
     }
 }

@@ -230,10 +230,10 @@ namespace BitFlyerDotNet.LightningApi
 
         public void Dispose()
         {
-            Debug.Print($"{nameof(BitFlyerClient)}.Dispose");
+            Debug.WriteLine($"{nameof(BitFlyerClient)} disposing...");
             _client?.Dispose();
             _hash?.Dispose();
-            Debug.Print($"{nameof(BitFlyerClient)}.Dispose exit");
+            Debug.WriteLine($"{nameof(BitFlyerClient)} disposed.");
         }
 
         internal async Task<BitFlyerResponse<T>> GetAsync<T>(string apiName, string queryParameters = "")

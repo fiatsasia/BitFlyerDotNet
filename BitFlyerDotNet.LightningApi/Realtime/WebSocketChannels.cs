@@ -15,15 +15,18 @@ using System.Security.Cryptography;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using WebSocket4Net;
+using System.Threading.Tasks;
 
 namespace BitFlyerDotNet.LightningApi
 {
     class WebSocketChannels : IDisposable
     {
-        public static int WebSocketReconnectionIntervalMs { get; set; } = 5000;
+        public static int WebSocketReconnectionIntervalMs { get; set; } = 3000;
         public long TotalReceivedMessageChars { get; private set; }
 
         public event Action Opened;
+        public event Action Suspended;
+        public event Action Resumed;
         public Action<string> MessageSent;
         public Action<string, object> MessageReceived;
 
@@ -52,7 +55,7 @@ namespace BitFlyerDotNet.LightningApi
 
         void CreateWebSocket()
         {
-            Debug.WriteLine("Creating WebSocket...");
+            Debug.WriteLine($"{DateTime.Now} Creating WebSocket...");
             _webSocket?.Dispose();
             _opened = false;
 
@@ -72,6 +75,7 @@ namespace BitFlyerDotNet.LightningApi
         public void Dispose()
         {
             Debug.Print($"{nameof(WebSocketChannels)}.Dispose");
+            _opened = false;
             _webSocket.CloseAsync();
             _closedEvent.WaitOne(1000);
             _webSocket.Dispose();
@@ -83,7 +87,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             if (!_opened)
             {
-                Debug.WriteLine("Opening WebSocket...");
+                Debug.WriteLine($"{DateTime.Now} Opening WebSocket...");
                 _opened = true;
 
                 _webSocket.OpenAsync();
@@ -98,7 +102,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public void Close()
         {
-            Debug.WriteLine("Closing WebSocket...");
+            Debug.WriteLine($"{DateTime.Now} Closing WebSocket...");
             _opened = false;
             _webSocket.CloseAsync();
             _closedEvent.WaitOne(1000);
@@ -121,6 +125,7 @@ namespace BitFlyerDotNet.LightningApi
 
         bool Authenticate()
         {
+            Debug.WriteLine($"{DateTime.Now} WebSocket start authentication.");
             var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var nonce = Guid.NewGuid().ToString("N");
             var sign = BitConverter.ToString(_hash.ComputeHash(Encoding.UTF8.GetBytes($"{now}{nonce}"))).Replace("-", string.Empty).ToLower();
@@ -142,35 +147,49 @@ namespace BitFlyerDotNet.LightningApi
             var resultReceived = new AutoResetEvent(false);
             void OnAuthenticateResultReceived(object sender, MessageReceivedEventArgs args)
             {
+                Debug.WriteLine($"{DateTime.Now} WebSocket authention result received. '{args.Message}'");
                 jsonResult = args.Message;
                 resultReceived.Set();
             }
+
             _webSocket.MessageReceived += OnAuthenticateResultReceived;
+            Debug.WriteLine($"{DateTime.Now} WebSocket sending authentication message..");
             Send(authCommand);
+            Debug.WriteLine($"{DateTime.Now} WebSocket sent authentication message.");
             resultReceived.WaitOne();
             _webSocket.MessageReceived -= OnAuthenticateResultReceived;
 
             // Parse auth result
             var joResult = (JObject)JsonConvert.DeserializeObject(jsonResult);
-            return joResult["result"].Value<bool>();
+
+            var authResult = joResult["result"].Value<bool>();
+            Debug.WriteLine($"{DateTime.Now} WebSocket authenticated. result = {authResult}");
+            return authResult;
         }
 
         void OnOpened(object sender, EventArgs args)
         {
-            Debug.WriteLine("{0} WebSocket opened.", DateTime.Now);
+            Debug.WriteLine($"{DateTime.Now} WebSocket opened.");
             _reconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
-            if (_webSocketSources.Count > 0)
+            Task.Run(() =>
             {
-                if (!string.IsNullOrEmpty(_apiKey) && _hash != null)
+                if (_webSocketSources.Count > 0)
                 {
-                    Debug.WriteLine("{0} WebSocket recover authentication.", DateTime.Now);
-                    Authenticate();
-                }
+                    if (!string.IsNullOrEmpty(_apiKey) && _hash != null)
+                    {
+                        Authenticate();
+                    }
 
-                Debug.WriteLine("{0} WebSocket recover subscriptions.", DateTime.Now);
-                _webSocketSources.Values.ForEach(source => { source.Subscribe(); }); // resubscribe
-            }
-            Opened?.Invoke();
+                    Resumed?.Invoke();
+
+                    Debug.WriteLine($"{DateTime.Now} WebSocket recover subscriptions.");
+                    _webSocketSources.Values.ForEach(source => { source.Subscribe(); }); // resubscribe
+                }
+                else
+                {
+                    Opened?.Invoke();
+                }
+            });
             _openedEvent.Set();
         }
 
@@ -190,13 +209,13 @@ namespace BitFlyerDotNet.LightningApi
 
         void OnDataReceived(object sender, WebSocket4Net.DataReceivedEventArgs args)
         {
-            Debug.WriteLine($"Socket data received : Length={args.Data.Length}");
+            Debug.WriteLine($"{DateTime.Now} Socket data received : Length={args.Data.Length}");
         }
 
         public event Action<WebSocketErrorStatus> Error;
         void OnError(object sender, SuperSocket.ClientEngine.ErrorEventArgs args)
         {
-            Debug.WriteLine($"Socket error : {args.Exception.Message}");
+            Debug.WriteLine($"{DateTime.Now} Socket error : {args.Exception.Message}");
             // Classifies expected or unexpexted
             var error = new WebSocketErrorStatus();
             switch (args.Exception)
@@ -206,8 +225,7 @@ namespace BitFlyerDotNet.LightningApi
                     break;
 
                 case SocketException sockex:
-                    Debug.WriteLine("{0} WebSocket socket error({1})", DateTime.Now, sockex.SocketErrorCode);
-                    Debug.WriteLine("{0} WebSocket caused exception. Will be closed.", DateTime.Now, sockex.Message);
+                    Debug.WriteLine($"{DateTime.Now} Caused socket exception. Will be closed. code:{sockex.SocketErrorCode} {sockex.Message}");
                     error.SocketError = sockex.SocketErrorCode;
                     error.Message = sockex.Message;
                     break;
@@ -229,19 +247,21 @@ namespace BitFlyerDotNet.LightningApi
 
         void OnClosed(object sender, EventArgs args)
         {
-            if (!_opened)
+            if (!_opened) // from Close() or Dispose()
             {
+                _closedEvent.Set();
                 return;
             }
-            Debug.WriteLine("{0} WebSocket connection closed. Will be reopening...", DateTime.Now);
+
+            Debug.WriteLine($"{DateTime.Now} WebSocket connection closed. Will be reopening...");
+            Task.Run(() => { Suspended?.Invoke(); });
             _reconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite);
-            _closedEvent.Set();
         }
 
         void OnReconnection(object _)
         {
             _reconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
-            Debug.WriteLine("{0} WebSocket is reopening connection... state={1}", DateTime.Now, _webSocket.State);
+            Debug.WriteLine($"{DateTime.Now} WebSocket is reopening connection... state={_webSocket.State}");
             switch (_webSocket.State)
             {
                 case WebSocketState.None:
@@ -250,7 +270,7 @@ namespace BitFlyerDotNet.LightningApi
                     {
                         //CreateWebSocket();
                         //TryOpen();
-                        _webSocket.Open();
+                        _webSocket.OpenAsync(); // Open() だと返ってこない場合がある。
                     }
                     catch (Exception ex)
                     {
@@ -260,7 +280,7 @@ namespace BitFlyerDotNet.LightningApi
                     break;
 
                 case WebSocketState.Open:
-                    Debug.WriteLine("{0} Web socket is still opened.", DateTime.Now);
+                    Debug.WriteLine($"{DateTime.Now} Web socket is still opened.");
                     break;
 
                 default:

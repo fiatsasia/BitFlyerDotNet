@@ -23,9 +23,6 @@ namespace BitFlyerDotNet.Trading
         public int MinuteToExpire { get; internal set; }
         public BfTimeInForce TimeInForce { get; internal set; }
 
-        public abstract string? AcceptanceId { get; }
-        public abstract string? OrderId { get; }
-
         public DateTime? OrderDate { get; protected set; }
         public DateTime? ExpireDate { get; protected set; }
 
@@ -43,7 +40,7 @@ namespace BitFlyerDotNet.Trading
         static IBfxOrder[] EmptyChildren = new IBfxOrder[0];
         public virtual IBfxOrder[] Children => EmptyChildren;
 
-        public string? OrderFailedReason { get; protected set; }
+        public string OrderFailedReason { get; protected set; } = string.Empty;
 
         internal abstract void ApplyParameters(BfProductCode productCode, int minutesToExpire, BfTimeInForce timeInForce);
 

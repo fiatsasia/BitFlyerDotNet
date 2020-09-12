@@ -14,6 +14,8 @@ namespace BitFlyerDotNet.Trading
 
         SendingCancel,
         CancelAccepted,
+
+        Closed,
     }
 
     public enum BfxOrderState
@@ -43,7 +45,6 @@ namespace BitFlyerDotNet.Trading
         {
             switch (state)
             {
-                case BfxOrderState.Ordered:
                 case BfxOrderState.OrderFailed:
                 case BfxOrderState.Executed:
                 case BfxOrderState.Canceled:

@@ -14,9 +14,11 @@ namespace BitFlyerDotNet.Trading
         public Guid Id { get; }
         public DateTime OpenTime { get; }
 
-        public abstract string? MarketId { get; }
+        public abstract string MarketId { get; }
         public BfxOrderTransactionState State { get; protected set; } = BfxOrderTransactionState.Idle;
         public abstract BfxOrderState OrderState { get; }
+        public abstract IBfxOrder Order { get; }
+        public virtual bool HasParent { get; } = false;
 
         public abstract void OnChildOrderEvent(BfChildOrderEvent coe);
 

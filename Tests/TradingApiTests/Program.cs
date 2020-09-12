@@ -5,14 +5,15 @@
 
 using System;
 using System.Linq;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Xml.Linq;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
-using Newtonsoft.Json;
+
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
+using Newtonsoft.Json;
 
 namespace TradingApiTests
 {
@@ -43,12 +44,16 @@ namespace TradingApiTests
                 _market.OrderTransactionChanged += OnOrderTransactionChanged;
 
                 _market.Open();
+                _market.GetActiveTransactions().ForEach(e => _transactions[Guid.NewGuid()] = e);
                 while (true)
                 {
                     Console.WriteLine("===================================================================");
                     Console.WriteLine("S)imple orders");
                     Console.WriteLine("C)onditional orders");
-                    Console.WriteLine("F)ind orders");
+                    Console.WriteLine("F)ind child orders");
+                    Console.WriteLine("Active P)ositions");
+                    Console.WriteLine("Active O)rders");
+                    Console.WriteLine("R)etrieve child orders");
                     Console.WriteLine("");
                     Console.Write("Main>");
 
@@ -66,6 +71,18 @@ namespace TradingApiTests
 
                             case 'F':
                                 FindOrders();
+                                break;
+
+                            case 'P':
+                                GetActivePositions();
+                                break;
+
+                            case 'O':
+                                GetActiveOrders();
+                                break;
+
+                            case 'R':
+                                RetrieveChildOrders();
                                 break;
 
                             case ESCAPE:
@@ -136,6 +153,55 @@ namespace TradingApiTests
             }
         }
 
+        static void GetActiveOrders()
+        {
+            Console.Write("C)hild P)arent I)nternal : ");
+            while (true)
+            {
+                switch (GetCh())
+                {
+                    case 'I':
+                        GetInternalActiveOrders();
+                        return;
+
+                    case 'C':
+                        GetActiveChildOrders();
+                        return;
+
+                    case 'P':
+                        GetActiveParentOrders();
+                        return;
+
+                    case ESCAPE:
+                        return;
+                }
+            }
+        }
+
+        static void GetInternalActiveOrders()
+        {
+            foreach (var order in _market.GetActiveTransactions().Select(e => e.Order))
+            {
+                Console.WriteLine($"{order.OrderDate} {order.OrderType} {order.State}");
+            }
+        }
+
+        static void GetActiveParentOrders()
+        {
+            DumpResponse(_account.Client.GetParentOrders(ProductCode, BfOrderState.Active));
+        }
+
+        static void GetActiveChildOrders()
+        {
+            DumpResponse(_account.Client.GetChildOrders(ProductCode, BfOrderState.Active));
+        }
+
+        static void GetActivePositions()
+        {
+            _account.Positions.GetActivePositions().ForEach(e => PrintPosition(e));
+            DumpResponse(_account.Client.GetPositions(ProductCode));
+        }
+
         static void FindOrders()
         {
             Console.Write("Child order acceptance ID : ");
@@ -170,21 +236,28 @@ namespace TradingApiTests
             }
 
             var resp = _account.Client.GetChildOrders(ProductCode, orderState: state, childOrderAcceptanceId: coai);
-            var jobject = JsonConvert.DeserializeObject(resp.Json);
-            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+            var jObj = JsonConvert.DeserializeObject(resp.Json);
+            Console.WriteLine(JsonConvert.SerializeObject(jObj, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+        }
+
+        static string _parentOrderId;
+        static void RetrieveChildOrders()
+        {
+            if (string.IsNullOrEmpty(_parentOrderId))
+            {
+                var parentOrder = _account.Client.GetParentOrders(ProductCode, BfOrderState.Active).GetContent().FirstOrDefault();
+                if (parentOrder == null)
+                {
+                    return;
+                }
+                _parentOrderId = parentOrder.ParentOrderId;
+            }
+            DumpResponse(_account.Client.GetChildOrders(ProductCode, parentOrderId: _parentOrderId));
         }
 
         static void OnPositionChanged(object sender, BfxPositionEventArgs ev)
         {
-            var pos = ev.Position;
-            if (pos.IsOpened)
-            {
-                Console.WriteLine($"{pos.Open.ToString(TimeFormat)} Position opened {pos.Side} P:{pos.OpenPrice} S:{pos.Size} TS:{_account.Positions.TotalSize}");
-            }
-            else // Closed
-            {
-                Console.WriteLine($"{pos.Close.Value.ToString(TimeFormat)} Position closed {pos.Side} P:{pos.ClosePrice} S:{pos.Size} TS:{_account.Positions.TotalSize} PT:{pos.Profit} NP:{pos.NetProfit}");
-            }
+            PrintPosition(ev.Position);
         }
 
         private static void OnOrderTransactionChanged(object sender, BfxOrderTransactionEventArgs ev)
@@ -239,6 +312,29 @@ namespace TradingApiTests
                 sb.Add($"ES:{order.ExecutedSize}");
             }
             Console.WriteLine(string.Join(' ', sb));
+        }
+
+        static void PrintPosition(BfxPosition pos)
+        {
+            if (pos.IsOpened)
+            {
+                Console.WriteLine($"{pos.Open.ToString(TimeFormat)} Position opened {pos.Side} P:{pos.OpenPrice} S:{pos.Size} TS:{_account.Positions.TotalSize}");
+            }
+            else // Closed
+            {
+                Console.WriteLine($"{pos.Close.Value.ToString(TimeFormat)} Position closed {pos.Side} P:{pos.ClosePrice} S:{pos.Size} TS:{_account.Positions.TotalSize} PT:{pos.Profit} NP:{pos.NetProfit}");
+            }
+        }
+
+        static void PrintOrder(IBfxOrder order)
+        {
+
+        }
+
+        static void DumpResponse(IBitFlyerResponse resp)
+        {
+            var jObj = JsonConvert.DeserializeObject(resp.Json);
+            Console.WriteLine(JsonConvert.SerializeObject(jObj, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
     }
 }

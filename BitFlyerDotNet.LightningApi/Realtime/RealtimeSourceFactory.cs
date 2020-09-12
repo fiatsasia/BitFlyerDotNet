@@ -38,15 +38,29 @@ namespace BitFlyerDotNet.LightningApi
             remove { Channels.Error -= value; }
         }
 
+        public event Action ConnectionSuspended
+        {
+            add { Channels.Suspended += value; }
+            remove { Channels.Suspended -= value; }
+        }
+
+        public event Action ConnectionResumed
+        {
+            add { Channels.Resumed += value; }
+            remove { Channels.Resumed -= value; }
+        }
+
         public static System.Reactive.Concurrency.IScheduler Scheduler { get; set; } = System.Reactive.Concurrency.Scheduler.Default;
 
         internal WebSocketChannels Channels { get; private set; }
         public event Action<string> MessageSent;
         public event Action<string, object> MessageReceived;
+
         void OnMessageSent(string json) => MessageSent?.Invoke(json);
         void OnMessageReceived(string json, object message) => MessageReceived?.Invoke(json, message);
 
         CompositeDisposable _disposables = new CompositeDisposable();
+        BitFlyerClient _client;
 
         /// <summary>
         /// Create public realtime source
@@ -56,6 +70,7 @@ namespace BitFlyerDotNet.LightningApi
             Channels = new WebSocketChannels(EndpointUrl).AddTo(_disposables);
             Channels.MessageSent = OnMessageSent;
             Channels.MessageReceived = OnMessageReceived;
+            _client = new BitFlyerClient().AddTo(_disposables);
         }
 
         /// <summary>
@@ -68,6 +83,15 @@ namespace BitFlyerDotNet.LightningApi
             Channels = new WebSocketChannels(EndpointUrl, apiKey, apiSecret).AddTo(_disposables);
             Channels.MessageSent = OnMessageSent;
             Channels.MessageReceived = OnMessageReceived;
+            _client = new BitFlyerClient().AddTo(_disposables);
+        }
+
+        public RealtimeSourceFactory(string apiKey, string apiSecret, BitFlyerClient client)
+        {
+            Channels = new WebSocketChannels(EndpointUrl, apiKey, apiSecret).AddTo(_disposables);
+            Channels.MessageSent = OnMessageSent;
+            Channels.MessageReceived = OnMessageReceived;
+            _client = client;
         }
 
         public void Dispose()
@@ -82,10 +106,7 @@ namespace BitFlyerDotNet.LightningApi
         void GetAvailableMarkets()
         {
             _availableMarkets.Clear();
-            using (var client = new BitFlyerClient())
-            {
-                client.GetAvailableMarkets().ForEach(market => _availableMarkets.Add(market.ProductCode, market.Symbol));
-            }
+            _client.GetAvailableMarkets().ForEach(market => _availableMarkets.Add(market.ProductCode, market.Symbol));
         }
 
         bool _opened = false;

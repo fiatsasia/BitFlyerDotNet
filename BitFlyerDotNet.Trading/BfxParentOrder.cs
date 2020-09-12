@@ -13,25 +13,24 @@ namespace BitFlyerDotNet.Trading
 {
     public class BfxParentOrder : BfxOrder
     {
-        public override string? AcceptanceId => ParentOrderAcceptanceId;
-        public override string? OrderId => ParentOrderId;
         public override IBfxExecution[] Executions => _orderMethod == BfOrderType.Simple ? _childOrders[0].Executions : base.Executions;
         public override IBfxOrder[] Children => _childOrders.ToArray();
 
-        public string? ParentOrderAcceptanceId { get; private set; }
-        public string? ParentOrderId { get; private set; }
+        public string ParentOrderAcceptanceId { get; private set; } = string.Empty;
+        public string ParentOrderId { get; private set; } = string.Empty;
 
         public BfParentOrderRequest? Request { get; }
         public int CompletedCount { get; private set; }
 
         BfOrderType _orderMethod;
-        List<BfxChildOrder> _childOrders;
+        List<BfxChildOrder> _childOrders = new List<BfxChildOrder>();
 
+        #region Create from order request and response
         public BfxParentOrder(BfParentOrderRequest request)
         {
             Request = request;
             _orderMethod = request.OrderMethod;
-            _childOrders = new List<BfxChildOrder>(request.Parameters.Select(e => new BfxChildOrder(e)));
+            _childOrders.AddRange(request.Parameters.Select(e => new BfxChildOrder(e)));
 
             ProductCode = _childOrders[0].ProductCode;
             if (request.OrderMethod == BfOrderType.Simple)
@@ -50,17 +49,89 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        public BfxParentOrder(BfProductCode productCode, BfParentOrder order, BfParentOrderDetail detail)
+        public void Update(BfParentOrderResponse response)
         {
-            _orderMethod = order.ParentOrderType;
-            _childOrders = new List<BfxChildOrder>();
-            for (int childIndex = 0; childIndex < detail.Parameters.Length; childIndex++)
+            ParentOrderAcceptanceId = response.ParentOrderAcceptanceId;
+            ChangeState(BfxOrderState.Ordering);
+        }
+        #endregion
+
+        public BfxParentOrder(BitFlyerClient client, BfProductCode productCode, BfParentOrder order)
+        {
+            ProductCode = productCode;
+
+            Update(order);
+            Update(client.GetParentOrder(ProductCode, parentOrderId: order.ParentOrderId).GetContent());
+            Update(client.GetChildOrders(ProductCode, parentOrderId: order.ParentOrderId).GetContent().OrderBy(e => e.PagingId).ToArray());
+            foreach (var childOrder in _childOrders)
             {
-                _childOrders.Add(new BfxChildOrder(ProductCode, detail, childIndex));
+                if (!string.IsNullOrEmpty(childOrder.ChildOrderId))
+                {
+                    childOrder.Update(client.GetPrivateExecutions(productCode, childOrderId: childOrder.ChildOrderId).GetContent());
+                }
+            }
+        }
+
+        public void Update(BfParentOrder order)
+        {
+            ParentOrderId = order.ParentOrderId;
+            ParentOrderAcceptanceId = order.ParentOrderAcceptanceId;
+            _orderMethod = order.ParentOrderType;
+
+            ExpireDate = order.ExpireDate;
+            OrderDate = order.ParentOrderDate;
+
+            ExecutedSize = order.ExecutedSize;
+            Commission = order.TotalCommission;
+
+            // API 仕様的に実質 Active 状態しか取得できない。
+            switch (order.ParentOrderState)
+            {
+                case BfOrderState.Active:
+                    ChangeState(BfxOrderState.Ordered);
+                    break;
+
+                case BfOrderState.Completed:
+                    ChangeState(BfxOrderState.Completed);
+                    break;
+
+                case BfOrderState.Canceled:
+                    ChangeState(BfxOrderState.Canceled);
+                    break;
+
+                case BfOrderState.Expired:
+                    ChangeState(BfxOrderState.Expired);
+                    break;
+
+                default:
+                    throw new ArgumentException("Unexpected parent order state.");
+            }
+        }
+
+        void Update(BfParentOrderDetail order)
+        {
+            ParentOrderId = order.ParentOrderId;
+            MinuteToExpire = order.MinuteToExpire;
+
+            if (_childOrders.Count == 0)
+            {
+                for (int childIndex = 0; childIndex < order.Parameters.Length; childIndex++)
+                {
+                    var childOrder = new BfxChildOrder(ProductCode, order.Parameters[childIndex]);
+                    childOrder.MinuteToExpire = order.MinuteToExpire;
+                    _childOrders.Add(childOrder);
+                }
+            }
+            else
+            {
+                for (int childIndex = 0; childIndex < _childOrders.Count; childIndex++)
+                {
+                    _childOrders[childIndex].Update(order.Parameters[childIndex]);
+                    _childOrders[childIndex].MinuteToExpire = order.MinuteToExpire;
+                }
             }
 
-            ProductCode = productCode;
-            if (detail.OrderMethod == BfOrderType.Simple)
+            if (order.OrderMethod == BfOrderType.Simple)
             {
                 var childOrder = _childOrders[0];
                 OrderType = childOrder.OrderType;
@@ -72,41 +143,86 @@ namespace BitFlyerDotNet.Trading
             }
             else
             {
-                OrderType = detail.OrderMethod;
+                OrderType = order.OrderMethod;
             }
-
-            ParentOrderAcceptanceId = order.ParentOrderAcceptanceId;
-            ParentOrderId = detail.ParentOrderId;
         }
 
-        internal override void ApplyParameters(BfProductCode productCode, int minutesToExpire, BfTimeInForce timeInForce)
+        public void Update(BfChildOrder[] childOrders)
         {
-            if (Request == null)
+            if (childOrders.Length == 0) // input is empty
             {
-                throw new ArgumentException();
+                return;
+            }
+            else if (_childOrders.Count == childOrders.Length) // input it full of content
+            {
+                for (int childOrderIndex = 0; childOrderIndex < _childOrders.Count; childOrderIndex++)
+                {
+                    _childOrders[childOrderIndex].Update(childOrders[childOrderIndex]);
+                }
+                return;
+            }
+            else // matching with ID
+            {
+                var updatedCount = 0;
+                foreach (var newOrder in childOrders)
+                {
+                    foreach (var currentOrder in _childOrders)
+                    {
+                        if (newOrder.ChildOrderAcceptanceId == currentOrder.ChildOrderAcceptanceId)
+                        {
+                            currentOrder.Update(newOrder);
+                            updatedCount++;
+                        }
+                    }
+                }
+                if (updatedCount == childOrders.Length)
+                {
+                    return; // all inputs are matched
+                }
             }
 
-            ProductCode = productCode;
-            MinuteToExpire = minutesToExpire;
-            TimeInForce = timeInForce;
-
-            if (_orderMethod == BfOrderType.Simple)
+            if (childOrders.Length == 1)
             {
-                var childOrder = _childOrders[0];
-                childOrder.MinuteToExpire = MinuteToExpire;
-                childOrder.TimeInForce = TimeInForce;
+                var childOrder = childOrders[0];
+                switch (OrderType)
+                {
+                    case BfOrderType.IFD:
+                        _childOrders[0].Update(childOrder);
+                        if (childOrder.ChildOrderState == BfOrderState.Completed)
+                        {
+                            CompletedCount = 1;
+                        }
+                        return;
+
+                    case BfOrderType.OCO:
+                        // Probably completed
+                        break;
+
+                    case BfOrderType.IFDOCO:
+                        _childOrders[0].Update(childOrder);
+                        if (childOrder.ChildOrderState == BfOrderState.Completed)
+                        {
+                            CompletedCount = 1;
+                        }
+                        return;
+
+                    default:
+                        throw new ArgumentException();
+                }
             }
 
-            ChangeState(BfxOrderState.Outstanding);
+            if (childOrders.Length == 2)
+            {
+                switch (OrderType)
+                {
+                    case BfOrderType.IFDOCO:
+                        _childOrders[0].Update(childOrders[0]);
+                        break;
 
-            Request.Parameters.ForEach(e => e.ProductCode = productCode);
-            _childOrders.ForEach(e => e.ApplyParameters(productCode, minutesToExpire, timeInForce));
-        }
-
-        public void Update(BfParentOrderResponse response)
-        {
-            ParentOrderAcceptanceId = response.ParentOrderAcceptanceId;
-            ChangeState(BfxOrderState.Ordering);
+                    default:
+                        throw new ArgumentException();
+                }
+            }
         }
 
         public void Update(BfParentOrderEvent poe)
@@ -173,6 +289,30 @@ namespace BitFlyerDotNet.Trading
         {
             Debug.WriteLine($"Parent order status changed: {ParentOrderAcceptanceId} {State} -> {state}");
             State = state;
+        }
+
+        internal override void ApplyParameters(BfProductCode productCode, int minutesToExpire, BfTimeInForce timeInForce)
+        {
+            if (Request == null)
+            {
+                throw new ArgumentException();
+            }
+
+            ProductCode = productCode;
+            MinuteToExpire = minutesToExpire;
+            TimeInForce = timeInForce;
+
+            if (_orderMethod == BfOrderType.Simple)
+            {
+                var childOrder = _childOrders[0];
+                childOrder.MinuteToExpire = MinuteToExpire;
+                childOrder.TimeInForce = TimeInForce;
+            }
+
+            ChangeState(BfxOrderState.Outstanding);
+
+            Request.Parameters.ForEach(e => e.ProductCode = productCode);
+            _childOrders.ForEach(e => e.ApplyParameters(productCode, minutesToExpire, timeInForce));
         }
     }
 }
