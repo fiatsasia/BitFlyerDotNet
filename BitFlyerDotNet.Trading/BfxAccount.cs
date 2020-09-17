@@ -42,14 +42,23 @@ namespace BitFlyerDotNet.Trading
             _disposables.DisposeReverse();
         }
 
-        public void Open()
+        void InitializeMarkets()
         {
+            if (_markets.Count > 0)
+            {
+                return;
+            }
+
             Client.GetAvailableMarkets().ForEach(e =>
             {
                 _markets.Add(e.ProductCode, new BfxMarket(this, e.ProductCode).AddTo(_disposables));
                 _marketSymbols.Add(e.Symbol, e.ProductCode);
             });
+        }
 
+        public void Open()
+        {
+            InitializeMarkets();
             Positions.Update(Client.GetPositions(BfProductCode.FXBTCJPY).GetContent());
 
             RealtimeSource.GetChildOrderEventsSource().Subscribe(coe =>
@@ -78,9 +87,8 @@ namespace BitFlyerDotNet.Trading
 
         public BfxMarket GetMarket(BfProductCode productCode)
         {
-            TryOpen();
+            InitializeMarkets();
             var market = _markets[productCode];
-            market.TryOpen();
             return market;
         }
     }
