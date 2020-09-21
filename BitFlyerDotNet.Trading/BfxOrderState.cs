@@ -5,19 +5,6 @@
 
 namespace BitFlyerDotNet.Trading
 {
-    public enum BfxOrderTransactionState
-    {
-        Idle,
-
-        SendingOrder,
-        WaitingOrderAccepted,
-
-        SendingCancel,
-        CancelAccepted,
-
-        Closed,
-    }
-
     public enum BfxOrderState
     {
         Unknown,
