@@ -40,6 +40,7 @@ namespace BitFlyerDotNet.Trading
         BfxAccount _account;
         ConcurrentDictionary<string, IBfxOrderTransaction> _childOrderTransactions = new ConcurrentDictionary<string, IBfxOrderTransaction>();
         ConcurrentDictionary<string, IBfxOrderTransaction> _parentOrderTransactions = new ConcurrentDictionary<string, IBfxOrderTransaction>();
+        BfxTickerSource _ticker;
 
         public BfxMarket(BfxAccount account, BfProductCode productCode, BfxConfiguration config)
         {
@@ -48,6 +49,7 @@ namespace BitFlyerDotNet.Trading
             Config = config ?? new BfxConfiguration();
 
             _serverTimeSpan = TimeSpan.Zero;
+            _ticker = new BfxTickerSource(this);
         }
 
         public BfxMarket(BfxAccount account, BfProductCode productCode)
@@ -65,8 +67,21 @@ namespace BitFlyerDotNet.Trading
         public void Open()
         {
             LoadMarketInformations();
-            RealtimeSource.GetExecutionSource(ProductCode).Subscribe(e => { _serverTimeSpan = e.ExecutedTime - DateTime.UtcNow; LastTradedPrice = e.Price; }).AddTo(_disposables);
-            RealtimeSource.GetOrderBookSource(ProductCode).Subscribe(e => { BestAskPrice = e.BestAskPrice; BestBidPrice = e.BestBidPrice; }).AddTo(_disposables);
+            RealtimeSource.GetExecutionSource(ProductCode).Subscribe(e =>
+            {
+                _serverTimeSpan = e.ExecutedTime - DateTime.UtcNow;
+                LastTradedPrice = e.Price;
+            }).AddTo(_disposables);
+            RealtimeSource.GetOrderBookSource(ProductCode).Subscribe(e =>
+            {
+                BestAskPrice = e.BestAskPrice;
+                BestBidPrice = e.BestBidPrice;
+            }).AddTo(_disposables);
+        }
+
+        public IObservable<BfxTicker> GetTickerSource()
+        {
+            return _ticker;
         }
 
         public void LoadMarketInformations()
@@ -77,14 +92,16 @@ namespace BitFlyerDotNet.Trading
             foreach (var parentOrder in _account.Client.GetParentOrders(ProductCode, orderState: BfOrderState.Active).GetContent())
             {
                 var xParentOrder = new BfxParentOrder(Client, ProductCode, parentOrder);
-                var parentTran = new BfxParentOrderTransaction(this, xParentOrder, OnOrderTransactionEvent);
+                var txParent = new BfxParentOrderTransaction(this, xParentOrder);
+                txParent.OrderTransactionEvent += OnOrderTransactionEvent;
                 foreach (var xChildOrder in xParentOrder.Children.Cast<BfxChildOrder>())
                 {
-                    var childTran = new BfxChildOrderTransaction(this, xChildOrder, parentTran, OnOrderTransactionEvent);
-                    _childOrderTransactions[xChildOrder.ChildOrderAcceptanceId] = childTran;
+                    var txChild = new BfxChildOrderTransaction(this, xChildOrder, txParent);
+                    txChild.OrderTransactionEvent += OnOrderTransactionEvent;
+                    _childOrderTransactions[xChildOrder.ChildOrderAcceptanceId] = txChild;
                     childOrders.Remove(xChildOrder.ChildOrderAcceptanceId); // remove child of parent
                 }
-                _parentOrderTransactions.TryAdd(parentOrder.ParentOrderAcceptanceId, parentTran);
+                _parentOrderTransactions.TryAdd(parentOrder.ParentOrderAcceptanceId, txParent);
             };
 
             // Load standalone child orders
@@ -93,7 +110,9 @@ namespace BitFlyerDotNet.Trading
                 var execs = Client.GetPrivateExecutions(ProductCode, childOrderId: child.ChildOrderId).GetContent();
                 var order = new BfxChildOrder(ProductCode, child);
                 order.Update(execs);
-                _childOrderTransactions.TryAdd(child.ChildOrderAcceptanceId, new BfxChildOrderTransaction(this, order, OnOrderTransactionEvent));
+                var tx = new BfxChildOrderTransaction(this, order);
+                tx.OrderTransactionEvent += OnOrderTransactionEvent;
+                _childOrderTransactions.TryAdd(child.ChildOrderAcceptanceId, tx);
             }
         }
 
@@ -107,58 +126,59 @@ namespace BitFlyerDotNet.Trading
 
         internal void ForwardChildOrderEvents(BfChildOrderEvent coe)
         {
-            var tran = _childOrderTransactions.GetOrAdd(coe.ChildOrderAcceptanceId, key => new BfxChildTransactionPlaceHolder());
-            if (tran is BfxChildTransactionPlaceHolder placeHolder)
+            var tx = _childOrderTransactions.GetOrAdd(coe.ChildOrderAcceptanceId, key => new BfxChildTransactionPlaceHolder());
+            if (tx is BfxChildTransactionPlaceHolder placeHolder)
             {
                 Debug.WriteLine($"--Child transaction place holder found or placed. {coe.ChildOrderAcceptanceId} {coe.EventType}");
                 placeHolder.ChildOrderEvents.Add(coe);
                 return;
             }
 
-            if (!(tran is BfxChildOrderTransaction childTran))
+            if (!(tx is BfxChildOrderTransaction txChild))
             {
                 throw new ApplicationException();
             }
 
-            if (childTran.Parent != null)
+            if (txChild.Parent != null)
             {
-                childTran.Parent.OnChildOrderEvent(coe);
+                txChild.Parent.OnChildOrderEvent(coe);
             }
             else
             {
-                childTran.OnChildOrderEvent(coe);
+                txChild.OnChildOrderEvent(coe);
             }
         }
 
         internal void ForwardParentOrderEvents(BfParentOrderEvent poe)
         {
             // Sometimes parent order event arraives faster than send order process completes.
-            var tran = _parentOrderTransactions.GetOrAdd(poe.ParentOrderAcceptanceId, key => new BfxParentTransactionPlaceHolder());
-            if (tran is BfxParentTransactionPlaceHolder placeHolder)
+            var tx = _parentOrderTransactions.GetOrAdd(poe.ParentOrderAcceptanceId, key => new BfxParentTransactionPlaceHolder());
+            if (tx is BfxParentTransactionPlaceHolder placeHolder)
             {
                 Debug.WriteLine($"--Parent transaction place holder found or placed. {poe.ParentOrderAcceptanceId} {poe.EventType}");
                 placeHolder.ParentOrderEvents.Add(poe);
                 return;
             }
 
-            if (!(tran is BfxParentOrderTransaction parentTran))
+            if (!(tx is BfxParentOrderTransaction txParent))
             {
                 throw new ApplicationException();
             }
 
-            parentTran.OnParentOrderEvent(poe);
+            txParent.OnParentOrderEvent(poe);
 
             if (poe.EventType == BfOrderEventType.Trigger)
             {
-                if (!(parentTran.Order.Children[poe.ChildOrderIndex - 1] is BfxChildOrder childOrder))
+                if (!(txParent.Order.Children[poe.ChildOrderIndex - 1] is BfxChildOrder childOrder))
                 {
                     throw new ApplicationException();
                 }
 
                 if (!string.IsNullOrEmpty(childOrder.ChildOrderAcceptanceId))
                 {
-                    var childTran = new BfxChildOrderTransaction(this, childOrder, parentTran, OnOrderTransactionEvent);
-                    _childOrderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId, childTran, (key, value) =>
+                    var txChild = new BfxChildOrderTransaction(this, childOrder, txParent);
+                    txChild.OrderTransactionEvent += OnOrderTransactionEvent;
+                    _childOrderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId, txChild, (key, value) =>
                     {
                         Debug.WriteLine($"--Child transaction place holder found and merged to parent. {childOrder.ChildOrderAcceptanceId} Parent.{poe.EventType}");
                         if (!(value is BfxChildTransactionPlaceHolder placeHolder))
@@ -167,8 +187,8 @@ namespace BitFlyerDotNet.Trading
                         }
 
                         // ToList() prevents "Collection was modified; enumeration operation may not execute."
-                        placeHolder.ChildOrderEvents.ToList().ForEach(coe => parentTran.OnChildOrderEvent(coe));
-                        return childTran;
+                        placeHolder.ChildOrderEvents.ToList().ForEach(coe => txParent.OnChildOrderEvent(coe));
+                        return txChild;
                     });
                 }
             }
@@ -198,54 +218,57 @@ namespace BitFlyerDotNet.Trading
         BfxChildOrderTransaction SendChildOrder(BfxChildOrder order, TimeSpan periodToExpire, BfTimeInForce timeInForce)
         {
             order.ApplyParameters(ProductCode, Convert.ToInt32(periodToExpire.TotalMinutes), timeInForce);
-            var trans = new BfxChildOrderTransaction(this, order, OnOrderTransactionEvent);
-            _ = trans.SendOrderRequestAsync();
-            return trans;
+            var tx = new BfxChildOrderTransaction(this, order);
+            tx.OrderTransactionEvent += OnOrderTransactionEvent;
+            _ = tx.SendOrderRequestAsync();
+            return tx;
         }
 
         BfxParentOrderTransaction SendParentOrder(BfxParentOrder order, TimeSpan periodToExpire, BfTimeInForce timeInForce)
         {
             order.ApplyParameters(ProductCode, Convert.ToInt32(periodToExpire.TotalMinutes), timeInForce);
-            var trans = new BfxParentOrderTransaction(this, order, OnOrderTransactionEvent);
-            _ = trans.SendOrderRequestAsync();
-            return trans;
+            var tx = new BfxParentOrderTransaction(this, order);
+            tx.OrderTransactionEvent += OnOrderTransactionEvent;
+            _ = tx.SendOrderRequestAsync();
+            return tx;
         }
 
-        internal void RegisterTransaction(BfxChildOrderTransaction tran)
+        internal void RegisterTransaction(BfxChildOrderTransaction tx)
         {
-            _childOrderTransactions.AddOrUpdate(tran.MarketId, tran, (key, value) =>
+            _childOrderTransactions.AddOrUpdate(tx.MarketId, tx, (key, value) =>
             {
-                Debug.WriteLine($"--Child transaction place holder found after order sent. {tran.MarketId}");
+                Debug.WriteLine($"--Child transaction place holder found after order sent. {tx.MarketId}");
                 if (!(value is BfxChildTransactionPlaceHolder placeHolder))
                 {
                     throw new ApplicationException();
                 }
 
                 // ToList() prevents "Collection was modified; enumeration operation may not execute."
-                placeHolder.ChildOrderEvents.ToList().ForEach(coe => tran.OnChildOrderEvent(coe));
-                return tran;
+                placeHolder.ChildOrderEvents.ToList().ForEach(coe => tx.OnChildOrderEvent(coe));
+                return tx;
             });
         }
 
-        internal void RegisterTransaction(BfxParentOrderTransaction tran)
+        internal void RegisterTransaction(BfxParentOrderTransaction tx)
         {
-            _parentOrderTransactions.AddOrUpdate(tran.MarketId, tran, (key, value) =>
+            _parentOrderTransactions.AddOrUpdate(tx.MarketId, tx, (key, value) =>
             {
-                Debug.WriteLine($"--Parent transaction place holder found after order sent. {tran.MarketId}");
+                Debug.WriteLine($"--Parent transaction place holder found after order sent. {tx.MarketId}");
                 if (!(value is BfxParentTransactionPlaceHolder placeHolder))
                 {
                     throw new ApplicationException();
                 }
                 foreach (var poe in placeHolder.ParentOrderEvents)
                 {
-                    tran.OnParentOrderEvent(poe);
+                    tx.OnParentOrderEvent(poe);
                     if (poe.EventType == BfOrderEventType.Trigger)
                     {
-                        var childTran = new BfxChildOrderTransaction(this, (BfxChildOrder)tran.Order.Children[poe.ChildOrderIndex - 1], tran, OnOrderTransactionEvent);
+                        var childTran = new BfxChildOrderTransaction(this, (BfxChildOrder)tx.Order.Children[poe.ChildOrderIndex - 1], tx);
+                        childTran.OrderTransactionEvent += OnOrderTransactionEvent;
                         RegisterTransaction(childTran);
                     }
                 }
-                return tran;
+                return tx;
             });
         }
 

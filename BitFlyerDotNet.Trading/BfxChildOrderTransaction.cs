@@ -18,31 +18,26 @@ namespace BitFlyerDotNet.Trading
         public override string MarketId => _order.ChildOrderAcceptanceId;
         public override IBfxOrder Order => _order;
         public override BfxOrderState OrderState => Order.State;
-        public BfxParentOrderTransaction Parent { get; }
+        public BfxParentOrderTransaction? Parent { get; }
         public override bool HasParent => Parent != null;
 
         protected override void CancelTransaction() => _cts.Cancel();
-
-        // Events
-        EventHandler<BfxOrderTransactionEventArgs> OrderTransactionEvent;
 
         // Private properties
         CancellationTokenSource _cts = new CancellationTokenSource();
         BfxChildOrder _order;
 
-        public BfxChildOrderTransaction(BfxMarket market, BfxChildOrder order, BfxParentOrderTransaction parent, EventHandler<BfxOrderTransactionEventArgs> handler)
+        public BfxChildOrderTransaction(BfxMarket market, BfxChildOrder order, BfxParentOrderTransaction parent)
             : base(market)
         {
             _order = order;
             Parent = parent;
-            OrderTransactionEvent = handler;
         }
 
-        public BfxChildOrderTransaction(BfxMarket market, BfxChildOrder order, EventHandler<BfxOrderTransactionEventArgs> handler)
+        public BfxChildOrderTransaction(BfxMarket market, BfxChildOrder order)
             : base(market)
         {
             _order = order;
-            OrderTransactionEvent = handler;
             Market.RealtimeSource.ConnectionSuspended += OnRealtimeConnectionSuspended;
             Market.RealtimeSource.ConnectionResumed += OnRealtimeConnectionResumed;
         }
@@ -204,19 +199,5 @@ namespace BitFlyerDotNet.Trading
                 Market.RealtimeSource.ConnectionResumed -= OnRealtimeConnectionResumed;
             }
         }
-
-        void NotifyEvent(BfxOrderTransactionEventType oet, DateTime time, object? parameter)
-        {
-            OrderTransactionEvent?.Invoke(this, new BfxOrderTransactionEventArgs(Order)
-            {
-                EventType = oet,
-                State = State,
-                Time = time,
-                Parameter = parameter,
-            });
-        }
-
-        void NotifyEvent(BfxOrderTransactionEventType oet) =>  NotifyEvent(oet, Market.ServerTime, null);
-        void NotifyEvent(BfxOrderTransactionEventType oet, BfChildOrderEvent coe) => NotifyEvent(oet, coe.EventDate, coe);
     }
 }

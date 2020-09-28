@@ -25,6 +25,7 @@ namespace BitFlyerDotNet.Trading
         protected BfxMarket Market { get; private set; }
         protected abstract void SendCancelOrderRequestAsync();
         protected abstract void CancelTransaction();
+        public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionEvent;
 
         string _derived;
 
@@ -92,5 +93,47 @@ namespace BitFlyerDotNet.Trading
             Debug.WriteLine($"{_derived} transaction state changed: {State} -> {state}");
             State = state;
         }
+
+        protected void NotifyEvent(BfxOrderTransactionEventType oet, DateTime time, object? parameter)
+        {
+            OrderTransactionEvent?.Invoke(this, new BfxOrderTransactionEventArgs(Order)
+            {
+                EventType = oet,
+                State = State,
+                Time = time,
+                Parameter = parameter,
+            });
+        }
+
+        protected void NotifyEvent(BfxOrderTransactionEventType oet) => NotifyEvent(oet, Market.ServerTime, null);
+
+        protected void NotifyChildOrderEvent(BfxOrderTransactionEventType oet, int childOrderIndex, BfChildOrderEvent coe)
+        {
+            if (Order.Children.Length == 1)
+            {
+                OrderTransactionEvent?.Invoke(this, new BfxOrderTransactionEventArgs(Order.Children[0])
+                {
+                    EventType = oet,
+                    State = State,
+                    Time = coe.EventDate,
+                    Parameter = coe,
+                });
+            }
+            else
+            {
+                OrderTransactionEvent?.Invoke(this, new BfxOrderTransactionEventArgs(Order)
+                {
+                    EventType = BfxOrderTransactionEventType.ChildOrderEvent,
+                    State = State,
+                    Time = coe.EventDate,
+                    Parameter = coe,
+                    ChildEventType = oet,
+                    ChildOrderIndex = childOrderIndex,
+                });
+            }
+        }
+
+        protected void NotifyEvent(BfxOrderTransactionEventType oet, BfChildOrderEvent coe) => NotifyEvent(oet, coe.EventDate, coe);
+        protected void NotifyEvent(BfxOrderTransactionEventType oet, BfParentOrderEvent poe) => NotifyEvent(oet, poe.EventDate, poe);
     }
 }

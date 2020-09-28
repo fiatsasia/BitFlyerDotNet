@@ -21,18 +21,14 @@ namespace BitFlyerDotNet.Trading
 
         protected override void CancelTransaction() => _cts.Cancel();
 
-        // Events
-        EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionEvent;
-
         // Private properties
         CancellationTokenSource _cts = new CancellationTokenSource();
         BfxParentOrder _order;
 
-        public BfxParentOrderTransaction(BfxMarket market, BfxParentOrder order, EventHandler<BfxOrderTransactionEventArgs> handler)
+        public BfxParentOrderTransaction(BfxMarket market, BfxParentOrder order)
             : base(market)
         {
             _order = order;
-            OrderTransactionEvent = handler;
             Market.RealtimeSource.ConnectionSuspended += OnRealtimeConnectionSuspended;
             Market.RealtimeSource.ConnectionResumed += OnRealtimeConnectionResumed;
         }
@@ -260,45 +256,6 @@ namespace BitFlyerDotNet.Trading
                 case BfOrderEventType.Complete:
                 case BfOrderEventType.Trigger:
                     throw new NotSupportedException();
-            }
-        }
-
-        void NotifyEvent(BfxOrderTransactionEventType oet, DateTime time, object? parameter)
-        {
-            OrderTransactionEvent?.Invoke(this, new BfxOrderTransactionEventArgs(Order)
-            {
-                EventType = oet,
-                State = State,
-                Time = time,
-                Parameter = parameter,
-            });
-        }
-        void NotifyEvent(BfxOrderTransactionEventType oet) => NotifyEvent(oet, Market.ServerTime, null);
-        void NotifyEvent(BfxOrderTransactionEventType oet, BfParentOrderEvent poe) => NotifyEvent(oet, poe.EventDate, poe);
-
-        void NotifyChildOrderEvent(BfxOrderTransactionEventType oet, int childOrderIndex, BfChildOrderEvent coe)
-        {
-            if (Order.Children.Length == 1)
-            {
-                OrderTransactionEvent?.Invoke(this, new BfxOrderTransactionEventArgs(Order.Children[0])
-                {
-                    EventType = oet,
-                    State = State,
-                    Time = coe.EventDate,
-                    Parameter = coe,
-                });
-            }
-            else
-            {
-                OrderTransactionEvent?.Invoke(this, new BfxOrderTransactionEventArgs(Order)
-                {
-                    EventType = BfxOrderTransactionEventType.ChildOrderEvent,
-                    State = State,
-                    Time = coe.EventDate,
-                    Parameter = coe,
-                    ChildEventType = oet,
-                    ChildOrderIndex = childOrderIndex,
-                });
             }
         }
     }

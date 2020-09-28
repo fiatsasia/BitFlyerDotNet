@@ -102,7 +102,7 @@ namespace BitFlyerDotNet.Trading
                         market.RealtimeSource.GetTickerSource(BfProductCode.FXBTCJPY),
                         market.RealtimeSource.GetTickerSource(BfProductCode.BTCJPY),
                         Observable.Timer(TimeSpan.Zero, market.Config.MarketStatusConfirmInterval)
-                            .Select(count => market.Client.GetMarketHealth(BfProductCode.FXBTCJPY).GetContent()),
+                            .Select(count => market.Client.GetHealth(BfProductCode.FXBTCJPY).GetContent()),
                         (ob, fxbtcjpy, btcjpy, health) =>
                         {
                             if (fxbtcjpy.Timestamp > _lastServerTime)
@@ -127,7 +127,7 @@ namespace BitFlyerDotNet.Trading
                     (
                         market.RealtimeSource.GetTickerSource(market.ProductCode),
                         Observable.Timer(TimeSpan.Zero, market.Config.MarketStatusConfirmInterval)
-                            .Select(count => market.Client.GetMarketHealth(market.ProductCode).GetContent()),
+                            .Select(count => market.Client.GetHealth(market.ProductCode).GetContent()),
                         (ob, nt, health) =>
                         {
                             if (nt.Timestamp > _lastServerTime)

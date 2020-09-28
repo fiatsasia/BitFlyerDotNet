@@ -17,6 +17,7 @@ namespace BitFlyerDotNet.Trading
         public bool IsCancelable => throw new NotImplementedException();
         public bool HasParent => throw new NotImplementedException();
         public IBfxOrder Order => throw new NotImplementedException();
+        public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionEvent;
 
         public void Cancel()
         {
