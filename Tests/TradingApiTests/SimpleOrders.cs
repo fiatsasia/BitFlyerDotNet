@@ -57,11 +57,11 @@ namespace TradingApiTests
                         break;
 
                     case 'S':
-                        PlaceOrder(BfxOrder.Stop(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize));
+                        PlaceOrder(BfxOrder.Stop(BfTradeSide.Sell, _market.BestAskPrice - UnexecutableGap, _orderSize));
                         break;
 
                     case 'O':
-                        PlaceOrder(BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize));
+                        PlaceOrder(BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice - UnexecutableGap, _market.BestAskPrice - UnexecutableGap, _orderSize));
                         break;
 
                     case 'T':

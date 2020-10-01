@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using BitFlyerDotNet.LightningApi;
+using System.Reactive.Subjects;
 
 namespace BitFlyerDotNet.Trading
 {
@@ -40,7 +41,7 @@ namespace BitFlyerDotNet.Trading
         BfxAccount _account;
         ConcurrentDictionary<string, IBfxOrderTransaction> _childOrderTransactions = new ConcurrentDictionary<string, IBfxOrderTransaction>();
         ConcurrentDictionary<string, IBfxOrderTransaction> _parentOrderTransactions = new ConcurrentDictionary<string, IBfxOrderTransaction>();
-        BfxTickerSource _ticker;
+        IObservable<BfxTicker> _ticker;
 
         public BfxMarket(BfxAccount account, BfProductCode productCode, BfxConfiguration config)
         {
@@ -49,7 +50,7 @@ namespace BitFlyerDotNet.Trading
             Config = config ?? new BfxConfiguration();
 
             _serverTimeSpan = TimeSpan.Zero;
-            _ticker = new BfxTickerSource(this);
+            _ticker = new BfxTickerSource(this).Publish().RefCount();
         }
 
         public BfxMarket(BfxAccount account, BfProductCode productCode)

@@ -7,6 +7,7 @@ using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
+using System.Linq;
 
 namespace PublicApiTests
 {
@@ -64,9 +65,9 @@ namespace PublicApiTests
         }
 
         [TestMethod]
-        public void GetMarketHealth()
+        public void GetHealth()
         {
-            var resp = _client.GetMarketHealth(ProductCode);
+            var resp = _client.GetHealth(ProductCode);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var jobject = JsonConvert.DeserializeObject(resp.Json);
@@ -74,19 +75,38 @@ namespace PublicApiTests
         }
 
         [TestMethod]
-        public void GetMarkets()
+        public void GetMarketsAll()
         {
             // If fails exception will be thrown
+            var resp = _client.GetMarketsAll();
+            foreach (var element in resp)
+            {
+                var jobject = JsonConvert.DeserializeObject(element.Json);
+                Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+            }
+        }
+
+        [TestMethod]
+        public void GetMarkets()
+        {
             var resp = _client.GetMarkets();
             var jobject = JsonConvert.DeserializeObject(resp.Json);
             Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+        }
 
-            resp = _client.GetMarketsUsa();
-            jobject = JsonConvert.DeserializeObject(resp.Json);
+        [TestMethod]
+        public void GetMarketsUsa()
+        {
+            var resp = _client.GetMarketsUsa();
+            var jobject = JsonConvert.DeserializeObject(resp.Json);
             Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+        }
 
-            resp = _client.GetMarketsEu();
-            jobject = JsonConvert.DeserializeObject(resp.Json);
+        [TestMethod]
+        public void GetMarketsEu()
+        {
+            var resp = _client.GetMarketsEu();
+            var jobject = JsonConvert.DeserializeObject(resp.Json);
             Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 

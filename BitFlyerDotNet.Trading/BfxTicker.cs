@@ -23,26 +23,21 @@ namespace BitFlyerDotNet.Trading
         public DateTime UpdatedTime { get; private set; }
         public TimeSpan ServerTimeDiff { get; private set; }
 
-        public BfMarketHealth Health { get; private set; }
-        public BfHealthState MarketStatus => Health.Status;
-
         public double SFDDifference { get; private set; }
         public double SFDRate { get; private set; }
 
-        public BfxTicker(BfOrderBook orderBook, BfTicker nativeTicker, BfMarketHealth health, TimeSpan serverTimeDiff)
+        public BfxTicker(BfOrderBook orderBook, BfTicker nativeTicker, TimeSpan serverTimeDiff)
         {
             OrderBook = orderBook;
             NativeTicker = nativeTicker;
-            Health = health;
             ServerTimeDiff = serverTimeDiff;
             UpdatedTime = DateTime.UtcNow + serverTimeDiff;
         }
 
-        public BfxTicker(BfOrderBook orderBook, BfTicker fxbtcTicker, BfTicker btcTicker, BfMarketHealth health, TimeSpan serverTimeDiff)
+        public BfxTicker(BfOrderBook orderBook, BfTicker fxbtcTicker, BfTicker btcTicker, TimeSpan serverTimeDiff)
         {
             OrderBook = orderBook;
             NativeTicker = fxbtcTicker;
-            Health = health;
             ServerTimeDiff = serverTimeDiff;
             UpdatedTime = DateTime.UtcNow + serverTimeDiff;
 
@@ -101,16 +96,14 @@ namespace BitFlyerDotNet.Trading
                     (
                         market.RealtimeSource.GetTickerSource(BfProductCode.FXBTCJPY),
                         market.RealtimeSource.GetTickerSource(BfProductCode.BTCJPY),
-                        Observable.Timer(TimeSpan.Zero, market.Config.MarketStatusConfirmInterval)
-                            .Select(count => market.Client.GetHealth(BfProductCode.FXBTCJPY).GetContent()),
-                        (ob, fxbtcjpy, btcjpy, health) =>
+                        (ob, fxbtcjpy, btcjpy) =>
                         {
                             if (fxbtcjpy.Timestamp > _lastServerTime)
                             {
                                 _lastServerTime = fxbtcjpy.Timestamp;
                                 _serverTimeDiff = fxbtcjpy.Timestamp - DateTime.UtcNow;
                             }
-                            return new BfxTicker(ob, fxbtcjpy, btcjpy, health, _serverTimeDiff);
+                            return new BfxTicker(ob, fxbtcjpy, btcjpy, _serverTimeDiff);
                         }
                     )
                     .Subscribe(observer).AddTo(_disposables);
@@ -126,16 +119,14 @@ namespace BitFlyerDotNet.Trading
                     market.RealtimeSource.GetOrderBookSource(market.ProductCode).CombineLatest
                     (
                         market.RealtimeSource.GetTickerSource(market.ProductCode),
-                        Observable.Timer(TimeSpan.Zero, market.Config.MarketStatusConfirmInterval)
-                            .Select(count => market.Client.GetHealth(market.ProductCode).GetContent()),
-                        (ob, nt, health) =>
+                        (ob, nt) =>
                         {
                             if (nt.Timestamp > _lastServerTime)
                             {
                                 _lastServerTime = nt.Timestamp;
                                 _serverTimeDiff = nt.Timestamp - DateTime.UtcNow;
                             }
-                            return new BfxTicker(ob, nt, health, _serverTimeDiff);
+                            return new BfxTicker(ob, nt, _serverTimeDiff);
                         }
                     )
                     .Subscribe(observer).AddTo(_disposables);

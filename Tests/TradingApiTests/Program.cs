@@ -43,6 +43,7 @@ namespace TradingApiTests
                 _orderSize = ProductCode.GetMinimumOrderSize();
                 _market.OrderTransactionChanged += OnOrderTransactionChanged;
 
+                _account.Open();
                 _market.Open();
                 _market.GetActiveTransactions().ForEach(e => _transactions[Guid.NewGuid()] = e);
                 while (true)

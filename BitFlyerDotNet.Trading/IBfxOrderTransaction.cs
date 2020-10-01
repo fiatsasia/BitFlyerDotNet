@@ -14,8 +14,6 @@ namespace BitFlyerDotNet.Trading
         BfxOrderTransactionState State { get; }
         IBfxOrder Order { get; }
 
-        event EventHandler<BfxOrderTransactionEventArgs> OrderTransactionEvent;
-
         bool IsCancelable { get; }
         void Cancel();
         bool HasParent { get; }

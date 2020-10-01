@@ -25,7 +25,7 @@ namespace BitFlyerDotNet.Trading
         protected BfxMarket Market { get; private set; }
         protected abstract void SendCancelOrderRequestAsync();
         protected abstract void CancelTransaction();
-        public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionEvent;
+        internal event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionEvent;
 
         string _derived;
 

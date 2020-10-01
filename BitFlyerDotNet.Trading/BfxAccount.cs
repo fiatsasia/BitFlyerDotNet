@@ -51,8 +51,12 @@ namespace BitFlyerDotNet.Trading
 
             Client.GetAvailableMarkets().ForEach(e =>
             {
-                _markets.Add(e.ProductCode, new BfxMarket(this, e.ProductCode).AddTo(_disposables));
-                _marketSymbols.Add(e.Symbol, e.ProductCode);
+                // "BTC_JPY" is available both in Japan/EU markets
+                if (!_markets.ContainsKey(e.ProductCode))
+                {
+                    _markets.Add(e.ProductCode, new BfxMarket(this, e.ProductCode).AddTo(_disposables));
+                    _marketSymbols.Add(e.Symbol, e.ProductCode);
+                }
             });
         }
 
