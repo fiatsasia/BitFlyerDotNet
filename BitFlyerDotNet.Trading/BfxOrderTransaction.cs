@@ -25,7 +25,6 @@ namespace BitFlyerDotNet.Trading
         protected BfxMarket Market { get; private set; }
         protected abstract void SendCancelOrderRequestAsync();
         protected abstract void CancelTransaction();
-        internal event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionEvent;
 
         string _derived;
 
@@ -96,7 +95,7 @@ namespace BitFlyerDotNet.Trading
 
         protected void NotifyEvent(BfxOrderTransactionEventType oet, DateTime time, object? parameter)
         {
-            OrderTransactionEvent?.Invoke(this, new BfxOrderTransactionEventArgs(Order)
+            Market.InvokeOrderTransactionEvent(this, new BfxOrderTransactionEventArgs(Order)
             {
                 EventType = oet,
                 State = State,
@@ -111,7 +110,7 @@ namespace BitFlyerDotNet.Trading
         {
             if (Order.Children.Length == 1)
             {
-                OrderTransactionEvent?.Invoke(this, new BfxOrderTransactionEventArgs(Order.Children[0])
+                Market.InvokeOrderTransactionEvent(this, new BfxOrderTransactionEventArgs(Order.Children[0])
                 {
                     EventType = oet,
                     State = State,
@@ -121,7 +120,7 @@ namespace BitFlyerDotNet.Trading
             }
             else
             {
-                OrderTransactionEvent?.Invoke(this, new BfxOrderTransactionEventArgs(Order)
+                Market.InvokeOrderTransactionEvent(this, new BfxOrderTransactionEventArgs(Order)
                 {
                     EventType = BfxOrderTransactionEventType.ChildOrderEvent,
                     State = State,
