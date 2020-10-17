@@ -67,7 +67,10 @@ namespace BitFlyerDotNet.Trading
 
         public void Open()
         {
-            LoadMarketInformations();
+            if (_account.Client.IsAuthenticated)
+            {
+                LoadMarketInformations();
+            }
             _ticker.Subscribe(e =>
             {
                 _serverTimeSpan = e.ServerTimeDiff;

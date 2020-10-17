@@ -24,6 +24,13 @@ namespace BitFlyerDotNet.Trading
         Dictionary<BfProductCode, BfxMarket> _markets = new Dictionary<BfProductCode, BfxMarket>();
         public BfxPositions Positions { get; } = new BfxPositions();
 
+        public BfxAccount()
+        {
+            Client = new BitFlyerClient().AddTo(_disposables);
+            RealtimeSource = new RealtimeSourceFactory(Client).AddTo(_disposables);
+            RealtimeSource.ConnectionResumed += OnRealtimeConnectionResumed;
+        }
+
         public BfxAccount(string apiKey, string apiSecret)
         {
             Client = new BitFlyerClient(apiKey, apiSecret).AddTo(_disposables);
@@ -62,6 +69,11 @@ namespace BitFlyerDotNet.Trading
 
         public void Open()
         {
+            if (!Client.IsAuthenticated)
+            {
+                return;
+            }
+
             InitializeMarkets();
             Positions.Update(Client.GetPositions(BfProductCode.FXBTCJPY).GetContent());
 
@@ -81,19 +93,19 @@ namespace BitFlyerDotNet.Trading
             });
         }
 
-        void TryOpen()
-        {
-            if (_markets.Count == 0)
-            {
-                Open();
-            }
-        }
-
         public BfxMarket GetMarket(BfProductCode productCode)
         {
+            if (!Client.IsAuthenticated)
+            {
+                if (_markets.TryGetValue(productCode, out BfxMarket market))
+                {
+                    return market;
+                }
+                return _markets[productCode] = new BfxMarket(this, productCode).AddTo(_disposables);
+            }
+
             InitializeMarkets();
-            var market = _markets[productCode];
-            return market;
+            return _markets[productCode];
         }
     }
 }

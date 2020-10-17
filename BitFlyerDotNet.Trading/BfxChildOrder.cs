@@ -89,7 +89,6 @@ namespace BitFlyerDotNet.Trading
         {
             ProductCode = productCode;
             Update(order);
-            ChangeState(BfxOrderState.Unknown);
         }
         #endregion Constructors
 
@@ -104,15 +103,12 @@ namespace BitFlyerDotNet.Trading
             ProductCode = productCode;
             MinuteToExpire = minutesToExpire;
             TimeInForce = TimeInForce;
-
-            ChangeState(BfxOrderState.Outstanding);
         }
 
         #region Update orders
         public void Update(BfChildOrderResponse response)
         {
             ChildOrderAcceptanceId = response.ChildOrderAcceptanceId;
-            ChangeState(BfxOrderState.Ordering);
         }
 
         public void Update(BfPrivateExecution[] execs)
@@ -125,7 +121,7 @@ namespace BitFlyerDotNet.Trading
             _executions.Clear();
             _executions.AddRange(execs.Select(e => new BfxExecution(e)));
             ExecutedSize = _executions.Sum(e => e.Size);
-            ChangeState(OrderSize > ExecutedSize ? BfxOrderState.Executing : BfxOrderState.Executed);
+            ChangeState(OrderSize > ExecutedSize ? BfxOrderState.PartiallyExecuted : BfxOrderState.Executed);
             LastUpdatedTime = _executions.Last().Time;
         }
 
@@ -162,7 +158,7 @@ namespace BitFlyerDotNet.Trading
             switch (order.ChildOrderState)
             {
                 case BfOrderState.Active:
-                    ChangeState(ExecutedSize == 0m ? BfxOrderState.Ordered : BfxOrderState.Executing);
+                    ChangeState(ExecutedSize == 0m ? BfxOrderState.Ordered : BfxOrderState.PartiallyExecuted);
                     break;
 
                 case BfOrderState.Completed:
@@ -211,11 +207,9 @@ namespace BitFlyerDotNet.Trading
                     break;
 
                 case BfOrderEventType.CancelFailed:
-                    switch (State)
+                    if (State != BfxOrderState.Outstanding) // Sometimes recived before ordered which under canceled OCO
                     {
-                        case BfxOrderState.Canceling: // Cancel child order from client
-                            ChangeState(BfxOrderState.CancelFailed);
-                            break;
+                        ChangeState(BfxOrderState.CancelFailed);
                     }
                     break;
 
@@ -223,7 +217,7 @@ namespace BitFlyerDotNet.Trading
                     _executions.Add(new BfxExecution(coe));
                     ExecutedSize = _executions.Sum(e => e.Size);
                     ExecutedPrice = Math.Round(_executions.Sum(e => e.Price * e.Size) / ExecutedSize.Value, ProductCode.GetPriceDecimals(), MidpointRounding.ToEven);
-                    ChangeState(OrderSize > ExecutedSize ? BfxOrderState.Executing : BfxOrderState.Executed);
+                    ChangeState(OrderSize > ExecutedSize ? BfxOrderState.PartiallyExecuted : BfxOrderState.Executed);
                     break;
 
                 case BfOrderEventType.Expire:

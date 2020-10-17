@@ -176,7 +176,7 @@ namespace BitFlyerDotNet.Trading
                     break;
 
                 case BfOrderEventType.Execution:
-                    NotifyEvent(Order.State == BfxOrderState.Executing ? BfxOrderTransactionEventType.PartiallyExecuted : BfxOrderTransactionEventType.Executed, coe);
+                    NotifyEvent(Order.State == BfxOrderState.PartiallyExecuted ? BfxOrderTransactionEventType.PartiallyExecuted : BfxOrderTransactionEventType.Executed, coe);
                     break;
 
                 case BfOrderEventType.Expire:

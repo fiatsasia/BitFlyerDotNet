@@ -43,7 +43,7 @@ namespace BitFlyerDotNet.Trading
                 switch (State)
                 {
                     case BfxOrderTransactionState.Idle:
-                        if (OrderState == BfxOrderState.Ordered || OrderState == BfxOrderState.Executing)
+                        if (OrderState == BfxOrderState.Ordered || OrderState == BfxOrderState.PartiallyExecuted)
                         {
                             return true;
                         }
@@ -67,7 +67,7 @@ namespace BitFlyerDotNet.Trading
             switch (State)
             {
                 case BfxOrderTransactionState.Idle:
-                    if (OrderState == BfxOrderState.Ordered || OrderState == BfxOrderState.Executing)
+                    if (OrderState == BfxOrderState.Ordered || OrderState == BfxOrderState.PartiallyExecuted)
                     {
                         SendCancelOrderRequestAsync();
                     }

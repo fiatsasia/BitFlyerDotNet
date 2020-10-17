@@ -52,7 +52,6 @@ namespace BitFlyerDotNet.Trading
         public void Update(BfParentOrderResponse response)
         {
             ParentOrderAcceptanceId = response.ParentOrderAcceptanceId;
-            ChangeState(BfxOrderState.Ordering);
         }
         #endregion
 
@@ -308,8 +307,6 @@ namespace BitFlyerDotNet.Trading
                 childOrder.MinuteToExpire = MinuteToExpire;
                 childOrder.TimeInForce = TimeInForce;
             }
-
-            ChangeState(BfxOrderState.Outstanding);
 
             Request.Parameters.ForEach(e => e.ProductCode = productCode);
             _childOrders.ForEach(e => e.ApplyParameters(productCode, minutesToExpire, timeInForce));

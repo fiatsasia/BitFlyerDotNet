@@ -7,18 +7,14 @@ namespace BitFlyerDotNet.Trading
 {
     public enum BfxOrderState
     {
-        Unknown,
-
         Outstanding,
 
-        Ordering,
         Ordered,
         OrderFailed,
 
-        Executing,
+        PartiallyExecuted,
         Executed,
 
-        Canceling,
         Canceled,
         CancelFailed,
 

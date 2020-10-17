@@ -73,6 +73,14 @@ namespace BitFlyerDotNet.LightningApi
             _client = new BitFlyerClient().AddTo(_disposables);
         }
 
+        public RealtimeSourceFactory(BitFlyerClient client)
+        {
+            Channels = new WebSocketChannels(EndpointUrl).AddTo(_disposables);
+            Channels.MessageSent = OnMessageSent;
+            Channels.MessageReceived = OnMessageReceived;
+            _client = client;
+        }
+
         /// <summary>
         /// Create pricate realtime source
         /// </summary>

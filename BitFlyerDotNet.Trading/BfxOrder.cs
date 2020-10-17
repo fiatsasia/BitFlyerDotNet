@@ -34,7 +34,7 @@ namespace BitFlyerDotNet.Trading
         public virtual IBfxExecution[] Executions => EmptyExecutions;
         public decimal? SfdCollectedAmount => Executions.Sum(e => e.SfdCollectedAmount);
 
-        public BfxOrderState State { get; protected set; } = BfxOrderState.Unknown;
+        public BfxOrderState State { get; protected set; } = BfxOrderState.Outstanding;
         public DateTime? LastUpdatedTime { get; protected set; }
 
         static IBfxOrder[] EmptyChildren = new IBfxOrder[0];
