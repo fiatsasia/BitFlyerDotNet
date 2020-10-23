@@ -6,7 +6,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
@@ -258,7 +257,7 @@ namespace BitFlyerDotNet.Trading
 
                 case BfOrderEventType.Complete:
                     CompletedCount++;
-                    Debug.WriteLine($"BfOrderEventType.Complete received. count = {CompletedCount}");
+                    Log.Trace($"BfOrderEventType.Complete received. count = {CompletedCount}");
                     switch (OrderType)
                     {
                         case BfOrderType.IFD:
@@ -286,7 +285,7 @@ namespace BitFlyerDotNet.Trading
 
         void ChangeState(BfxOrderState state)
         {
-            Debug.WriteLine($"Parent order status changed: {ParentOrderAcceptanceId} {State} -> {state}");
+            Log.Trace($"Parent order status changed: {ParentOrderAcceptanceId} {State} -> {state}");
             State = state;
         }
 

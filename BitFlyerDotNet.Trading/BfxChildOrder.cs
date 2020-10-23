@@ -6,7 +6,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
@@ -244,7 +243,7 @@ namespace BitFlyerDotNet.Trading
 
         void ChangeState(BfxOrderState state)
         {
-            Debug.WriteLine($"Child order status changed: {ChildOrderAcceptanceId} {State} -> {state}");
+            Log.Trace($"Child order status changed: {ChildOrderAcceptanceId} {State} -> {state}");
             State = state;
         }
         #endregion Update orders

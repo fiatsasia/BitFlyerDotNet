@@ -7,7 +7,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using BitFlyerDotNet.LightningApi;
@@ -125,7 +124,7 @@ namespace BitFlyerDotNet.Trading
             var tx = _childOrderTransactions.GetOrAdd(coe.ChildOrderAcceptanceId, key => new BfxChildTransactionPlaceHolder());
             if (tx is BfxChildTransactionPlaceHolder placeHolder)
             {
-                Debug.WriteLine($"--Child transaction place holder found or placed. {coe.ChildOrderAcceptanceId} {coe.EventType}");
+                Log.Info($"Child transaction place holder found or placed. {coe.ChildOrderAcceptanceId} {coe.EventType}");
                 placeHolder.ChildOrderEvents.Add(coe);
                 return;
             }
@@ -151,7 +150,7 @@ namespace BitFlyerDotNet.Trading
             var tx = _parentOrderTransactions.GetOrAdd(poe.ParentOrderAcceptanceId, key => new BfxParentTransactionPlaceHolder());
             if (tx is BfxParentTransactionPlaceHolder placeHolder)
             {
-                Debug.WriteLine($"--Parent transaction place holder found or placed. {poe.ParentOrderAcceptanceId} {poe.EventType}");
+                Log.Info($"Parent transaction place holder found or placed. {poe.ParentOrderAcceptanceId} {poe.EventType}");
                 placeHolder.ParentOrderEvents.Add(poe);
                 return;
             }
@@ -175,7 +174,7 @@ namespace BitFlyerDotNet.Trading
                     var txChild = new BfxChildOrderTransaction(this, childOrder, txParent);
                     _childOrderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId, txChild, (key, value) =>
                     {
-                        Debug.WriteLine($"--Child transaction place holder found and merged to parent. {childOrder.ChildOrderAcceptanceId} Parent.{poe.EventType}");
+                        Log.Info($"Child transaction place holder found and merged to parent. {childOrder.ChildOrderAcceptanceId} Parent.{poe.EventType}");
                         if (!(value is BfxChildTransactionPlaceHolder placeHolder))
                         {
                             throw new ApplicationException();
@@ -243,7 +242,7 @@ namespace BitFlyerDotNet.Trading
         {
             _childOrderTransactions.AddOrUpdate(tx.MarketId, tx, (key, value) =>
             {
-                Debug.WriteLine($"--Child transaction place holder found after order sent. {tx.MarketId}");
+                Log.Info($"Child transaction place holder found after order sent. {tx.MarketId}");
                 if (!(value is BfxChildTransactionPlaceHolder placeHolder))
                 {
                     throw new ApplicationException();
@@ -259,7 +258,7 @@ namespace BitFlyerDotNet.Trading
         {
             _parentOrderTransactions.AddOrUpdate(tx.MarketId, tx, (key, value) =>
             {
-                Debug.WriteLine($"--Parent transaction place holder found after order sent. {tx.MarketId}");
+                Log.Info($"Parent transaction place holder found after order sent. {tx.MarketId}");
                 if (!(value is BfxParentTransactionPlaceHolder placeHolder))
                 {
                     throw new ApplicationException();

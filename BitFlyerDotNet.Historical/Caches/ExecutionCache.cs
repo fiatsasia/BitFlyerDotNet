@@ -6,7 +6,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Diagnostics;
 using System.Reactive.Linq;
 using BitFlyerDotNet.LightningApi;
 
@@ -203,17 +202,20 @@ namespace BitFlyerDotNet.Historical
                 return;
             }
 
-            Debug.WriteLine("HistoricalCache committing executions... {0} - {1}", _manageRec.StartExecutedTime.ToLocalTime(), _manageRec.EndExecutedTime.ToLocalTime());
+            Log.Trace($"HistoricalCache committing executions... {_manageRec.StartExecutedTime.ToLocalTime()} - {_manageRec.EndExecutedTime.ToLocalTime()}");
             _ctx.AddManageRecord(_manageRec);
             _ctx.SaveExecutionChanges();
             _manageRec = null;
-            Debug.WriteLine("HistoricalCache committed.");
+            Log.Trace("HistoricalCache committed.");
         }
 
         public void InsertGap(int before, int after)
         {
-            Debug.Assert(before != 0 && after != 0);
-            Debug.WriteLine("HistoricalCache committing executions...");
+            if (before == 0 || after == 0)
+            {
+                throw new ArgumentException();
+            }
+            Log.Trace("HistoricalCache committing executions...");
 
             var blockRow = new DbManageRecord();
             blockRow.StartExecutionId = after + 1;
@@ -223,7 +225,7 @@ namespace BitFlyerDotNet.Historical
             _ctx.AddManageRecord(blockRow);
             _ctx.SaveExecutionChanges();
 
-            Debug.WriteLine("HistoricalCache committed.");
+            Log.Trace("HistoricalCache committed.");
         }
     }
 }

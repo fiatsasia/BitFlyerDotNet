@@ -7,7 +7,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 using BitFlyerDotNet.LightningApi;
 
@@ -49,7 +48,7 @@ namespace BitFlyerDotNet.Trading
                 return;
             }
 
-            Debug.WriteLine($"{DateTime.Now} Found active parent order. {order.ParentOrderState}");
+            Log.Info($"Found active parent order. {order.ParentOrderState}");
             var oldExecutedSize = order.ExecutedSize;
             _order.Update(order);
 
@@ -63,7 +62,7 @@ namespace BitFlyerDotNet.Trading
                 return;
             }
 
-            Debug.WriteLine($"{DateTime.Now} Found {childOrders.Length} child orders.");
+            Log.Info($"Found {childOrders.Length} child orders.");
             _order.Update(childOrders);
             if (oldExecutedSize != Order.ExecutedSize)
             {
@@ -76,7 +75,7 @@ namespace BitFlyerDotNet.Trading
                         {
                             continue;
                         }
-                        Debug.WriteLine($"{DateTime.Now} Found additional execs. size:{execs.Sum(e => e.Size)}");
+                        Log.Info($"Found additional execs. size:{execs.Sum(e => e.Size)}");
                         childOrder.Update(execs);
                     }
                 }
@@ -108,20 +107,20 @@ namespace BitFlyerDotNet.Trading
                         return;
                     }
 
-                    Debug.WriteLine($"SendParentOrder failed: {resp.StatusCode} {resp.ErrorMessage}");
+                    Log.Warn($"SendParentOrder failed: {resp.StatusCode} {resp.ErrorMessage}");
                     _cts.Token.ThrowIfCancellationRequested();
-                    Debug.WriteLine("Trying retry...");
+                    Log.Info("Trying retry...");
                     await Task.Delay(Market.Config.OrderRetryInterval);
                 }
 
-                Debug.WriteLine("SendOrderRequest - Retried out");
+                Log.Error("SendOrderRequest - Retried out");
                 ChangeState(BfxOrderTransactionState.Idle);
                 NotifyEvent(BfxOrderTransactionEventType.OrderSendFailed);
                 throw new BitFlyerDotNetException();
             }
             catch (OperationCanceledException ex)
             {
-                Debug.WriteLine("SendParentOrderRequestAsync is canceled");
+                Log.Trace("SendParentOrderRequestAsync is canceled");
                 ChangeState(BfxOrderTransactionState.Idle);
                 NotifyEvent(BfxOrderTransactionEventType.OrderSendCanceled, Market.ServerTime, ex);
             }
@@ -189,7 +188,7 @@ namespace BitFlyerDotNet.Trading
                     break;
 
                 case BfOrderEventType.Trigger:
-                    Debug.WriteLine($"Trigger {poe.Side} P:{poe.Price} S:{poe.Size}");
+                    Log.Trace($"Trigger {poe.Side} P:{poe.Price} S:{poe.Size}");
                     break;
 
                 case BfOrderEventType.Expire:

@@ -6,7 +6,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using BitFlyerDotNet.LightningApi;
 using System.Linq;
 
@@ -58,13 +57,13 @@ namespace BitFlyerDotNet.Trading
                 return;
             }
 
-            Debug.WriteLine($"{DateTime.Now} Found standalone order. {order.ChildOrderType} {order.ChildOrderState}");
+            Log.Info($"Found standalone order. {order.ChildOrderType} {order.ChildOrderState}");
             var oldExecSize = Order.ExecutedSize.HasValue ? Order.ExecutedSize.Value : 0m;
             _order.Update(order);
 
             if (order.ExecutedSize > oldExecSize)
             {
-                Debug.WriteLine($"{DateTime.Now} Found additional execs. size:{order.ExecutedSize}");
+                Log.Info($"Found additional execs. size:{order.ExecutedSize}");
                 var execs = Market.Client.GetPrivateExecutions(Market.ProductCode, childOrderAcceptanceId: order.ChildOrderAcceptanceId).GetContent();
                 _order.Update(execs);
             }
@@ -95,20 +94,20 @@ namespace BitFlyerDotNet.Trading
                         return;
                     }
 
-                    Debug.WriteLine($"SendChildOrder failed: {resp.StatusCode} {resp.ErrorMessage}");
+                    Log.Warn($"SendChildOrder failed: {resp.StatusCode} {resp.ErrorMessage}");
                     _cts.Token.ThrowIfCancellationRequested();
-                    Debug.WriteLine("Trying retry...");
+                    Log.Info("Trying retry...");
                     await Task.Delay(Market.Config.OrderRetryInterval);
                 }
 
-                Debug.WriteLine("SendOrderRequest - Retried out");
+                Log.Error("SendOrderRequest - Retried out");
                 ChangeState(BfxOrderTransactionState.Idle);
                 NotifyEvent(BfxOrderTransactionEventType.OrderSendFailed);
                 throw new BitFlyerDotNetException();
             }
             catch (OperationCanceledException ex)
             {
-                Debug.WriteLine("SendChildOrderRequestAsync is canceled");
+                Log.Trace("SendChildOrderRequestAsync is canceled");
                 ChangeState(BfxOrderTransactionState.Idle);
                 NotifyEvent(BfxOrderTransactionEventType.OrderSendCanceled, Market.ServerTime, ex);
             }

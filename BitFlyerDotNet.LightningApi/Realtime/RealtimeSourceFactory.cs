@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Net.Sockets;
 using System.Reactive.Subjects;
 using System.Reactive.Linq;
@@ -104,9 +103,9 @@ namespace BitFlyerDotNet.LightningApi
 
         public void Dispose()
         {
-            Debug.Print($"{nameof(RealtimeSourceFactory)}.Dispose");
+            Log.Trace($"{nameof(RealtimeSourceFactory)}.Dispose");
             _disposables.Dispose();
-            Debug.Print($"{nameof(RealtimeSourceFactory)}.Dispose exit");
+            Log.Trace($"{nameof(RealtimeSourceFactory)}.Dispose exit");
         }
 
         // Convert BfProdcutCode (inc. futures) to native product codes

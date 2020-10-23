@@ -5,9 +5,6 @@
 
 using System;
 using System.Linq;
-using System.IO;
-using System.Threading;
-using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Reactive.Disposables;
 using Newtonsoft.Json;
@@ -79,43 +76,6 @@ namespace BitFlyerDotNet.LightningApi
                 default:
                     return false;
             }
-        }
-    }
-
-    public static class DebugEx
-    {
-        [Conditional("DEBUG")]
-        public static void Trace()
-        {
-            Debug.WriteLine(CreatePrifix(new StackFrame(1, true)));
-        }
-
-        [Conditional("DEBUG")]
-        public static void Trace(string format, params object[] args)
-        {
-            Debug.WriteLine(CreatePrifix(new StackFrame(1, true)) + format, args);
-        }
-
-        [Conditional("DEBUG")]
-        public static void EnterMethod()
-        {
-            Debug.WriteLine(CreatePrifix(new StackFrame(1, true)) + "EnterMethod");
-        }
-
-        [Conditional("DEBUG")]
-        public static void ExitMethod()
-        {
-            Debug.WriteLine(CreatePrifix(new StackFrame(1, true)) + "ExitMethod");
-        }
-
-        static string CreatePrifix(StackFrame sf)
-        {
-            var method = sf.GetMethod();
-            var methodname = method.DeclaringType + "." + method.Name;
-            var fileName = Path.GetFileName(sf.GetFileName());
-            var lineNum = sf.GetFileLineNumber();
-            var threadId = Thread.CurrentThread.ManagedThreadId;
-            return $"{fileName}({lineNum}):{methodname}({threadId}) ";
         }
     }
 }

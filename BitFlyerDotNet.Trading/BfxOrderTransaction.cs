@@ -4,7 +4,6 @@
 //
 
 using System;
-using System.Diagnostics;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
@@ -89,7 +88,7 @@ namespace BitFlyerDotNet.Trading
 
         protected virtual void ChangeState(BfxOrderTransactionState state)
         {
-            Debug.WriteLine($"{_derived} transaction state changed: {State} -> {state}");
+            Log.Trace($"{_derived} transaction state changed: {State} -> {state}");
             State = state;
         }
 

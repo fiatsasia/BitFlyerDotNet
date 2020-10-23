@@ -7,7 +7,6 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -230,10 +229,10 @@ namespace BitFlyerDotNet.LightningApi
 
         public void Dispose()
         {
-            Debug.WriteLine($"{nameof(BitFlyerClient)} disposing...");
+            Log.Trace($"{nameof(BitFlyerClient)} disposing...");
             _client?.Dispose();
             _hash?.Dispose();
-            Debug.WriteLine($"{nameof(BitFlyerClient)} disposed.");
+            Log.Trace($"{nameof(BitFlyerClient)} disposed.");
         }
 
         internal async Task<BitFlyerResponse<T>> GetAsync<T>(string apiName, string queryParameters = "")
@@ -254,7 +253,7 @@ namespace BitFlyerDotNet.LightningApi
                     TotalReceivedMessageChars += responseObject.Json.Length;
                     if (_apiLimitter.CheckLimitReached())
                     {
-                        Debug.Print("API limit reached.");
+                        Log.Warn("API limit reached.");
                         await Task.Delay(ApiLimitterPenaltyMs);
                     }
                     return responseObject;
@@ -332,7 +331,7 @@ namespace BitFlyerDotNet.LightningApi
                     }
                     if (_apiLimitter.CheckLimitReached())
                     {
-                        Debug.Print("API limit reached.");
+                        Log.Warn("API limit reached.");
                         await Task.Delay(ApiLimitterPenaltyMs);
                     }
                     return responseObject;
@@ -416,7 +415,7 @@ namespace BitFlyerDotNet.LightningApi
                         case nameof(CancelAllChildOrders):
                             if (_orderApiLimitter.CheckLimitReached())
                             {
-                                Debug.Print("Order API limit reached.");
+                                Log.Warn("Order API limit reached.");
                                 await Task.Delay(OrderApiLimitPenaltyMs);
                             }
                             break;
@@ -430,7 +429,7 @@ namespace BitFlyerDotNet.LightningApi
                     if (ex is TaskCanceledException) // Caused timedout
                     {
                         responseObject.StatusCode = HttpStatusCode.RequestTimeout;
-                        Debug.WriteLine("BitFlyerlient: Request timedout");
+                        Log.Warn("BitFlyerlient: Request timedout");
                     }
                     else if (ex is HttpRequestException)
                     {
@@ -438,7 +437,7 @@ namespace BitFlyerDotNet.LightningApi
                         {
                             responseObject.ErrorMessage = ((WebException)ex.InnerException).Status.ToString();
                             responseObject.StatusCode = HttpStatusCode.InternalServerError;
-                            Debug.WriteLine($"BitFlyerlient: Internal Server Error {responseObject.ErrorMessage}");
+                            Log.Error($"BitFlyerlient: Internal Server Error {responseObject.ErrorMessage}");
                         }
                     }
                     else if (ex is WebException)
@@ -453,11 +452,11 @@ namespace BitFlyerDotNet.LightningApi
                         {
                             responseObject.StatusCode = HttpStatusCode.NoContent;
                         }
-                        Debug.WriteLine($"BitFlyerlient: WebException {responseObject.StatusCode}");
+                        Log.Error($"BitFlyerlient: WebException {responseObject.StatusCode}");
                     }
                     else
                     {
-                        Debug.WriteLine($"BitFlyerlient: Unexpected exception {ex.Message}");
+                        Log.Error($"BitFlyerlient: Unexpected exception {ex.Message}");
                         throw ex;
                     }
                     return responseObject;
