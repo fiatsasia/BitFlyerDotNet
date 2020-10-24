@@ -20,6 +20,7 @@ namespace BitFlyerDotNet.Historical
         public abstract DbSet<DbExecution> GetExecutions();
         public abstract DbSet<DbMinuteMarker> GetMarker();
         public abstract DbSet<DbHistoricalOhlc> GetOhlc();
+        public abstract DbSet<DbOhlcMark> GetOhlcMark();
 
         public BfDbContextBaseSqlServer(string connStr, DbContextOptions options)
             : base(options)
@@ -47,11 +48,13 @@ namespace BitFlyerDotNet.Historical
         public DbSet<DbExecution> FXBTCJPY_Executions { get; set; }
         public DbSet<DbMinuteMarker> FXBTCJPY_Marker { get; set; }
         public DbSet<DbHistoricalOhlc> FXBTCJPY_Ohlc { get; set; }
+        public DbSet<DbOhlcMark> FXBTCJPY_OHLC_Mark { get; set; }
 
         public override DbSet<DbManageRecord> GetManageTable() { return FXBTCJPY_ManageTable; }
         public override DbSet<DbExecution> GetExecutions() { return FXBTCJPY_Executions; }
         public override DbSet<DbMinuteMarker> GetMarker() { return FXBTCJPY_Marker; }
         public override DbSet<DbHistoricalOhlc> GetOhlc() { return FXBTCJPY_Ohlc; }
+        public override DbSet<DbOhlcMark> GetOhlcMark() { return FXBTCJPY_OHLC_Mark; }
 
         public BfFxBtcJpyDbContextSqlServer(string connStr)
             : base(connStr, new DbContextOptionsBuilder<BfFxBtcJpyDbContextSqlServer>().Options) { }
@@ -64,11 +67,13 @@ namespace BitFlyerDotNet.Historical
         public DbSet<DbExecution> BTCJPY_Executions { get; set; }
         public DbSet<DbMinuteMarker> BTCJPY_Marker { get; set; }
         public DbSet<DbHistoricalOhlc> BTCJPY_Ohlc { get; set; }
+        public DbSet<DbOhlcMark> BTCJPY_OHLC_Mark { get; set; }
 
         public override DbSet<DbManageRecord> GetManageTable() { return BTCJPY_ManageTable; }
         public override DbSet<DbExecution> GetExecutions() { return BTCJPY_Executions; }
         public override DbSet<DbMinuteMarker> GetMarker() { return BTCJPY_Marker; }
         public override DbSet<DbHistoricalOhlc> GetOhlc() { return BTCJPY_Ohlc; }
+        public override DbSet<DbOhlcMark> GetOhlcMark() { return BTCJPY_OHLC_Mark; }
 
         public BfBtcJpyDbContextSqlServer(string connStr)
             : base(connStr, new DbContextOptionsBuilder<BfBtcJpyDbContextSqlServer>().Options) { }
@@ -81,11 +86,13 @@ namespace BitFlyerDotNet.Historical
         public DbSet<DbExecution> ETHBTC_Executions { get; set; }
         public DbSet<DbMinuteMarker> ETHBTC_Marker { get; set; }
         public DbSet<DbHistoricalOhlc> ETHBTC_Ohlc { get; set; }
+        public DbSet<DbOhlcMark> ETHBTC_OHLC_Mark { get; set; }
 
         public override DbSet<DbManageRecord> GetManageTable() { return ETHBTC_ManageTable; }
         public override DbSet<DbExecution> GetExecutions() { return ETHBTC_Executions; }
         public override DbSet<DbMinuteMarker> GetMarker() { return ETHBTC_Marker; }
         public override DbSet<DbHistoricalOhlc> GetOhlc() { return ETHBTC_Ohlc; }
+        public override DbSet<DbOhlcMark> GetOhlcMark() { return ETHBTC_OHLC_Mark; }
 
         public BfEthBtcDbContextSqlServer(string connStr)
             : base(connStr, new DbContextOptionsBuilder<BfEthBtcDbContextSqlServer>().Options) { }
@@ -98,11 +105,13 @@ namespace BitFlyerDotNet.Historical
         public DbSet<DbExecution> BCHBTC_Executions { get; set; }
         public DbSet<DbMinuteMarker> BCHBTC_Marker { get; set; }
         public DbSet<DbHistoricalOhlc> BCHBTC_Ohlc { get; set; }
+        public DbSet<DbOhlcMark> BCHBTC_OHLC_Mark { get; set; }
 
         public override DbSet<DbManageRecord> GetManageTable() { return BCHBTC_ManageTable; }
         public override DbSet<DbExecution> GetExecutions() { return BCHBTC_Executions; }
         public override DbSet<DbMinuteMarker> GetMarker() { return BCHBTC_Marker; }
         public override DbSet<DbHistoricalOhlc> GetOhlc() { return BCHBTC_Ohlc; }
+        public override DbSet<DbOhlcMark> GetOhlcMark() { return BCHBTC_OHLC_Mark; }
 
         public BfBCHBtcDbContextSqlServer(string connStr)
             : base(connStr, new DbContextOptionsBuilder<BfBCHBtcDbContextSqlServer>().Options) { }
@@ -115,11 +124,13 @@ namespace BitFlyerDotNet.Historical
         public DbSet<DbExecution> ETHJPY_Executions { get; set; }
         public DbSet<DbMinuteMarker> ETHJPY_Marker { get; set; }
         public DbSet<DbHistoricalOhlc> ETHJPY_Ohlc { get; set; }
+        public DbSet<DbOhlcMark> ETHJPY_OHLC_Mark { get; set; }
 
         public override DbSet<DbManageRecord> GetManageTable() { return ETHJPY_ManageTable; }
         public override DbSet<DbExecution> GetExecutions() { return ETHJPY_Executions; }
         public override DbSet<DbMinuteMarker> GetMarker() { return ETHJPY_Marker; }
         public override DbSet<DbHistoricalOhlc> GetOhlc() { return ETHJPY_Ohlc; }
+        public override DbSet<DbOhlcMark> GetOhlcMark() { return ETHJPY_OHLC_Mark; }
 
         public BfEthJpyDbContextSqlServer(string connStr)
             : base(connStr, new DbContextOptionsBuilder<BfEthJpyDbContextSqlServer>().Options) { }
