@@ -68,7 +68,7 @@ namespace HistoricalCacheUtil
             }
 #endif
             Console.WriteLine("BitFlyerDotNet cache management utilities");
-            Console.WriteLine("Copyright (C) 2017-2018 Fiats Inc.");
+            Console.WriteLine("Copyright (C) 2017-2020 Fiats Inc.");
 
             try
             {

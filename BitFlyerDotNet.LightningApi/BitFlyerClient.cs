@@ -253,7 +253,7 @@ namespace BitFlyerDotNet.LightningApi
                     TotalReceivedMessageChars += responseObject.Json.Length;
                     if (_apiLimitter.CheckLimitReached())
                     {
-                        Log.Warn("API limit reached.");
+                        Log.Warn($"API limit reached. Inserting {ApiLimitterPenaltyMs}ms delay.");
                         await Task.Delay(ApiLimitterPenaltyMs);
                     }
                     return responseObject;
@@ -331,7 +331,7 @@ namespace BitFlyerDotNet.LightningApi
                     }
                     if (_apiLimitter.CheckLimitReached())
                     {
-                        Log.Warn("API limit reached.");
+                        Log.Warn($"API limit reached. Inserting {ApiLimitterPenaltyMs}ms delay.");
                         await Task.Delay(ApiLimitterPenaltyMs);
                     }
                     return responseObject;

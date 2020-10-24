@@ -17,8 +17,6 @@ namespace BitFlyerDotNet.Historical
     public class HistoricalExecutionSource : IObservable<IBfExecution>
     {
         const int ReadCountMax = 500;
-        static readonly TimeSpan ErrorInterval = TimeSpan.FromMilliseconds(15000); // Public API is limited 500 requests in 5 minutes.
-        static readonly TimeSpan ReadInterval = TimeSpan.FromMilliseconds(600); // 600ms x 500times / 60s = 5mintes
 
         CancellationTokenSource _cancel = new CancellationTokenSource();
         CompositeDisposable _disposables = new CompositeDisposable();
@@ -40,10 +38,8 @@ namespace BitFlyerDotNet.Historical
                                 observer.OnCompleted();
                                 return;
                             }
-                            Thread.Sleep(ErrorInterval);
                             continue;
                         }
-                        Thread.Sleep(ReadInterval);
 
                         var elements = resp.GetContent();
                         foreach (var element in elements)
