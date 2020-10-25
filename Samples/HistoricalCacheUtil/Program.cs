@@ -281,6 +281,10 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
                     {
                         Console.WriteLine("{0} {1} Completed {2} Elapsed", exec.ExecutedTime.ToLocalTime(), recordCount, sw.Elapsed);
                     }
+                    if (client.IsApiLimitReached)
+                    {
+                        cache.SaveChanges();
+                    }
                 },
                 () =>
                 {

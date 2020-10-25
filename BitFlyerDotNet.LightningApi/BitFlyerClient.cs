@@ -207,7 +207,9 @@ namespace BitFlyerDotNet.LightningApi
         public Func<string, string, bool> ConfirmCallback { get; set; } = (apiName, json) => true;
 
         CountTimerLimitter _apiLimitter = new CountTimerLimitter(ApiLimitInterval, ApiLimitCount);
+        public bool IsApiLimitReached => _apiLimitter.IsLimitReached;
         CountTimerLimitter _orderApiLimitter = new CountTimerLimitter(ApiLimitInterval, OrderApiLimitCount);
+        public bool IsOrderLimitReached => _orderApiLimitter.IsLimitReached;
 
         public BitFlyerClient(BitFlyerClientConfig config = null)
         {
