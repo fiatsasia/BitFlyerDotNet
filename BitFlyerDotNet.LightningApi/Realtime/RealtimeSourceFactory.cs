@@ -122,8 +122,9 @@ namespace BitFlyerDotNet.LightningApi
         {
             if (!_opened)
             {
-                Channels.Opened += () => GetAvailableMarkets();
+                Channels.Resumed += () => GetAvailableMarkets(); // To refresh markets when is resumed
                 Channels.TryOpen(); // TryOpen will return after GetAvailableMarkets() finished.
+                GetAvailableMarkets();
                 _opened = true;
             }
         }
@@ -194,7 +195,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             TryOpen();
             var symbol = _availableMarkets[productCode];
-            return _tickSources.GetOrAdd(symbol, _ =>
+            return _tickSources.GetOrAdd(symbol, _ => // Cause ArgumentException if key not found.
             {
                 var source = new RealtimeTickerSource(Channels, symbol, s =>
                 {
@@ -211,7 +212,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             TryOpen();
             var symbol = _availableMarkets[productCode];
-            return _orderBookSnapshotSources.GetOrAdd(symbol, _ =>
+            return _orderBookSnapshotSources.GetOrAdd(symbol, _ => // Cause ArgumentException if key not found.
             {
                 var snapshot = new RealtimeBoardSnapshotSource(Channels, symbol);
                 var update = new RealtimeBoardSource(Channels, symbol);

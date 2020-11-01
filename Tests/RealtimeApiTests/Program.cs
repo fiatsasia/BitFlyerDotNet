@@ -28,10 +28,18 @@ namespace RealtimeApiTests
         {
             if (args.Length > 0)
             {
-                LoadRunsettings(args[0]);
-                var key = Properties["ApiKey"];
-                var secret = Properties["ApiSecret"];
-                _factory = new RealtimeSourceFactory(key, secret);
+                Console.Write("Disable authentication (y/n)?");
+                if (GetCh() == 'Y')
+                {
+                    _factory = new RealtimeSourceFactory();
+                }
+                else
+                {
+                    LoadRunsettings(args[0]);
+                    var key = Properties["ApiKey"];
+                    var secret = Properties["ApiSecret"];
+                    _factory = new RealtimeSourceFactory(key, secret);
+                }
             }
             else
             {

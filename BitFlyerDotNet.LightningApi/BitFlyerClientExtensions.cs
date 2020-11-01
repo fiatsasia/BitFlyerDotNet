@@ -11,7 +11,7 @@ namespace BitFlyerDotNet.LightningApi
 {
     public static class BitFlyerClientExtensions
     {
-        public static List<(BfProductCode ProductCode, string Symbol)> GetAvailableMarkets(this BitFlyerClient client)
+        public static IEnumerable<(BfProductCode ProductCode, string Symbol)> GetAvailableMarkets(this BitFlyerClient client)
         {
             var result = new List<(BfProductCode ProductCode, string Symbol)>();
             foreach (var market in client.GetMarketsAll().SelectMany(e => e.GetContent()))
@@ -29,7 +29,7 @@ namespace BitFlyerDotNet.LightningApi
                     result.Add(((BfProductCode)Enum.Parse(typeof(BfProductCode), market.ProductCode.Replace("_", "")), market.ProductCode));
                 }
             }
-            return result;
+            return result.Distinct(e => e.ProductCode);
         }
     }
 }

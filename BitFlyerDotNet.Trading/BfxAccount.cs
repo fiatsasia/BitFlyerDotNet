@@ -24,18 +24,23 @@ namespace BitFlyerDotNet.Trading
         Dictionary<BfProductCode, BfxMarket> _markets = new Dictionary<BfProductCode, BfxMarket>();
         public BfxPositions Positions { get; } = new BfxPositions();
 
-        public BfxAccount()
+        public BfxAccount(string apiKey, string apiSecret)
         {
-            Client = new BitFlyerClient().AddTo(_disposables);
-            RealtimeSource = new RealtimeSourceFactory(Client).AddTo(_disposables);
+            if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiKey))
+            {
+                Client = new BitFlyerClient().AddTo(_disposables);
+                RealtimeSource = new RealtimeSourceFactory(Client).AddTo(_disposables);
+            }
+            else
+            {
+                Client = new BitFlyerClient(apiKey, apiSecret).AddTo(_disposables);
+                RealtimeSource = new RealtimeSourceFactory(apiKey, apiSecret, Client).AddTo(_disposables);
+            }
             RealtimeSource.ConnectionResumed += OnRealtimeConnectionResumed;
         }
 
-        public BfxAccount(string apiKey, string apiSecret)
+        public BfxAccount() : this(string.Empty, string.Empty)
         {
-            Client = new BitFlyerClient(apiKey, apiSecret).AddTo(_disposables);
-            RealtimeSource = new RealtimeSourceFactory(apiKey, apiSecret, Client).AddTo(_disposables);
-            RealtimeSource.ConnectionResumed += OnRealtimeConnectionResumed;
         }
 
         private void OnRealtimeConnectionResumed()
@@ -58,23 +63,20 @@ namespace BitFlyerDotNet.Trading
 
             Client.GetAvailableMarkets().ForEach(e =>
             {
-                // "BTC_JPY" is available both in Japan/EU markets
-                if (!_markets.ContainsKey(e.ProductCode))
-                {
-                    _markets.Add(e.ProductCode, new BfxMarket(this, e.ProductCode).AddTo(_disposables));
-                    _marketSymbols.Add(e.Symbol, e.ProductCode);
-                }
+                _markets.Add(e.ProductCode, new BfxMarket(this, e.ProductCode).AddTo(_disposables));
+                _marketSymbols.Add(e.Symbol, e.ProductCode);
             });
         }
 
         public void Open()
         {
+            InitializeMarkets();
+
             if (!Client.IsAuthenticated)
             {
                 return;
             }
 
-            InitializeMarkets();
             Positions.Update(Client.GetPositions(BfProductCode.FXBTCJPY).GetContent());
 
             RealtimeSource.GetChildOrderEventsSource().Subscribe(coe =>
@@ -95,15 +97,6 @@ namespace BitFlyerDotNet.Trading
 
         public BfxMarket GetMarket(BfProductCode productCode)
         {
-            if (!Client.IsAuthenticated)
-            {
-                if (_markets.TryGetValue(productCode, out BfxMarket market))
-                {
-                    return market;
-                }
-                return _markets[productCode] = new BfxMarket(this, productCode).AddTo(_disposables);
-            }
-
             InitializeMarkets();
             return _markets[productCode];
         }

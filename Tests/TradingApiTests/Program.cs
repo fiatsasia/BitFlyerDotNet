@@ -34,9 +34,18 @@ namespace TradingApiTests
 
         static void Main(string[] args)
         {
+            AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
             LoadSettings(args[0]);
+            var key = Properties["ApiKey"];
+            var secret = Properties["ApiSecret"];
 
-            using (_account = new BfxAccount(Properties["ApiKey"], Properties["ApiSecret"]))
+            Console.Write("Disable authentication (y/n)?");
+            if (GetCh() == 'Y')
+            {
+                key = secret = string.Empty;
+            }
+
+            using (_account = new BfxAccount(key, secret))
             {
                 _market = _account.GetMarket(ProductCode);
                 _account.PositionChanged += OnPositionChanged;
@@ -103,6 +112,14 @@ namespace TradingApiTests
             var xml = XDocument.Load(filePath);
             var n = xml.Element("RunSettings").Elements("TestRunParameters");
             Properties = xml.Element("RunSettings").Element("TestRunParameters").Elements("Parameter").ToDictionary(e => e.Attribute("name").Value, e => e.Attribute("value").Value);
+        }
+
+        static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
+        {
+            Console.WriteLine(e.ExceptionObject.ToString());
+            Console.WriteLine("Press Enter to continue");
+            Console.ReadLine();
+            Environment.Exit(1);
         }
 
         static BfTradeSide SelectSide()
