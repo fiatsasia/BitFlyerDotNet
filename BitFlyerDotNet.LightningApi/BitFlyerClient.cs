@@ -191,6 +191,7 @@ namespace BitFlyerDotNet.LightningApi
         const string PrivateBasePath = "/v1/me/";
         const string UsaMarket = "/usa";
         const string EuMarket = "/eu";
+        const int ReadCountMax = 500;
         static readonly TimeSpan ApiLimitInterval = TimeSpan.FromMinutes(5);
         const int ApiLimitCount = 500;
         const int ApiLimitterPenaltyMs = 600; // 5min / 500times

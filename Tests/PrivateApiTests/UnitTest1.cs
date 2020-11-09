@@ -222,11 +222,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetCoinAddresses()
+        public void GetAddresses()
         {
             try
             {
-                var resp = _client.GetCoinAddresses();
+                var resp = _client.GetAddresses();
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 DumpResponse(resp);
                 var content = resp.GetContent();
@@ -393,7 +393,7 @@ namespace PrivateApiTests
             {
                 //var resp = _client.GetChildOrders(_productCode, BfOrderState.Completed, count: 1);
 
-                var resp = _client.GetPrivateExecutions(_productCode, count: 5);
+                var resp = _client.GetPrivateExecutions(_productCode, count: 5, before: 1852461210);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 DumpResponse(resp);
                 var content = resp.GetContent();

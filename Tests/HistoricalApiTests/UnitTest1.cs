@@ -4,8 +4,9 @@
 //
 
 using System;
-using System.Threading;
 using System.Linq;
+using System.Threading;
+using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Historical;
@@ -15,6 +16,9 @@ namespace HistoricalApiTests
     [TestClass]
     public class UnitTest1
     {
+        static BfProductCode _productCode;
+        static string _key;
+        static string _secret;
         static string _cacheDirectoryPath;
 
         [TestInitialize]
@@ -25,7 +29,46 @@ namespace HistoricalApiTests
         [ClassInitialize]
         public static void Classinitialize(TestContext context)
         {
+            _productCode = Enum.Parse<BfProductCode>(context.Properties["ProductCode"].ToString());
+            _key = context.Properties["ApiKey"].ToString();
+            _secret = context.Properties["ApiSecret"].ToString();
             _cacheDirectoryPath = context.Properties["CacheDirectoryPath"].ToString();
+        }
+
+        [TestMethod]
+        public void ChildOrderInitialTest()
+        {
+            var client = new BitFlyerClient(_key, _secret);
+            var connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
+            var account = new AccountSource(client, connStr);
+            var balances = account.GetChildOrders(_productCode, DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
+        }
+
+        [TestMethod]
+        public void ExecutionInitialTest()
+        {
+            var client = new BitFlyerClient(_key, _secret);
+            var connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
+            var account = new AccountSource(client, connStr);
+            var execs = account.GetExecutions(_productCode, DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
+        }
+
+        [TestMethod]
+        public void BalanceInitialTest()
+        {
+            var client = new BitFlyerClient(_key, _secret);
+            var connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
+            var account = new AccountSource(client, connStr);
+            var balances = account.GetBalances(BfCurrencyCode.JPY, DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
+        }
+
+        [TestMethod]
+        public void CollateralInitialTest()
+        {
+            var client = new BitFlyerClient(_key, _secret);
+            var connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
+            var account = new AccountSource(client, connStr);
+            var colls = account.GetCollaterals(DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
         }
 
         [TestMethod]

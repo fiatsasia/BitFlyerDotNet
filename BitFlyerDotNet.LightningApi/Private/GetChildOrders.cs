@@ -4,6 +4,8 @@
 //
 
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -12,7 +14,7 @@ namespace BitFlyerDotNet.LightningApi
     public class BfChildOrder
     {
         [JsonProperty(PropertyName = "id")]
-        public int PagingId { get; private set; }
+        public uint PagingId { get; private set; }
 
         [JsonProperty(PropertyName = "child_order_id")]
         public string ChildOrderId { get; private set; }
@@ -82,8 +84,8 @@ namespace BitFlyerDotNet.LightningApi
             BfProductCode productCode,
             BfOrderState orderState = BfOrderState.Unknown,
             int count = 0,
-            int before = 0,
-            int after = 0,
+            uint before = 0,
+            uint after = 0,
             string childOrderId = null,
             string childOrderAcceptanceId = null,
             string parentOrderId = null
@@ -101,6 +103,41 @@ namespace BitFlyerDotNet.LightningApi
             );
 
             return PrivateGetAsync<BfChildOrder[]>(nameof(GetChildOrders), query).Result;
+        }
+
+        public IEnumerable<BfChildOrder> GetChildOrders(
+            BfProductCode productCode,
+            BfOrderState orderState,
+            uint before,
+            string childOrderId,
+            string childOrderAcceptanceId,
+            string parentOrderId,
+            Func<BfChildOrder, bool> predicate
+        )
+        {
+            while (true)
+            {
+                var orders = GetChildOrders(productCode, orderState, ReadCountMax, before, 0, childOrderId, childOrderAcceptanceId, parentOrderId).GetContent();
+                if (orders.Length == 0)
+                {
+                    break;
+                }
+
+                foreach (var order in orders)
+                {
+                    if (!predicate(order))
+                    {
+                        yield break;
+                    }
+                    yield return order;
+                }
+
+                if (orders.Length < ReadCountMax)
+                {
+                    break;
+                }
+                before = orders.Last().PagingId;
+            }
         }
     }
 }

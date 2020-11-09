@@ -4,6 +4,8 @@
 //
 
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -62,6 +64,33 @@ namespace BitFlyerDotNet.LightningApi
             );
 
             return PrivateGetAsync<BfPrivateExecution[]>("getexecutions", query).Result;
+        }
+
+        public IEnumerable<BfPrivateExecution> GetPrivateExecutions(BfProductCode productCode, int before, Func<BfPrivateExecution, bool> predicate)
+        {
+            while (true)
+            {
+                var execs = GetPrivateExecutions(productCode, ReadCountMax, before, 0).GetContent();
+                if (execs.Length == 0)
+                {
+                    break;
+                }
+
+                foreach (var exec in execs)
+                {
+                    if (!predicate(exec))
+                    {
+                        yield break;
+                    }
+                    yield return exec;
+                }
+
+                if (execs.Length < ReadCountMax)
+                {
+                    break;
+                }
+                before = execs.Last().ExecutionId;
+            }
         }
     }
 }

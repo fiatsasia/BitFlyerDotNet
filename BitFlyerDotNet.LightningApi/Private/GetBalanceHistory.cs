@@ -4,6 +4,8 @@
 //
 
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -70,6 +72,33 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0) ? $"&after={after}" : ""
             );
             return PrivateGetAsync<BfBalanceHistory[]>(nameof(GetBalanceHistory), query).Result;
+        }
+
+        public IEnumerable<BfBalanceHistory> GetBalanceHistory(BfCurrencyCode currencyCode, int before, Func<BfBalanceHistory, bool> predicate)
+        {
+            while (true)
+            {
+                var balances = GetBalanceHistory(currencyCode, ReadCountMax, before, 0).GetContent();
+                if (balances.Length == 0)
+                {
+                    break;
+                }
+
+                foreach (var balance in balances)
+                {
+                    if (!predicate(balance))
+                    {
+                        yield break;
+                    }
+                    yield return balance;
+                }
+
+                if (balances.Length < ReadCountMax)
+                {
+                    break;
+                }
+                before = balances.Last().PagingId;
+            }
         }
     }
 }

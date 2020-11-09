@@ -56,14 +56,4 @@ namespace BitFlyerDotNet.Trading
 
         IBfxOrder[] Children { get; }
     }
-
-    public interface IBfxExecution
-    {
-        int Id { get; }
-        DateTime Time { get; }
-        decimal Price { get; }
-        decimal Size { get; }
-        decimal? Commission { get; }
-        decimal? SfdCollectedAmount { get; }
-    }
 }

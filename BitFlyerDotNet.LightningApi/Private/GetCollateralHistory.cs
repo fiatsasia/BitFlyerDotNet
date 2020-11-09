@@ -4,6 +4,8 @@
 //
 
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -50,6 +52,33 @@ namespace BitFlyerDotNet.LightningApi
             ).TrimStart('&');
 
             return PrivateGetAsync<BfCollateralHistory[]>(nameof(GetCollateralHistory), query).Result;
+        }
+
+        public IEnumerable<BfCollateralHistory> GetCollateralHistory(int before, Func<BfCollateralHistory, bool> predicate)
+        {
+            while (true)
+            {
+                var execs = GetCollateralHistory(ReadCountMax, before, 0).GetContent();
+                if (execs.Length == 0)
+                {
+                    break;
+                }
+
+                foreach (var exec in execs)
+                {
+                    if (!predicate(exec))
+                    {
+                        yield break;
+                    }
+                    yield return exec;
+                }
+
+                if (execs.Length < ReadCountMax)
+                {
+                    break;
+                }
+                before = execs.Last().PagingId;
+            }
         }
     }
 }

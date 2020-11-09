@@ -8,7 +8,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxExecution : IBfxExecution
+    class BfxExecution : IBfxExecution
     {
         public int Id { get; }
         public DateTime Time { get; }
@@ -16,6 +16,7 @@ namespace BitFlyerDotNet.Trading
         public decimal Size { get; }
         public decimal? Commission { get; }
         public decimal? SfdCollectedAmount { get; }
+        public string OrderId { get; }
 
         public BfxExecution(BfChildOrderEvent coe)
         {
@@ -25,6 +26,7 @@ namespace BitFlyerDotNet.Trading
             Size = coe.Size;
             Commission = coe.Commission;
             SfdCollectedAmount = coe.SwapForDifference;
+            OrderId = coe.ChildOrderId;
         }
 
         public BfxExecution(BfPrivateExecution exec)
@@ -34,6 +36,7 @@ namespace BitFlyerDotNet.Trading
             Price = exec.Price;
             Size = exec.Size;
             Commission = exec.Commission;
+            OrderId = exec.ChildOrderId;
         }
     }
 }
