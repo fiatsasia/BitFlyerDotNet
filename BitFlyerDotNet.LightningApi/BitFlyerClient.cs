@@ -30,16 +30,6 @@ namespace BitFlyerDotNet.LightningApi
         public static readonly BfErrorResponse Default = default(BfErrorResponse);
     }
 
-    public interface IBitFlyerResponse
-    {
-        string Json { get; }
-        bool IsError { get; }
-        bool IsNetworkError { get; }
-        bool IsApplicationError { get; }
-        string ErrorMessage { get; }
-        bool IsUnauthorized { get; }
-    }
-
     public class BitFlyerResponse : IBitFlyerResponse
     {
         public static readonly IBitFlyerResponse Success = new BitFlyerResponse(false, false, "Success");
@@ -61,7 +51,7 @@ namespace BitFlyerDotNet.LightningApi
 
     public class BitFlyerResponse<T> : IBitFlyerResponse
     {
-        static readonly JsonSerializerSettings _jsonDeserializeSettings = new JsonSerializerSettings
+        static readonly JsonSerializerSettings _jsonDeserializeSettings = new ()
         {
             // To enable after develop/find PascalCaseNamingStrategy()
             //ContractResolver = new DefaultContractResolver { NamingStrategy = new PascalCaseNamingStrategy() },
@@ -179,7 +169,7 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient : IDisposable
     {
-        public static readonly JsonSerializerSettings JsonSerializeSettings = new JsonSerializerSettings
+        public static readonly JsonSerializerSettings JsonSerializeSettings = new ()
         {
             ContractResolver = new DefaultContractResolver { NamingStrategy = new SnakeCaseNamingStrategy() },
             DateFormatHandling = DateFormatHandling.IsoDateFormat,
@@ -203,13 +193,13 @@ namespace BitFlyerDotNet.LightningApi
         HMACSHA256 _hash;
 
         public bool IsAuthenticated => _hash != null;
-        public BitFlyerClientConfig Config { get; } = new BitFlyerClientConfig();
+        public BitFlyerClientConfig Config { get; } = new ();
         public long TotalReceivedMessageChars { get; private set; }
         public Func<string, string, bool> ConfirmCallback { get; set; } = (apiName, json) => true;
 
-        CountTimerLimitter _apiLimitter = new CountTimerLimitter(ApiLimitInterval, ApiLimitCount);
+        CountTimerLimitter _apiLimitter = new (ApiLimitInterval, ApiLimitCount);
         public bool IsApiLimitReached => _apiLimitter.IsLimitReached;
-        CountTimerLimitter _orderApiLimitter = new CountTimerLimitter(ApiLimitInterval, OrderApiLimitCount);
+        CountTimerLimitter _orderApiLimitter = new (ApiLimitInterval, OrderApiLimitCount);
         public bool IsOrderLimitReached => _orderApiLimitter.IsLimitReached;
 
         public BitFlyerClient(BitFlyerClientConfig config = null)
@@ -219,15 +209,15 @@ namespace BitFlyerDotNet.LightningApi
                 Config = config;
             }
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-            _client = new HttpClient();
-            _client.BaseAddress = new Uri(BaseUri);
+            _client = new ();
+            _client.BaseAddress = new (BaseUri);
         }
 
         public BitFlyerClient(string apiKey, string apiSecret, BitFlyerClientConfig config = null)
             : this(config)
         {
             _apiKey = apiKey;
-            _hash = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret));
+            _hash = new (Encoding.UTF8.GetBytes(apiSecret));
         }
 
         public void Dispose()

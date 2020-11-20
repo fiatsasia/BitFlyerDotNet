@@ -10,8 +10,8 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BfOrderBook
     {
-        SortedDictionary<decimal, decimal> _bids { get; } = new SortedDictionary<decimal, decimal>();
-        SortedDictionary<decimal, decimal> _asks { get; } = new SortedDictionary<decimal, decimal>();
+        SortedDictionary<decimal, decimal> _bids { get; } = new ();
+        SortedDictionary<decimal, decimal> _asks { get; } = new ();
         KeyValuePair<decimal, decimal> _bestBid;
         KeyValuePair<decimal, decimal> _bestAsk;
 
@@ -24,9 +24,9 @@ namespace BitFlyerDotNet.LightningApi
         public double TotalBidDepth { get; private set; }
         public double TotalAskDepth { get; private set; }
 
-        static readonly KeyValuePair<decimal, decimal> DefaultElement = new KeyValuePair<decimal, decimal>(decimal.Zero, decimal.Zero);
+        static readonly KeyValuePair<decimal, decimal> DefaultElement = new (decimal.Zero, decimal.Zero);
 
-        object _lockObject = new object();
+        object _lockObject = new ();
 
         public void Reset(BfBoard orders)
         {
@@ -110,7 +110,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             lock (_lockObject)
             {
-                return new BfOrderBookSnapshot(_bids, _asks, unchecked((decimal)MidPrice), size);
+                return new (_bids, _asks, unchecked((decimal)MidPrice), size);
             }
         }
     }

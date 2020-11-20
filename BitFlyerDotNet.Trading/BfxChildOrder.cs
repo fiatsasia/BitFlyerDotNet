@@ -15,8 +15,8 @@ namespace BitFlyerDotNet.Trading
         public override IBfxExecution[] Executions => _executions.ToArray();
 
         // Response fields
-        public string ChildOrderAcceptanceId { get; private set; } = string.Empty;
-        public string ChildOrderId { get; private set; } = string.Empty;
+        public override string AcceptanceId { get; protected set; } = string.Empty;
+        public override string OrderId { get; protected set; } = string.Empty;
 
         internal BfChildOrderRequest? Request { get; }
 
@@ -42,22 +42,22 @@ namespace BitFlyerDotNet.Trading
         }
 
         // Market/Limit get from market
-        public BfxChildOrder(BfProductCode productCode, BfChildOrder order)
+        public BfxChildOrder(IBfChildOrder order)
         {
             Request = default;
 
             // Request fields
-            ProductCode = productCode;
-            OrderType = order.ChildOrderType;
+            ProductCode = order.ProductCode;
+            OrderType = order.OrderType;
             Side = order.Side;
-            OrderSize = order.Size;
+            OrderSize = order.OrderSize;
             if (OrderType == BfOrderType.Limit)
             {
-                OrderPrice = order.Price;
+                OrderPrice = order.OrderPrice;
             }
 
             Update(order);
-            LastUpdatedTime = order.ChildOrderDate;
+            LastUpdatedTime = order.OrderDate;
         }
 
         // Market/Limit/Stop/StopLimit/Trail of parent order
@@ -107,10 +107,10 @@ namespace BitFlyerDotNet.Trading
         #region Update orders
         public void Update(BfChildOrderResponse response)
         {
-            ChildOrderAcceptanceId = response.ChildOrderAcceptanceId;
+            AcceptanceId = response.ChildOrderAcceptanceId;
         }
 
-        public void Update(BfPrivateExecution[] execs)
+        public void Update(IBfPrivateExecution[] execs)
         {
             if (execs.Length == 0)
             {
@@ -143,18 +143,14 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        public void Update(BfChildOrder order)
+        public void Update(IBfChildOrder order)
         {
-            ChildOrderAcceptanceId = order.ChildOrderAcceptanceId;
-            ChildOrderId = order.ChildOrderId;
-            OrderDate = order.ChildOrderDate;
+            AcceptanceId = order.AcceptanceId;
+            OrderId = order.OrderId;
+            OrderDate = order.OrderDate;
             ExpireDate = order.ExpireDate;
 
-            ExecutedSize = order.ExecutedSize;
-            ExecutedPrice = order.AveragePrice;
-            Commission = order.TotalCommission;
-
-            switch (order.ChildOrderState)
+            switch (order.State)
             {
                 case BfOrderState.Active:
                     ChangeState(ExecutedSize == 0m ? BfxOrderState.Ordered : BfxOrderState.PartiallyExecuted);
@@ -175,17 +171,18 @@ namespace BitFlyerDotNet.Trading
                 default:
                     throw new ArgumentException("Unexpected order status");
             }
+            Update(order.Executions);
         }
 
         public void Update(BfChildOrderEvent coe)
         {
             if (!string.IsNullOrEmpty(coe.ChildOrderAcceptanceId))
             {
-                ChildOrderAcceptanceId = coe.ChildOrderAcceptanceId;
+                AcceptanceId = coe.ChildOrderAcceptanceId;
             }
             if (!string.IsNullOrEmpty(coe.ChildOrderId))
             {
-                ChildOrderId = coe.ChildOrderId;
+                OrderId = coe.ChildOrderId;
             }
             LastUpdatedTime = coe.EventDate;
 
@@ -238,12 +235,12 @@ namespace BitFlyerDotNet.Trading
                 return;
             }
 
-            ChildOrderAcceptanceId = poe.ChildOrderAcceptanceId;
+            AcceptanceId = poe.ChildOrderAcceptanceId;
         }
 
         void ChangeState(BfxOrderState state)
         {
-            Log.Trace($"Child order status changed: {ChildOrderAcceptanceId} {State} -> {state}");
+            Log.Trace($"Child order status changed: {AcceptanceId} {State} -> {state}");
             State = state;
         }
         #endregion Update orders

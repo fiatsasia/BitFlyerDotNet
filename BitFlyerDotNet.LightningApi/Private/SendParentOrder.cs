@@ -41,7 +41,7 @@ namespace BitFlyerDotNet.LightningApi
         // Message builders
         public static BfParentOrderRequestParameter MarketPrice(BfProductCode productCode, BfTradeSide side, decimal size)
         {
-            return new BfParentOrderRequestParameter
+            return new ()
             {
                 ProductCode = productCode,
                 ConditionType = BfOrderType.Market,
@@ -52,7 +52,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public static BfParentOrderRequestParameter LimitPrice(BfProductCode productCode, BfTradeSide side, decimal price, decimal size)
         {
-            return new BfParentOrderRequestParameter
+            return new ()
             {
                 ProductCode = productCode,
                 ConditionType = BfOrderType.Limit,
@@ -69,7 +69,7 @@ namespace BitFlyerDotNet.LightningApi
                 throw new ArgumentException();
             }
 
-            return new BfParentOrderRequestParameter
+            return new ()
             {
                 ProductCode = productCode,
                 ConditionType = BfOrderType.Stop,
@@ -86,7 +86,7 @@ namespace BitFlyerDotNet.LightningApi
                 throw new ArgumentException();
             }
 
-            return new BfParentOrderRequestParameter
+            return new ()
             {
                 ProductCode = productCode,
                 ConditionType = BfOrderType.StopLimit,
@@ -104,7 +104,7 @@ namespace BitFlyerDotNet.LightningApi
                 throw new ArgumentException();
             }
 
-            return new BfParentOrderRequestParameter
+            return new ()
             {
                 ProductCode = productCode,
                 ConditionType = BfOrderType.Trail,
@@ -127,81 +127,72 @@ namespace BitFlyerDotNet.LightningApi
         public BfTimeInForce TimeInForce { get; set; }
         public bool ShouldSerializeTimeInForce() { return TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
 
-        public List<BfParentOrderRequestParameter> Parameters { get; set; } = new List<BfParentOrderRequestParameter>();
+        public List<BfParentOrderRequestParameter> Parameters { get; set; } = new ();
 
         // Message builders
         public static BfParentOrderRequest Stop(BfProductCode productCode, BfTradeSide side, decimal triggerPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
-            return new BfParentOrderRequest
+            return new ()
             {
                 OrderMethod = BfOrderType.Simple,
                 MinuteToExpire = minuteToExpire,
                 TimeInForce = timeInForce,
-                Parameters = new List<BfParentOrderRequestParameter>
-                {
-                    BfParentOrderRequestParameter.Stop(productCode, side, triggerPrice, size)
-                }
+                Parameters = new () { BfParentOrderRequestParameter.Stop(productCode, side, triggerPrice, size) }
             };
         }
 
         public static BfParentOrderRequest StopLimit(BfProductCode productCode, BfTradeSide side, decimal triggerPrice, decimal orderPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
-            return new BfParentOrderRequest
+            return new ()
             {
                 OrderMethod = BfOrderType.Simple,
                 MinuteToExpire = minuteToExpire,
                 TimeInForce = timeInForce,
-                Parameters = new List<BfParentOrderRequestParameter>
-                {
-                    BfParentOrderRequestParameter.StopLimit(productCode, side, triggerPrice, orderPrice, size)
-                }
+                Parameters = new () { BfParentOrderRequestParameter.StopLimit(productCode, side, triggerPrice, orderPrice, size) }
             };
         }
 
         public static BfParentOrderRequest Trail(BfProductCode productCode, BfTradeSide side, decimal offset, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
-            return new BfParentOrderRequest
+            return new ()
             {
                 OrderMethod = BfOrderType.Simple,
                 MinuteToExpire = minuteToExpire,
                 TimeInForce = timeInForce,
-                Parameters = new List<BfParentOrderRequestParameter>
-                {
-                    BfParentOrderRequestParameter.Trail(productCode, side, offset, size)
-                }
+                Parameters = new () { BfParentOrderRequestParameter.Trail(productCode, side, offset, size) }
             };
         }
 
         public static BfParentOrderRequest IFD(BfParentOrderRequestParameter first, BfParentOrderRequestParameter second, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
-            return new BfParentOrderRequest
+            return new ()
             {
                 OrderMethod = BfOrderType.IFD,
                 MinuteToExpire = minuteToExpire,
                 TimeInForce = timeInForce,
-                Parameters = new List<BfParentOrderRequestParameter> { first, second }
+                Parameters = new () { first, second }
             };
         }
 
         public static BfParentOrderRequest OCO(BfParentOrderRequestParameter first, BfParentOrderRequestParameter second, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
-            return new BfParentOrderRequest
+            return new ()
             {
                 OrderMethod = BfOrderType.OCO,
                 MinuteToExpire = minuteToExpire,
                 TimeInForce = timeInForce,
-                Parameters = new List<BfParentOrderRequestParameter> { first, second }
+                Parameters = new () { first, second }
             };
         }
 
         public static BfParentOrderRequest IFDOCO(BfParentOrderRequestParameter ifdone, BfParentOrderRequestParameter ocoFirst, BfParentOrderRequestParameter ocoSecond, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
-            return new BfParentOrderRequest
+            return new ()
             {
                 OrderMethod = BfOrderType.IFDOCO,
                 MinuteToExpire = minuteToExpire,
                 TimeInForce = timeInForce,
-                Parameters = new List<BfParentOrderRequestParameter> { ifdone, ocoFirst, ocoSecond }
+                Parameters = new () { ifdone, ocoFirst, ocoSecond }
             };
         }
     }

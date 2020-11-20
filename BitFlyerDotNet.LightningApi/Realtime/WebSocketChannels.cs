@@ -31,9 +31,9 @@ namespace BitFlyerDotNet.LightningApi
 
         WebSocket _webSocket;
         Timer _reconnectionTimer;
-        AutoResetEvent _openedEvent = new AutoResetEvent(false);
-        AutoResetEvent _closedEvent = new AutoResetEvent(false);
-        ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new ConcurrentDictionary<string, IRealtimeSource>();
+        AutoResetEvent _openedEvent = new (false);
+        AutoResetEvent _closedEvent = new (false);
+        ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new ();
 
         string _uri;
         string _apiKey;

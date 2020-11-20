@@ -4,17 +4,17 @@
 //
 
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BitFlyerDotNet.LightningApi;
-using System.Linq;
 
 namespace BitFlyerDotNet.Trading
 {
     public class BfxChildOrderTransaction : BfxOrderTransaction
     {
         // Public properties
-        public override string MarketId => _order.ChildOrderAcceptanceId;
+        public override string MarketId => _order.AcceptanceId;
         public override IBfxOrder Order => _order;
         public override BfxOrderState OrderState => Order.State;
         public BfxParentOrderTransaction? Parent { get; }
@@ -37,36 +37,6 @@ namespace BitFlyerDotNet.Trading
             : base(market)
         {
             _order = order;
-            Market.RealtimeSource.ConnectionSuspended += OnRealtimeConnectionSuspended;
-            Market.RealtimeSource.ConnectionResumed += OnRealtimeConnectionResumed;
-        }
-
-        void OnRealtimeConnectionSuspended()
-        {
-        }
-
-        void OnRealtimeConnectionResumed()
-        {
-            if (string.IsNullOrEmpty(_order.ChildOrderAcceptanceId))
-            {
-                return;
-            }
-            var order = Market.Client.GetChildOrders(Market.ProductCode, childOrderAcceptanceId: _order.ChildOrderAcceptanceId).GetContent().FirstOrDefault();
-            if (order == null)
-            {
-                return;
-            }
-
-            Log.Info($"Found standalone order. {order.ChildOrderType} {order.ChildOrderState}");
-            var oldExecSize = Order.ExecutedSize.HasValue ? Order.ExecutedSize.Value : 0m;
-            _order.Update(order);
-
-            if (order.ExecutedSize > oldExecSize)
-            {
-                Log.Info($"Found additional execs. size:{order.ExecutedSize}");
-                var execs = Market.Client.GetPrivateExecutions(Market.ProductCode, childOrderAcceptanceId: order.ChildOrderAcceptanceId).GetContent();
-                _order.Update(execs);
-            }
         }
 
         // - 経過時間でリトライ終了のオプション
@@ -87,6 +57,7 @@ namespace BitFlyerDotNet.Trading
                     var resp = await Market.Client.SendChildOrderAsync(_order.Request, _cts.Token);
                     if (!resp.IsError)
                     {
+                        Market.OrderCache.OpenChildOrder(_order.Request, resp.GetContent());
                         _order.Update(resp.GetContent());
                         ChangeState(BfxOrderTransactionState.WaitingOrderAccepted);
                         NotifyEvent(BfxOrderTransactionEventType.OrderSent, Market.ServerTime, resp);
@@ -123,7 +94,7 @@ namespace BitFlyerDotNet.Trading
             try
             {
                 _cts.Token.ThrowIfCancellationRequested();
-                var resp = await Market.Client.CancelChildOrderAsync(Market.ProductCode, string.Empty, _order.ChildOrderAcceptanceId, _cts.Token);
+                var resp = await Market.Client.CancelChildOrderAsync(Market.ProductCode, string.Empty, _order.AcceptanceId, _cts.Token);
                 if (!resp.IsError)
                 {
                     ChangeState(BfxOrderTransactionState.CancelAccepted);
@@ -145,7 +116,7 @@ namespace BitFlyerDotNet.Trading
         // Call from BfxMarket
         public override void OnChildOrderEvent(BfChildOrderEvent coe)
         {
-            if (coe.ChildOrderAcceptanceId != _order.ChildOrderAcceptanceId)
+            if (coe.ChildOrderAcceptanceId != _order.AcceptanceId)
             {
                 throw new ArgumentException();
             }
@@ -186,16 +157,6 @@ namespace BitFlyerDotNet.Trading
                 case BfOrderEventType.Complete:
                 case BfOrderEventType.Trigger: // Not happened when Simple Order ?
                     throw new NotSupportedException();
-            }
-        }
-
-        protected override void ChangeState(BfxOrderTransactionState state)
-        {
-            base.ChangeState(state);
-            if (state == BfxOrderTransactionState.Closed)
-            {
-                Market.RealtimeSource.ConnectionSuspended -= OnRealtimeConnectionSuspended;
-                Market.RealtimeSource.ConnectionResumed -= OnRealtimeConnectionResumed;
             }
         }
     }

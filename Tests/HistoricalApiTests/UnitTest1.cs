@@ -20,6 +20,8 @@ namespace HistoricalApiTests
         static string _key;
         static string _secret;
         static string _cacheDirectoryPath;
+        static BitFlyerClient _client;
+        static string _connStr;
 
         [TestInitialize]
         public void Initialize()
@@ -32,42 +34,71 @@ namespace HistoricalApiTests
             _productCode = Enum.Parse<BfProductCode>(context.Properties["ProductCode"].ToString());
             _key = context.Properties["ApiKey"].ToString();
             _secret = context.Properties["ApiSecret"].ToString();
+            _client = new BitFlyerClient(_key, _secret);
             _cacheDirectoryPath = context.Properties["CacheDirectoryPath"].ToString();
+            //_connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
+            _connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
         }
 
         [TestMethod]
-        public void ChildOrderInitialTest()
+        public void UpdateActiveOrders()
         {
-            var client = new BitFlyerClient(_key, _secret);
-            var connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
-            var account = new AccountSource(client, connStr);
-            var balances = account.GetChildOrders(_productCode, DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
+            var account = new OrderSource(_client, _connStr, _productCode);
+            account.UpdateActiveOrders();
+        }
+
+        [TestMethod]
+        public void UpdateRecenrParentOrders()
+        {
+            var account = new OrderSource(_client, _connStr, _productCode);
+            account.UpdateRecentParentOrders(DateTime.UtcNow - TimeSpan.FromDays(60));
+        }
+
+        [TestMethod]
+        public void UpdateRecenrChildOrders()
+        {
+            var account = new OrderSource(_client, _connStr, _productCode);
+            account.UpdateRecentChildOrders(DateTime.UtcNow - TimeSpan.FromDays(60));
+        }
+
+        [TestMethod]
+        public void UpdateRecenrOrders()
+        {
+            var account = new OrderSource(_client, _connStr, _productCode);
+            account.UpdateRecentOrders(DateTime.UtcNow - TimeSpan.FromDays(60));
+        }
+
+        [TestMethod]
+        public void UpdateRecenrExecutions()
+        {
+            var account = new OrderSource(_client, _connStr, _productCode);
+            account.UpdateRecentExecutions(DateTime.UtcNow - TimeSpan.FromDays(90));
+        }
+
+        [TestMethod]
+        public void AccountInitialTest()
+        {
+            var account = new OrderSource(_client, _connStr, _productCode);
         }
 
         [TestMethod]
         public void ExecutionInitialTest()
         {
-            var client = new BitFlyerClient(_key, _secret);
-            var connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
-            var account = new AccountSource(client, connStr);
+            var account = new OrderSource(_client, _connStr, _productCode);
             var execs = account.GetExecutions(_productCode, DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
         }
 
         [TestMethod]
         public void BalanceInitialTest()
         {
-            var client = new BitFlyerClient(_key, _secret);
-            var connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
-            var account = new AccountSource(client, connStr);
+            var account = new OrderSource(_client, _connStr, _productCode);
             var balances = account.GetBalances(BfCurrencyCode.JPY, DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
         }
 
         [TestMethod]
         public void CollateralInitialTest()
         {
-            var client = new BitFlyerClient(_key, _secret);
-            var connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
-            var account = new AccountSource(client, connStr);
+            var account = new OrderSource(_client, _connStr, _productCode);
             var colls = account.GetCollaterals(DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
         }
 

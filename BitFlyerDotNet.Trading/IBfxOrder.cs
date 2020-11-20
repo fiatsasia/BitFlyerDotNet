@@ -36,6 +36,9 @@ namespace BitFlyerDotNet.Trading
         decimal? TriggerPrice { get; }          // --3- -6--   OrderType is Stop or Stop Limit
         decimal? TrailOffset { get; }           // --3- -6--   Offset; OrderType is Trailing stop
 
+        string AcceptanceId { get; }
+        string OrderId { get; }
+
         // Order Execution
         decimal? ExecutedSize { get; }          // ---- 5--
         decimal? ExecutedPrice { get; }         // ---- 5--   5:AveragePrice

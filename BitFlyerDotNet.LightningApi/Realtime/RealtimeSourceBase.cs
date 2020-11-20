@@ -10,13 +10,6 @@ using Newtonsoft.Json.Linq;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    interface IRealtimeSource
-    {
-        string ChannelName { get; }
-        object OnMessageReceived(JToken token);
-        void Subscribe();
-    }
-
     abstract class RealtimeSourceBase<TSource> : IRealtimeSource, IObservable<TSource> where TSource : class
     {
         WebSocketChannels _channels;

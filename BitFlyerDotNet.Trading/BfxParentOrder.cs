@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using System.Collections;
 using System.Collections.Generic;
 using BitFlyerDotNet.LightningApi;
 
@@ -15,21 +16,27 @@ namespace BitFlyerDotNet.Trading
         public override IBfxExecution[] Executions => _orderMethod == BfOrderType.Simple ? _childOrders[0].Executions : base.Executions;
         public override IBfxOrder[] Children => _childOrders.ToArray();
 
-        public string ParentOrderAcceptanceId { get; private set; } = string.Empty;
-        public string ParentOrderId { get; private set; } = string.Empty;
+        public override string AcceptanceId { get; protected set; } = string.Empty;
+        public override string OrderId { get; protected set; } = string.Empty;
 
         public BfParentOrderRequest? Request { get; }
         public int CompletedCount { get; private set; }
 
         BfOrderType _orderMethod;
-        List<BfxChildOrder> _childOrders = new List<BfxChildOrder>();
+        BfxChildOrder[] _childOrders;
 
         #region Create from order request and response
+        public BfxParentOrder(BfOrderType orderType)
+        {
+            _childOrders = new BfxChildOrder[orderType.GetChildCount()];
+        }
+
         public BfxParentOrder(BfParentOrderRequest request)
+            : this(request.OrderMethod)
         {
             Request = request;
             _orderMethod = request.OrderMethod;
-            _childOrders.AddRange(request.Parameters.Select(e => new BfxChildOrder(e)));
+            _childOrders = request.Parameters.Select(e => new BfxChildOrder(e)).ToArray();
 
             ProductCode = _childOrders[0].ProductCode;
             if (request.OrderMethod == BfOrderType.Simple)
@@ -50,40 +57,28 @@ namespace BitFlyerDotNet.Trading
 
         public void Update(BfParentOrderResponse response)
         {
-            ParentOrderAcceptanceId = response.ParentOrderAcceptanceId;
+            AcceptanceId = response.ParentOrderAcceptanceId;
         }
         #endregion
 
-        public BfxParentOrder(BitFlyerClient client, BfProductCode productCode, BfParentOrder order)
+        public BfxParentOrder(IBfParentOrder order)
+            : this(order.OrderType)
         {
-            ProductCode = productCode;
-
+            ProductCode = order.ProductCode;
             Update(order);
-            Update(client.GetParentOrder(ProductCode, parentOrderId: order.ParentOrderId).GetContent());
-            Update(client.GetChildOrders(ProductCode, parentOrderId: order.ParentOrderId).GetContent().OrderBy(e => e.PagingId).ToArray());
-            foreach (var childOrder in _childOrders)
-            {
-                if (!string.IsNullOrEmpty(childOrder.ChildOrderId))
-                {
-                    childOrder.Update(client.GetPrivateExecutions(productCode, childOrderId: childOrder.ChildOrderId).GetContent());
-                }
-            }
         }
 
-        public void Update(BfParentOrder order)
+        public void Update(IBfParentOrder order)
         {
-            ParentOrderId = order.ParentOrderId;
-            ParentOrderAcceptanceId = order.ParentOrderAcceptanceId;
-            _orderMethod = order.ParentOrderType;
+            OrderId = order.OrderId;
+            AcceptanceId = order.AcceptanceId;
+            _orderMethod = order.OrderType;
 
             ExpireDate = order.ExpireDate;
-            OrderDate = order.ParentOrderDate;
-
-            ExecutedSize = order.ExecutedSize;
-            Commission = order.TotalCommission;
+            OrderDate = order.OrderDate;
 
             // API 仕様的に実質 Active 状態しか取得できない。
-            switch (order.ParentOrderState)
+            switch (order.State)
             {
                 case BfOrderState.Active:
                     ChangeState(BfxOrderState.Ordered);
@@ -104,56 +99,19 @@ namespace BitFlyerDotNet.Trading
                 default:
                     throw new ArgumentException("Unexpected parent order state.");
             }
+
+            Update(order.Children);
         }
 
-        void Update(BfParentOrderDetail order)
-        {
-            ParentOrderId = order.ParentOrderId;
-            MinuteToExpire = order.MinuteToExpire;
-
-            if (_childOrders.Count == 0)
-            {
-                for (int childIndex = 0; childIndex < order.Parameters.Length; childIndex++)
-                {
-                    var childOrder = new BfxChildOrder(ProductCode, order.Parameters[childIndex]);
-                    childOrder.MinuteToExpire = order.MinuteToExpire;
-                    _childOrders.Add(childOrder);
-                }
-            }
-            else
-            {
-                for (int childIndex = 0; childIndex < _childOrders.Count; childIndex++)
-                {
-                    _childOrders[childIndex].Update(order.Parameters[childIndex]);
-                    _childOrders[childIndex].MinuteToExpire = order.MinuteToExpire;
-                }
-            }
-
-            if (order.OrderMethod == BfOrderType.Simple)
-            {
-                var childOrder = _childOrders[0];
-                OrderType = childOrder.OrderType;
-                Side = childOrder.Side;
-                OrderSize = childOrder.OrderSize;
-                OrderPrice = childOrder.OrderPrice;
-                TriggerPrice = childOrder.TriggerPrice;
-                TrailOffset = childOrder.TrailOffset;
-            }
-            else
-            {
-                OrderType = order.OrderMethod;
-            }
-        }
-
-        public void Update(BfChildOrder[] childOrders)
+        public void Update(IBfChildOrder[] childOrders)
         {
             if (childOrders.Length == 0) // input is empty
             {
                 return;
             }
-            else if (_childOrders.Count == childOrders.Length) // input it full of content
+            else if (_childOrders.Length == childOrders.Length) // input it full of content
             {
-                for (int childOrderIndex = 0; childOrderIndex < _childOrders.Count; childOrderIndex++)
+                for (int childOrderIndex = 0; childOrderIndex < _childOrders.Length; childOrderIndex++)
                 {
                     _childOrders[childOrderIndex].Update(childOrders[childOrderIndex]);
                 }
@@ -166,7 +124,7 @@ namespace BitFlyerDotNet.Trading
                 {
                     foreach (var currentOrder in _childOrders)
                     {
-                        if (newOrder.ChildOrderAcceptanceId == currentOrder.ChildOrderAcceptanceId)
+                        if (newOrder.AcceptanceId == currentOrder.AcceptanceId)
                         {
                             currentOrder.Update(newOrder);
                             updatedCount++;
@@ -186,7 +144,7 @@ namespace BitFlyerDotNet.Trading
                 {
                     case BfOrderType.IFD:
                         _childOrders[0].Update(childOrder);
-                        if (childOrder.ChildOrderState == BfOrderState.Completed)
+                        if (childOrder.State == BfOrderState.Completed)
                         {
                             CompletedCount = 1;
                         }
@@ -198,7 +156,7 @@ namespace BitFlyerDotNet.Trading
 
                     case BfOrderType.IFDOCO:
                         _childOrders[0].Update(childOrder);
-                        if (childOrder.ChildOrderState == BfOrderState.Completed)
+                        if (childOrder.State == BfOrderState.Completed)
                         {
                             CompletedCount = 1;
                         }
@@ -278,14 +236,14 @@ namespace BitFlyerDotNet.Trading
 
         public int Update(BfChildOrderEvent coe)
         {
-            var childOrderIndex = _childOrders.FindIndex(e => e.ChildOrderAcceptanceId == coe.ChildOrderAcceptanceId);
+            var childOrderIndex = Array.FindIndex(_childOrders, e => e.AcceptanceId == coe.ChildOrderAcceptanceId);
             _childOrders[childOrderIndex].Update(coe);
             return childOrderIndex;
         }
 
         void ChangeState(BfxOrderState state)
         {
-            Log.Trace($"Parent order status changed: {ParentOrderAcceptanceId} {State} -> {state}");
+            Log.Trace($"Parent order status changed: {AcceptanceId} {State} -> {state}");
             State = state;
         }
 

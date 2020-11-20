@@ -9,17 +9,6 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    // Common interface between BfExecution and BfPrivateExecution
-    public interface IBfExecution
-    {
-        int ExecutionId { get; }
-        BfTradeSide Side { get; }
-        decimal Price { get; }
-        decimal Size { get; }
-        DateTime ExecutedTime { get; }
-        string ChildOrderAcceptanceId { get; }
-    }
-
     public class BfExecution : IBfExecution
     {
         [JsonProperty(PropertyName = "id")]

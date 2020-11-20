@@ -92,5 +92,8 @@ namespace BitFlyerDotNet.LightningApi
                 before = execs.Last().ExecutionId;
             }
         }
+
+        public IEnumerable<BfPrivateExecution> GetPrivateExecutions(BfProductCode productCode, DateTime after)
+            => GetPrivateExecutions(productCode, 0, e => e.ExecutedTime >= after);
     }
 }

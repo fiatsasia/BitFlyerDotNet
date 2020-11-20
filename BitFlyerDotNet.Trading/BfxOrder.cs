@@ -20,11 +20,14 @@ namespace BitFlyerDotNet.Trading
         public decimal? TriggerPrice { get; protected set; }
         public decimal? TrailOffset { get; protected set; }
 
+        public abstract string AcceptanceId { get; protected set; }
+        public abstract string OrderId { get; protected set; }
+
         public int MinuteToExpire { get; internal set; }
         public BfTimeInForce TimeInForce { get; internal set; }
 
         public DateTime? OrderDate { get; protected set; }
-        public DateTime? ExpireDate { get; protected set; }
+        public DateTime? ExpireDate { get; internal set; }
 
         public decimal? ExecutedSize { get; protected set; }
         public decimal? ExecutedPrice { get; protected set; }

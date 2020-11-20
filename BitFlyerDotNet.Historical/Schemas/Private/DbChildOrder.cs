@@ -10,94 +10,265 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    public class DbChildOrder
+    public class DbChildOrder : IBfChildOrder
     {
         [Key]
         [Column(Order = 0)]
-        public uint PagingId { get; private set; }
+        public uint Id { get; set; }
 
-        [Required]
         [Column(Order = 1)]
-        public string ChildOrderId { get; private set; }
+        public uint PagingId { get; set; }
 
         [Required]
         [Column(Order = 2)]
-        public string ProductCode { get; private set; }
+        public BfProductCode ProductCode { get; set; }
 
         [Required]
         [Column(Order = 3)]
-        public BfTradeSide Side { get; private set; }
+        public BfTradeSide Side { get; set; }
 
         [Required]
         [Column(Order = 4)]
-        public BfOrderType ChildOrderType { get; private set; }
+        public BfOrderType OrderType { get; set; }
 
-        [Required]
         [Column(Order = 5)]
-        public decimal Price { get; private set; } // value is 0 when executed by market price
+        public decimal? OrderPrice { get; set; }
 
         [Required]
         [Column(Order = 6)]
-        public decimal AveragePrice { get; private set; }
+        public decimal OrderSize { get; set; }
 
-        [Required]
         [Column(Order = 7)]
-        public decimal Size { get; private set; }
+        public decimal? TriggerPrice { get; set; }
 
-        [Required]
         [Column(Order = 8)]
-        public BfOrderState ChildOrderState { get; private set; }
+        public decimal? Offset { get; set; }
 
-        [Required]
         [Column(Order = 9)]
-        public DateTime ExpireDate { get; private set; }
+        public int? MinuteToExpire { get; set; }
 
-        [Required]
         [Column(Order = 10)]
-        public DateTime ChildOrderDate { get; private set; }
+        public BfTimeInForce? TimeInForce { get; set; }
 
-        [Required]
         [Column(Order = 11)]
-        public string ChildOrderAcceptanceId { get; private set; }
+        public string AcceptanceId { get; set; }
 
-        [Required]
         [Column(Order = 12)]
-        public decimal OutstandingSize { get; private set; }
+        public string OrderId { get; set; }
 
-        [Required]
         [Column(Order = 13)]
-        public decimal CancelSize { get; private set; }
+        public BfOrderState State { get; set; }
 
-        [Required]
         [Column(Order = 14)]
-        public decimal ExecutedSize { get; private set; }
+        public DateTime? OrderDate { get; set; }
 
-        [Required]
         [Column(Order = 15)]
-        public decimal TotalCommission { get; private set; }
+        public DateTime? ExpireDate { get; set; }
+
+        [Column(Order = 16)]
+        public decimal? ExecutedSize { get; set; }
+
+        [Column(Order = 17)]
+        public DateTime? CloseDate { get; set; }
+
+        [Column(Order = 18)]
+        public string FailedReason { get; set; }
+
+        // Parent linkage
+        [Column(Order = 19)]
+        public string ParentOrderAcceptanceId { get; set; }
+
+        [Column(Order = 20)]
+        public string ParentOrderId { get; set; }
+
+        [Column(Order = 21)]
+        public int ChildOrderIndex { get; set; }
+
+        [NotMapped]
+        public IBfPrivateExecution[] Executions { get; set; }
 
         public DbChildOrder()
         {
         }
 
-        public DbChildOrder(BfChildOrder order)
+        public DbChildOrder(BfChildOrderRequest request, string childOrderAcceptanceId)
+        {
+            AcceptanceId = childOrderAcceptanceId;
+
+            ProductCode = request.ProductCode;
+            OrderType = request.ChildOrderType;
+            Side = request.Side;
+            if (OrderType == BfOrderType.Limit)
+            {
+                OrderPrice = request.Price;
+            }
+            OrderSize = request.Size;
+            MinuteToExpire = request.MinuteToExpire;
+
+            ChildOrderIndex = -1;
+        }
+
+        public DbChildOrder(BfProductCode productCode, BfChildOrder order)
+        {
+            ProductCode = productCode;
+            Side = order.Side;
+            OrderType = order.ChildOrderType;
+            OrderSize = order.Size;
+
+            ChildOrderIndex = -1;
+
+            Update(order);
+        }
+
+        public void Update(BfChildOrder order)
         {
             PagingId = order.PagingId;
-            ChildOrderId = order.ChildOrderId;
-            ProductCode = order.ProductCode;
-            Side = order.Side;
-            ChildOrderType = order.ChildOrderType;
-            Price = order.Price;
-            AveragePrice = order.AveragePrice;
-            Size = order.Size;
-            ChildOrderState = order.ChildOrderState;
+            AcceptanceId = order.ChildOrderAcceptanceId;
+            OrderId = order.ChildOrderId;
+            if (order.ChildOrderType != BfOrderType.Market)
+            {
+                OrderPrice = order.Price;
+            }
+            State = order.ChildOrderState;
             ExpireDate = order.ExpireDate;
-            ChildOrderDate = order.ChildOrderDate;
-            ChildOrderAcceptanceId = order.ChildOrderAcceptanceId;
-            OutstandingSize = order.OutstandingSize;
-            CancelSize = order.CancelSize;
+            OrderDate = order.ChildOrderDate;
             ExecutedSize = order.ExecutedSize;
-            TotalCommission = order.TotalCommission;
+        }
+
+        public void Update(BfChildOrderEvent coe)
+        {
+            OrderId = coe.ChildOrderId;
+            AcceptanceId = coe.ChildOrderAcceptanceId; // When child of parent
+
+            switch (coe.EventType)
+            {
+                case BfOrderEventType.Order:
+                    State = BfOrderState.Active;
+                    OrderPrice = coe.Price;
+                    OrderDate = coe.EventDate;
+                    ExpireDate = coe.ExpireDate;
+                    break;
+
+                case BfOrderEventType.OrderFailed:
+                    State = BfOrderState.Rejected;
+                    FailedReason = coe.OrderFailedReason;
+                    CloseDate = coe.EventDate;
+                    break;
+
+                case BfOrderEventType.Cancel:
+                    State = BfOrderState.Canceled;
+                    CloseDate = coe.EventDate;
+                    break;
+
+                case BfOrderEventType.CancelFailed:
+                    State = BfOrderState.Rejected;
+                    CloseDate = coe.EventDate;
+                    FailedReason = "Cancel Failed";
+                    break;
+
+                case BfOrderEventType.Execution:
+                    if (!ExecutedSize.HasValue)
+                    {
+                        ExecutedSize = coe.Size;
+                    }
+                    else
+                    {
+                        ExecutedSize += coe.Size;
+                    }
+                    if (ExecutedSize >= OrderSize)
+                    {
+                        State = BfOrderState.Completed;
+                        CloseDate = coe.EventDate;
+                    }
+                    else
+                    {
+                        State = BfOrderState.Active;
+                    }
+                    break;
+
+                case BfOrderEventType.Expire:
+                    State = BfOrderState.Expired;
+                    CloseDate = coe.EventDate;
+                    break;
+
+                default:
+                    throw new ArgumentException($"{coe.EventType} is not expected.");
+            }
+        }
+
+        //======================================================================
+        // From element of parent order
+        //
+
+        public DbChildOrder(BfParentOrderRequest req, BfParentOrderResponse resp, int childOrderIndex)
+        {
+            ProductCode = req.Parameters[childOrderIndex].ProductCode;
+            Side = req.Parameters[childOrderIndex].Side;
+            OrderType = req.Parameters[childOrderIndex].ConditionType;
+            OrderSize = req.Parameters[childOrderIndex].Size;
+            MinuteToExpire = req.MinuteToExpire;
+            TimeInForce = req.TimeInForce;
+
+            if (OrderType is BfOrderType.Limit or BfOrderType.StopLimit)
+            {
+                OrderPrice = req.Parameters[childOrderIndex].Price;
+            }
+            if (OrderType is BfOrderType.Stop or BfOrderType.StopLimit)
+            {
+                TriggerPrice = req.Parameters[childOrderIndex].TriggerPrice;
+            }
+            if (OrderType == BfOrderType.Trail)
+            {
+                Offset = req.Parameters[childOrderIndex].Offset;
+            }
+
+            ParentOrderAcceptanceId = resp.ParentOrderAcceptanceId;
+            ChildOrderIndex = childOrderIndex;
+        }
+
+        public DbChildOrder(BfProductCode productCode, BfParentOrderDetail order, int childOrderIndex)
+        {
+            ProductCode = productCode;
+            OrderType = order.Parameters[childOrderIndex].ConditionType;
+            Side = order.Parameters[childOrderIndex].Side;
+            OrderSize = order.Parameters[childOrderIndex].Size;
+            ExpireDate = order.ExpireDate;
+            TimeInForce = order.TimeInForce;
+
+            if (OrderType is BfOrderType.Limit or BfOrderType.StopLimit)
+            {
+                OrderPrice = order.Parameters[childOrderIndex].Price;
+            }
+            if (OrderType is BfOrderType.Stop or BfOrderType.StopLimit)
+            {
+                TriggerPrice = order.Parameters[childOrderIndex].TriggerPrice;
+            }
+            if (OrderType == BfOrderType.Trail)
+            {
+                Offset = order.Parameters[childOrderIndex].Offset;
+            }
+
+            ParentOrderAcceptanceId = order.ParentOrderAcceptanceId;
+            ParentOrderId = order.ParentOrderId;
+            ChildOrderIndex = childOrderIndex;
+        }
+
+        public void Update(BfParentOrderEvent poe)
+        {
+            ParentOrderAcceptanceId = poe.ParentOrderAcceptanceId;
+            ParentOrderId = poe.ParentOrderId;
+            AcceptanceId = poe.ChildOrderAcceptanceId;
+            ChildOrderIndex = poe.ChildOrderIndex;
+
+            switch (poe.EventType)
+            {
+                case BfOrderEventType.Trigger:
+                    ExpireDate = poe.ExpireDate;
+                    break;
+
+                case BfOrderEventType.Complete:
+                    break;
+            }
         }
     }
 }

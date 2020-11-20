@@ -105,19 +105,11 @@ namespace BitFlyerDotNet.LightningApi
             return PrivateGetAsync<BfChildOrder[]>(nameof(GetChildOrders), query).Result;
         }
 
-        public IEnumerable<BfChildOrder> GetChildOrders(
-            BfProductCode productCode,
-            BfOrderState orderState,
-            uint before,
-            string childOrderId,
-            string childOrderAcceptanceId,
-            string parentOrderId,
-            Func<BfChildOrder, bool> predicate
-        )
+        public IEnumerable<BfChildOrder> GetChildOrders(BfProductCode productCode, BfOrderState orderState, uint before, Func<BfChildOrder, bool> predicate)
         {
             while (true)
             {
-                var orders = GetChildOrders(productCode, orderState, ReadCountMax, before, 0, childOrderId, childOrderAcceptanceId, parentOrderId).GetContent();
+                var orders = GetChildOrders(productCode, orderState, ReadCountMax, before).GetContent();
                 if (orders.Length == 0)
                 {
                     break;
@@ -139,5 +131,13 @@ namespace BitFlyerDotNet.LightningApi
                 before = orders.Last().PagingId;
             }
         }
+
+        public IEnumerable<BfChildOrder> GetChildOrders(BfProductCode productCode, DateTime after) =>
+            GetChildOrders(productCode, BfOrderState.Active, 0, e => e.ChildOrderDate >= after)
+            .Concat(GetChildOrders(productCode, BfOrderState.Completed, 0, e => e.ChildOrderDate >= after))
+            .Concat(GetChildOrders(productCode, BfOrderState.Canceled, 0, e => e.ChildOrderDate >= after))
+            .Concat(GetChildOrders(productCode, BfOrderState.Expired, 0, e => e.ChildOrderDate >= after))
+            .Concat(GetChildOrders(productCode, BfOrderState.Rejected, 0, e => e.ChildOrderDate >= after))
+            .OrderByDescending(e => e.PagingId);
     }
 }

@@ -7,12 +7,14 @@ using System;
 using System.Linq;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Xml.Linq;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
 
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
+using BitFlyerDotNet.Historical;
 using Newtonsoft.Json;
 
 namespace TradingApiTests
@@ -22,12 +24,14 @@ namespace TradingApiTests
         const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
         const decimal UnexecutableGap = 50000m;
         const string TimeFormat = "yyyy/MM/dd HH:mm:ss.ffff";
+        const string OrderCacheFileName = "TradingApiTests.db3";
 
         static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
         const char ESCAPE = (char)0x1b;
 
         static BfxAccount _account;
         static BfxMarket _market;
+        static OrderSource _orderLog;
         static Dictionary<string, string> Properties;
         static ConcurrentDictionary<Guid, IBfxOrderTransaction> _transactions = new ConcurrentDictionary<Guid, IBfxOrderTransaction>();
         static decimal _orderSize;
@@ -45,6 +49,7 @@ namespace TradingApiTests
                 key = secret = string.Empty;
             }
 
+            var connStr = "data source=" + Path.Combine(Properties["CacheDirectoryPath"].ToString(), OrderCacheFileName);
             using (_account = new BfxAccount(key, secret))
             {
                 _market = _account.GetMarket(ProductCode);
@@ -52,8 +57,10 @@ namespace TradingApiTests
                 _orderSize = ProductCode.GetMinimumOrderSize();
                 _market.OrderTransactionChanged += OnOrderTransactionChanged;
 
+
                 _account.Open();
-                _market.Open();
+                _orderLog = new OrderSource(_account.Client, connStr, ProductCode);
+                _market.Open(_orderLog);
                 _market.GetActiveTransactions().ForEach(e => _transactions[Guid.NewGuid()] = e);
                 while (true)
                 {

@@ -38,7 +38,7 @@ namespace BitFlyerDotNet.LightningApi
     public class BfParentOrderDetail
     {
         [JsonProperty(PropertyName = "id")]
-        public int PagingId { get; private set; }
+        public uint PagingId { get; private set; }
 
         [JsonProperty(PropertyName = "parent_order_id")]
         public string ParentOrderId { get; private set; }
@@ -47,11 +47,18 @@ namespace BitFlyerDotNet.LightningApi
         [JsonConverter(typeof(StringEnumConverter))]
         public BfOrderType OrderMethod { get; private set; }
 
-        [JsonProperty(PropertyName = "minute_to_expire")]
-        public int MinuteToExpire { get; private set; }
+        [JsonProperty(PropertyName = "expire_date")]
+        public DateTime ExpireDate { get; private set; }
+
+        [JsonProperty(PropertyName = "time_in_force")]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public BfTimeInForce TimeInForce { get; set; }
 
         [JsonProperty(PropertyName = "parameters")]
         public BfParentOrderParameter[] Parameters { get; private set; }
+
+        [JsonProperty(PropertyName = "parent_order_acceptance_id")]
+        public string ParentOrderAcceptanceId { get; private set; }
     }
 
     public partial class BitFlyerClient
@@ -64,7 +71,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="parentOrderId"></param>
         /// <param name="parentOrderAcceptanceId"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfParentOrderDetail> GetParentOrder(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
+        public BitFlyerResponse<BfParentOrderDetail> GetParentOrderDetail(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
         {
             if (string.IsNullOrEmpty(parentOrderId) && string.IsNullOrEmpty(parentOrderAcceptanceId))
             {
@@ -77,7 +84,7 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(parentOrderAcceptanceId) ? "&parent_order_acceptance_id=" + parentOrderAcceptanceId : ""
             );
 
-            return PrivateGetAsync<BfParentOrderDetail>(nameof(GetParentOrder), query).Result;
+            return PrivateGetAsync<BfParentOrderDetail>("getparentorder", query).Result;
         }
     }
 }

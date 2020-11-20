@@ -58,7 +58,7 @@ namespace BitFlyerDotNet.LightningApi
         void OnMessageSent(string json) => MessageSent?.Invoke(json);
         void OnMessageReceived(string json, object message) => MessageReceived?.Invoke(json, message);
 
-        CompositeDisposable _disposables = new CompositeDisposable();
+        CompositeDisposable _disposables = new ();
         BitFlyerClient _client;
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace BitFlyerDotNet.LightningApi
         }
 
         // Convert BfProdcutCode (inc. futures) to native product codes
-        Dictionary<BfProductCode, string> _availableMarkets = new Dictionary<BfProductCode, string>();
+        Dictionary<BfProductCode, string> _availableMarkets = new ();
         void GetAvailableMarkets()
         {
             _availableMarkets.Clear();
@@ -153,7 +153,7 @@ namespace BitFlyerDotNet.LightningApi
 #endif
         }
 
-        ConcurrentDictionary<string, IConnectableObservable<BfExecution>> _executionColdSources = new ConcurrentDictionary<string, IConnectableObservable<BfExecution>>();
+        ConcurrentDictionary<string, IConnectableObservable<BfExecution>> _executionColdSources = new ();
         public IObservable<BfExecution> GetExecutionSource(BfProductCode productCode, bool hotStart = false)
         {
             TryOpen();
@@ -190,7 +190,7 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        ConcurrentDictionary<string, IObservable<BfTicker>> _tickSources = new ConcurrentDictionary<string, IObservable<BfTicker>>();
+        ConcurrentDictionary<string, IObservable<BfTicker>> _tickSources = new ();
         public IObservable<BfTicker> GetTickerSource(BfProductCode productCode)
         {
             TryOpen();
@@ -207,7 +207,7 @@ namespace BitFlyerDotNet.LightningApi
             });
         }
 
-        ConcurrentDictionary<string, IObservable<BfOrderBook>> _orderBookSnapshotSources = new ConcurrentDictionary<string, IObservable<BfOrderBook>>();
+        ConcurrentDictionary<string, IObservable<BfOrderBook>> _orderBookSnapshotSources = new ();
         public IObservable<BfOrderBook> GetOrderBookSource(BfProductCode productCode)
         {
             TryOpen();

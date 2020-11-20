@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\BitFlyerDotNet.Historical\BitFlyerDotNet.Historical.csproj" />
     <ProjectReference Include="..\..\BitFlyerDotNet.Trading\BitFlyerDotNet.Trading.csproj" />
   </ItemGroup>
 

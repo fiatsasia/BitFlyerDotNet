@@ -38,5 +38,15 @@ namespace BitFlyerDotNet.Trading
             Commission = exec.Commission;
             OrderId = exec.ChildOrderId;
         }
+
+        public BfxExecution(IBfPrivateExecution exec)
+        {
+            Id = exec.ExecutionId;
+            Time = exec.ExecutedTime;
+            Price = exec.Price;
+            Size = exec.Size;
+            Commission = exec.Commission;
+            OrderId = exec.ChildOrderId;
+        }
     }
 }

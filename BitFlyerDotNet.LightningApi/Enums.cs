@@ -53,7 +53,7 @@ namespace BitFlyerDotNet.LightningApi
 
     public static class BfProductCodeEx
     {
-        static Dictionary<BfProductCode, int> _priceDecimals = new Dictionary<BfProductCode, int>
+        static Dictionary<BfProductCode, int> _priceDecimals = new ()
         {
             { BfProductCode.BTCJPY, 1 },
             { BfProductCode.FXBTCJPY, 1 },
@@ -67,7 +67,7 @@ namespace BitFlyerDotNet.LightningApi
             { BfProductCode.ETHJPY, 1 },
         };
 
-        static Dictionary<string, BfProductCode> _originalTable = new Dictionary<string, BfProductCode>();
+        static Dictionary<string, BfProductCode> _originalTable = new ();
 
         static BfProductCodeEx()
         {
@@ -114,6 +114,7 @@ namespace BitFlyerDotNet.LightningApi
         [EnumMember(Value = "BUYSELL")]
         BuySell,
     }
+
     public static class BfTradeSideExtensions
     {
         public static BfTradeSide GetOpposite(this BfTradeSide side)
@@ -234,6 +235,21 @@ namespace BitFlyerDotNet.LightningApi
 
     public static class BfOrderTypeExtension
     {
+        public static int GetChildCount(this BfOrderType orderType)
+        {
+            return orderType switch
+            {
+                BfOrderType.IFDOCO => 3,
+                BfOrderType.IFD => 2,
+                BfOrderType.OCO => 2,
+                BfOrderType.Simple => 1,
+                BfOrderType.Stop => 1,
+                BfOrderType.StopLimit => 1,
+                BfOrderType.Trail => 1,
+                _ => 0
+            };
+        }
+
         // Send:
         //   BfParentOrderRequest.OrderMethod
         // Receive:
@@ -336,5 +352,21 @@ namespace BitFlyerDotNet.LightningApi
         Complete,
         [EnumMember(Value = "EXPIRE")]
         Expire,
+    }
+
+    public static class BfOrderEventTypeExtension
+    {
+        public static bool IsClosed(this BfOrderEventType eventType)
+        {
+            return eventType switch
+            {
+                BfOrderEventType.Cancel => true,
+                BfOrderEventType.CancelFailed => true,
+                BfOrderEventType.Complete => true,
+                BfOrderEventType.Expire => true,
+                BfOrderEventType.OrderFailed => true,
+                _ => false
+            };
+        }
     }
 }

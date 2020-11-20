@@ -54,7 +54,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode)
         {
-            return Withdraw(new BfWithdrawRequest
+            return Withdraw(new ()
             {
                 CurrencyCode = currencyCode,
                 BankAccountId = bankAccountId,

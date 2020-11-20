@@ -10,13 +10,12 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    public class DbPrivateExecution : IBfExecution
+    public class DbPrivateExecution : IBfPrivateExecution
     {
         [Key]
         [Column(Order = 0)]
         public int ExecutionId { get; set; }
 
-        //[Key]
         [Required]
         [Column(Order = 1)]
         public BfProductCode ProductCode { get; set; }
@@ -39,7 +38,7 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 6)]
-        public decimal Commission { get; set; }
+        public decimal? Commission { get; set; }
 
         //[Key]
         [Required]
@@ -50,6 +49,9 @@ namespace BitFlyerDotNet.Historical
         [Column(Order = 8)]
         public string ChildOrderAcceptanceId { get; set; }
 
+        [Column(Order = 9)]
+        public decimal? SwapForDifference { get; set; }
+
         public DbPrivateExecution()
         {
         }
@@ -58,13 +60,31 @@ namespace BitFlyerDotNet.Historical
         {
             ExecutionId = exec.ExecutionId;
             ProductCode = productCode;
-            ChildOrderId = exec.ChildOrderId;
             Side = exec.Side;
             Price = exec.Price;
             Size = exec.Size;
+
+            ChildOrderId = exec.ChildOrderId;
+            ChildOrderAcceptanceId = exec.ChildOrderAcceptanceId;
+
             Commission = exec.Commission;
             ExecutedTime = exec.ExecutedTime;
-            ChildOrderAcceptanceId = exec.ChildOrderAcceptanceId;
+        }
+
+        public DbPrivateExecution(BfProductCode productCode, BfChildOrderEvent coe)
+        {
+            ExecutionId = coe.ExecutionId;
+            ProductCode = productCode;
+            Side = coe.Side;
+            Price = coe.Price;
+            Size = coe.Size;
+
+            ChildOrderId = coe.ChildOrderId;
+            ChildOrderAcceptanceId = coe.ChildOrderAcceptanceId;
+
+            Commission = coe.Commission;
+            ExecutedTime = coe.EventDate;
+            SwapForDifference = coe.SwapForDifference;
         }
     }
 }

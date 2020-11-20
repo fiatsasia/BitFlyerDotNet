@@ -39,7 +39,7 @@ namespace BitFlyerDotNet.LightningApi
         // Order builders
         public static BfChildOrderRequest MarketPrice(BfProductCode productCode, BfTradeSide side, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
-            return new BfChildOrderRequest
+            return new ()
             {
                 ProductCode = productCode,
                 ChildOrderType = BfOrderType.Market,
@@ -52,7 +52,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public static BfChildOrderRequest LimitPrice(BfProductCode productCode, BfTradeSide side, decimal price, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
-            return new BfChildOrderRequest
+            return new ()
             {
                 ProductCode = productCode,
                 ChildOrderType = BfOrderType.Limit,

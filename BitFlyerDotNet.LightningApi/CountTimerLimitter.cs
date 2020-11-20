@@ -19,7 +19,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             _interval = interval;
             _limitCount = limitCount;
-            _queue = new ConcurrentQueue<DateTime>();
+            _queue = new ();
             _last = DateTime.Now;
         }
 
