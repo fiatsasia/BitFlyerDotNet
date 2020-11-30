@@ -21,6 +21,7 @@ namespace BitFlyerDotNet.Historical
         ConcurrentQueue<Func<bool>> _pendQ = new ();
         Task _procTask;
         bool _exitTask;
+        object _txLock = new object();
 
         public OrderSource(BitFlyerClient client, string connStr, BfProductCode productCode)
         {
@@ -34,14 +35,20 @@ namespace BitFlyerDotNet.Historical
                 {
                     while (!_procQ.IsCompleted)
                     {
-                        if (!_procQ.Take().Invoke())
+                        var proc = _procQ.Take();
+                        lock (_txLock)
                         {
-                            continue;
+                            if (!proc.Invoke())
+                            {
+                                continue;
+                            }
                         }
+
                         if (_exitTask)
                         {
                             break;
                         }
+
                         while (_pendQ.TryDequeue(out Func<bool> pendProc))
                         {
                             _procQ.Add(pendProc);
@@ -60,8 +67,9 @@ namespace BitFlyerDotNet.Historical
             _procTask.Wait();
         }
 
+        #region Initial updates
         //======================================================================
-        // Initializations
+        // Initial updates
         //======================================================================
         public void UpdateRecentParentOrders(DateTime after)
         {
@@ -158,8 +166,13 @@ namespace BitFlyerDotNet.Historical
             }
             _ctx.SaveChanges();
         }
+        #endregion Initial updates
 
-        public void UpdateActiveOrders()
+        #region Manage active orders
+        //======================================================================
+        // Manage active orders
+        //======================================================================
+        void UpdateActiveChildOrders()
         {
             var activeChildren = _client.GetChildOrders(_productCode, BfOrderState.Active).GetContent();
             var inactivatedChildIds = _ctx.ChildOrders.Where(e => e.State == BfOrderState.Active).Select(e => e.AcceptanceId).ToList()
@@ -186,10 +199,16 @@ namespace BitFlyerDotNet.Historical
             {
                 _ctx.Upsert(_productCode, child);
                 var execs = _client.GetPrivateExecutions(_productCode, childOrderAcceptanceId: child.ChildOrderAcceptanceId).GetContent();
-                _ctx.InsertIfNotExits(_productCode, execs);
+                if (execs.Length > 0)
+                {
+                    _ctx.InsertIfNotExits(_productCode, execs);
+                }
             }
             _ctx.SaveChanges();
+        }
 
+        void UpdateActiveParentOrders()
+        {
             // Update active parent orders, descendants and executions
             var activeParents = _client.GetParentOrders(_productCode, BfOrderState.Active).GetContent();
             var inactivatedParents = _ctx.ParentOrders.Where(e => e.State == BfOrderState.Active).ToList()
@@ -216,14 +235,15 @@ namespace BitFlyerDotNet.Historical
                 {
                     recParent.Update(parent, detail);
                 }
-                var childOrders = _client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId).ToArray();
+
+                // Matches child orders and parent orders with generating child index.
+                // - OCO and only single active child, 
+                var children = new Queue<BfChildOrder>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
                 int baseIndex = -1;
-                if (childOrders.Length > 0)
+                if (children.Count > 0)
                 {
-                    baseIndex = int.Parse(childOrders[0].ChildOrderAcceptanceId.Split('-')[2]);
+                    baseIndex = int.Parse(children.Peek().ChildOrderAcceptanceId.Split('-')[2]); // extract last part of acceptance ID
                 }
-                var children = new Queue<BfChildOrder>();
-                childOrders.ForEach(e => children.Enqueue(e));
                 for (int childOrderIndex = 0; childOrderIndex < detail.Parameters.Length; childOrderIndex++)
                 {
                     if (children.Count > 0)
@@ -232,9 +252,12 @@ namespace BitFlyerDotNet.Historical
                         if (relativeIndex == childOrderIndex)
                         {
                             var child = children.Dequeue();
-                            _ctx.Upsert(_productCode, child, parent.ParentOrderAcceptanceId, parent.ParentOrderId, childOrderIndex);
+                            _ctx.Upsert(_productCode, child, detail, childOrderIndex);
                             var execs = _client.GetPrivateExecutions(_productCode, childOrderAcceptanceId: child.ChildOrderAcceptanceId).GetContent();
-                            _ctx.InsertIfNotExits(_productCode, execs);
+                            if (execs.Length > 0)
+                            {
+                                _ctx.InsertIfNotExits(_productCode, execs);
+                            }
                         }
                     }
                 }
@@ -242,8 +265,17 @@ namespace BitFlyerDotNet.Historical
             _ctx.SaveChanges();
         }
 
+        public void UpdateActiveOrders() => _procQ.Add(() =>
+        {
+            UpdateActiveChildOrders();
+            UpdateActiveParentOrders();
+            return true;
+        });
+        #endregion Manage active orders
+
+        #region Update parent orders cache
         //======================================================================
-        // Parent orders
+        // Update parent orders cache
         //======================================================================
         public void OpenParentOrder(BfParentOrderRequest req, BfParentOrderResponse resp) => _procQ.Add(() =>
         {
@@ -286,9 +318,11 @@ namespace BitFlyerDotNet.Historical
             _ctx.SaveChanges();
             return true;
         }
+        #endregion Update parent orders cache
 
+        #region Update child orders cache
         //======================================================================
-        // Child orders
+        // Update child orders cache
         //======================================================================
         public void OpenChildOrder(BfChildOrderRequest req, BfChildOrderResponse resp) => _procQ.Add(() =>
         {
@@ -319,6 +353,8 @@ namespace BitFlyerDotNet.Historical
                         {
                             Log.Trace($"Cancel faile which child order acceptance ID not matched but found parent. COAID:{coe.ChildOrderAcceptanceId}");
                             me.Update(coe);
+                            me.ParentOrderId = sibling.ParentOrderId;
+                            _ctx.SaveChanges();
                             return true;
                         }
                     }
@@ -350,60 +386,90 @@ namespace BitFlyerDotNet.Historical
             _ctx.SaveChanges();
             return true;
         }
+        #endregion Update child orders cache
 
+        #region Query cache
+
+        //======================================================================
+        // Query cache
+        //======================================================================
         public IEnumerable<IBfParentOrder> GetActiveParentOrders()
         {
-            var parents = _ctx.ParentOrders.Where(e => e.State == BfOrderState.Active).ToArray();
-            foreach (var parent in parents)
+            lock (_txLock)
             {
-                parent.Children = new IBfChildOrder[parent.OrderType.GetChildCount()];
-                var children = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == parent.AcceptanceId).ToArray();
-                var childOrderIndex = 0;
-                foreach (var child in children)
+                var parents = _ctx.ParentOrders.Where(e => e.State == BfOrderState.Active).ToArray();
+                foreach (var parent in parents)
                 {
-                    parent.Children[childOrderIndex++].Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).ToArray();
+                    parent.Children = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == parent.AcceptanceId).OrderBy(e => e.ChildOrderIndex).ToArray();
+                    foreach (var child in parent.Children)
+                    {
+                        child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).OrderBy(e => e.ExecutedTime).ToArray();
+                    }
                 }
+                return parents;
             }
-            return parents;
         }
 
         public IEnumerable<IBfChildOrder> GetActiveIndependentChildOrders()
         {
-            var children = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == default && e.State == BfOrderState.Active).ToArray();
-            foreach (var child in children)
+            lock (_txLock)
             {
-                child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).ToArray();
+                var children = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == default && e.State == BfOrderState.Active).ToArray();
+                foreach (var child in children)
+                {
+                    child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).ToArray();
+                }
+                return children;
             }
-            return children;
         }
 
         public IBfParentOrder GetParentOrder(string parentOrderAcceptanceId)
         {
-            var parent = _ctx.FindParentOrder(_productCode, parentOrderAcceptanceId);
-            if (parent == default)
+            lock (_txLock)
             {
-                return default;
-            }
+                var parent = _ctx.FindParentOrder(_productCode, parentOrderAcceptanceId);
+                if (parent == default)
+                {
+                    return default;
+                }
 
-            parent.Children = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == parent.AcceptanceId).ToArray();
-            foreach (var child in parent.Children)
-            {
-                child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).ToArray();
+                parent.Children = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == parent.AcceptanceId).ToArray();
+                foreach (var child in parent.Children)
+                {
+                    child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).ToArray();
+                }
+                return parent;
             }
-            return parent;
         }
 
         public IBfChildOrder GetChildOrder(string childOrderAcceptanceId)
         {
-            var child = _ctx.ChildOrders.Where(e => e.AcceptanceId == childOrderAcceptanceId).FirstOrDefault();
-            if (child == default)
+            lock (_txLock)
             {
-                return default;
+                var child = _ctx.ChildOrders.Where(e => e.AcceptanceId == childOrderAcceptanceId).FirstOrDefault();
+                if (child == default)
+                {
+                    return default;
+                }
+                child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == childOrderAcceptanceId).OrderByDescending(e => e.ExecutedTime).ToArray();
+                return child;
             }
-            child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == childOrderAcceptanceId).OrderByDescending(e => e.ExecutedTime).ToArray();
-            return child;
         }
 
+        public decimal CalculateProfit(TimeSpan span)
+        {
+            lock (_txLock)
+            {
+                var until = DateTime.UtcNow - span;
+                var execs = _ctx.Executions.Where(e => e.ProductCode == _productCode && e.ExecutedTime >= until).OrderBy(e => e.ExecutedTime);
+                return execs.ToList().Select(exec => exec.Amount * (exec.Side == BfTradeSide.Buy ? -1m : 1m)).Sum();
+            }
+        }
+        #endregion Query cache
+
+        //======================================================================
+        // WIPs
+        //======================================================================
         // Private executions
         public IEnumerable<DbPrivateExecution> GetExecutions(BfProductCode productCode, DateTime start, DateTime end)
         {

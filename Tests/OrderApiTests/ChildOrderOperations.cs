@@ -38,7 +38,7 @@ namespace OrderApiTests
                     {
                         case 'S':
                             {
-                                var request = BfChildOrderRequest.MarketPrice(ProductCode, BfTradeSide.Sell, OrderSize);
+                                var request = BfChildOrderRequest.Market(ProductCode, BfTradeSide.Sell, OrderSize);
                                 var content = _client.SendChildOrder(request).GetContent();
                                 _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
                             }
@@ -46,7 +46,7 @@ namespace OrderApiTests
 
                         case 'B':
                             {
-                                var request = BfChildOrderRequest.MarketPrice(ProductCode, BfTradeSide.Buy, OrderSize);
+                                var request = BfChildOrderRequest.Market(ProductCode, BfTradeSide.Buy, OrderSize);
                                 var content = _client.SendChildOrder(request).GetContent();
                                 _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
                             }
@@ -54,7 +54,7 @@ namespace OrderApiTests
 
                         case 'L':
                             {
-                                var request = BfChildOrderRequest.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize);
+                                var request = BfChildOrderRequest.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize);
                                 var content = _client.SendChildOrder(request).GetContent();
                                 _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
                             }
@@ -77,7 +77,7 @@ namespace OrderApiTests
 
                         case 'T':
                             {
-                                var request = BfChildOrderRequest.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize, timeInForce: BfTimeInForce.FOK);
+                                var request = BfChildOrderRequest.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize, timeInForce: BfTimeInForce.FOK);
                                 var content = _client.SendChildOrder(request).GetContent();
                                 _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
                             }
@@ -85,7 +85,7 @@ namespace OrderApiTests
 
                         case 'M':
                             {
-                                var request = BfChildOrderRequest.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize, minuteToExpire: 1);
+                                var request = BfChildOrderRequest.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize, minuteToExpire: 1);
                                 var content = _client.SendChildOrder(request).GetContent();
                                 _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
                             }
@@ -93,7 +93,7 @@ namespace OrderApiTests
 
                         case 'I':
                             {
-                                var request = BfChildOrderRequest.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, 0.001m);
+                                var request = BfChildOrderRequest.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, 0.001m);
                                 var content = _client.SendChildOrder(request).GetContent();
                                 _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
                             }

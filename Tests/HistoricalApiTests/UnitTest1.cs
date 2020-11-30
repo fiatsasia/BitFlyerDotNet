@@ -36,8 +36,8 @@ namespace HistoricalApiTests
             _secret = context.Properties["ApiSecret"].ToString();
             _client = new BitFlyerClient(_key, _secret);
             _cacheDirectoryPath = context.Properties["CacheDirectoryPath"].ToString();
+            _connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "TradingApiTests.db3");
             //_connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
-            _connStr = "data source=" + Path.Combine(_cacheDirectoryPath, "account.db3");
         }
 
         [TestMethod]
@@ -82,21 +82,21 @@ namespace HistoricalApiTests
         }
 
         [TestMethod]
-        public void ExecutionInitialTest()
+        public void InitializeExecutions()
         {
             var account = new OrderSource(_client, _connStr, _productCode);
-            var execs = account.GetExecutions(_productCode, DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
+            var execs = account.GetExecutions(_productCode, DateTime.UtcNow.AddDays(-7), DateTime.UtcNow).ToList();
         }
 
         [TestMethod]
-        public void BalanceInitialTest()
+        public void InitializeBalances()
         {
             var account = new OrderSource(_client, _connStr, _productCode);
             var balances = account.GetBalances(BfCurrencyCode.JPY, DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
         }
 
         [TestMethod]
-        public void CollateralInitialTest()
+        public void InitializeCollaterals()
         {
             var account = new OrderSource(_client, _connStr, _productCode);
             var colls = account.GetCollaterals(DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();

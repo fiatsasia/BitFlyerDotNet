@@ -37,7 +37,7 @@ namespace BitFlyerDotNet.LightningApi
         public bool ShouldSerializeTimeInForce() { return TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
 
         // Order builders
-        public static BfChildOrderRequest MarketPrice(BfProductCode productCode, BfTradeSide side, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        public static BfChildOrderRequest Market(BfProductCode productCode, BfTradeSide side, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return new ()
             {
@@ -50,7 +50,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfChildOrderRequest LimitPrice(BfProductCode productCode, BfTradeSide side, decimal price, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        public static BfChildOrderRequest Limit(BfProductCode productCode, BfTradeSide side, decimal price, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return new ()
             {

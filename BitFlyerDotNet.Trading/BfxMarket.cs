@@ -60,6 +60,11 @@ namespace BitFlyerDotNet.Trading
         {
             Task.Run(() =>
             {
+                if (OrderCache == default)
+                {
+                    return;
+                }
+
                 OrderCache.UpdateActiveOrders();
                 foreach (var parent in _parentOrderTransactions.Values.ToArray())
                 {
@@ -211,7 +216,7 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        public IBfxOrderTransaction CreateTransaction(IBfxOrder order, TimeSpan periodToExpire, BfTimeInForce timeInForce)
+        public IBfxOrderTransaction CreateTransaction(IBfxOrder order, BfTimeInForce timeInForce, TimeSpan periodToExpire)
         {
             switch (order)
             {
@@ -230,7 +235,7 @@ namespace BitFlyerDotNet.Trading
 
         public IBfxOrderTransaction CreateTransaction(IBfxOrder order)
         {
-            return CreateTransaction(order, TimeSpan.Zero, BfTimeInForce.NotSpecified);
+            return CreateTransaction(order, BfTimeInForce.NotSpecified, TimeSpan.Zero);
         }
 
         public Task DispatchTransaction(IBfxOrderTransaction tx)
@@ -250,7 +255,7 @@ namespace BitFlyerDotNet.Trading
 
         public IBfxOrderTransaction PlaceOrder(IBfxOrder order, TimeSpan periodToExpire, BfTimeInForce timeInForce)
         {
-            var tx = CreateTransaction(order, periodToExpire, timeInForce);
+            var tx = CreateTransaction(order, timeInForce, periodToExpire);
             _ = DispatchTransaction(tx);
             return tx;
         }

@@ -5,8 +5,6 @@
 
 using System;
 using System.Linq;
-using System.Collections;
-using System.Collections.Generic;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
@@ -65,6 +63,7 @@ namespace BitFlyerDotNet.Trading
             : this(order.OrderType)
         {
             ProductCode = order.ProductCode;
+            _childOrders = new BfxChildOrder[order.OrderType.GetChildCount()];
             Update(order);
         }
 
@@ -113,7 +112,14 @@ namespace BitFlyerDotNet.Trading
             {
                 for (int childOrderIndex = 0; childOrderIndex < _childOrders.Length; childOrderIndex++)
                 {
-                    _childOrders[childOrderIndex].Update(childOrders[childOrderIndex]);
+                    if (_childOrders[childOrderIndex] == default)
+                    {
+                        _childOrders[childOrderIndex] = new BfxChildOrder(childOrders[childOrderIndex]);
+                    }
+                    else
+                    {
+                        _childOrders[childOrderIndex].Update(childOrders[childOrderIndex]);
+                    }
                 }
                 return;
             }

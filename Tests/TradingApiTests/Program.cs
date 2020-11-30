@@ -25,13 +25,14 @@ namespace TradingApiTests
         const decimal UnexecutableGap = 50000m;
         const string TimeFormat = "yyyy/MM/dd HH:mm:ss.ffff";
         const string OrderCacheFileName = "TradingApiTests.db3";
+        const string TabString = "    ";
 
         static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
         const char ESCAPE = (char)0x1b;
 
         static BfxAccount _account;
         static BfxMarket _market;
-        static OrderSource _orderLog;
+        static OrderSource _orderCache;
         static Dictionary<string, string> Properties;
         static ConcurrentDictionary<Guid, IBfxOrderTransaction> _transactions = new ConcurrentDictionary<Guid, IBfxOrderTransaction>();
         static decimal _orderSize;
@@ -59,17 +60,20 @@ namespace TradingApiTests
 
 
                 _account.Open();
-                _orderLog = new OrderSource(_account.Client, connStr, ProductCode);
-                _market.Open(_orderLog);
+                _orderCache = new OrderSource(_account.Client, connStr, ProductCode);
+                _market.Open(_orderCache);
                 _market.GetActiveTransactions().ForEach(e => _transactions[Guid.NewGuid()] = e);
                 while (true)
                 {
                     Console.WriteLine("===================================================================");
                     Console.WriteLine("S)imple orders");
                     Console.WriteLine("C)onditional orders");
+                    Console.WriteLine("U)nexecutable orders");
+                    Console.WriteLine("");
+                    Console.WriteLine("Active O)rders");
+                    Console.WriteLine("T)oday's Profit");
                     Console.WriteLine("F)ind child orders");
                     Console.WriteLine("Active P)ositions");
-                    Console.WriteLine("Active O)rders");
                     Console.WriteLine("R)etrieve child orders");
                     Console.WriteLine("");
                     Console.Write("Main>");
@@ -86,6 +90,10 @@ namespace TradingApiTests
                                 ConditionalOrders();
                                 break;
 
+                            case 'U':
+                                UnexecutableOrders();
+                                break;
+
                             case 'F':
                                 FindOrders();
                                 break;
@@ -100,6 +108,10 @@ namespace TradingApiTests
 
                             case 'R':
                                 RetrieveChildOrders();
+                                break;
+
+                            case 'T':
+                                Console.WriteLine($"Profit {_orderCache.CalculateProfit(TimeSpan.FromDays(1))} JPY");
                                 break;
 
                             case ESCAPE:
@@ -173,7 +185,7 @@ namespace TradingApiTests
         {
             if (_account.Positions.TotalSize > 0m)
             {
-                var tran = _market.PlaceOrder(BfxOrder.MarketPrice(_account.Positions.Side.GetOpposite(), _account.Positions.TotalSize));
+                var tran = _market.PlaceOrder(BfxOrder.Market(_account.Positions.Side.GetOpposite(), _account.Positions.TotalSize));
                 _transactions[tran.Id] = tran;
             }
         }
@@ -213,12 +225,32 @@ namespace TradingApiTests
 
         static void GetActiveParentOrders()
         {
-            DumpResponse(_account.Client.GetParentOrders(ProductCode, BfOrderState.Active));
+            var parents = _orderCache.GetActiveParentOrders();
+            foreach (var parent in parents)
+            {
+                Console.WriteLine($"{parent.OrderDate} {parent.OrderType}");
+                foreach (var child in parent.Children)
+                {
+                    Console.WriteLine(TabString + $"{child.OrderDate} {child.OrderType} {child.Side}");
+                    foreach (var exec in child.Executions)
+                    {
+                        Console.WriteLine(TabString + TabString + $"{exec.ExecutedTime} P:{exec.Price} S:{exec.Size}");
+                    }
+                }
+            }
         }
 
         static void GetActiveChildOrders()
         {
-            DumpResponse(_account.Client.GetChildOrders(ProductCode, BfOrderState.Active));
+            var children = _orderCache.GetActiveIndependentChildOrders();
+            foreach (var child in children)
+            {
+                Console.WriteLine($"{child.OrderDate} {child.OrderType} {child.Side}");
+                foreach (var exec in child.Executions)
+                {
+                    Console.WriteLine(TabString + $"{exec.ExecutedTime} P:{exec.Price} S:{exec.Size}");
+                }
+            }
         }
 
         static void GetActivePositions()

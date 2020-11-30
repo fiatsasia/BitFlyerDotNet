@@ -10,6 +10,23 @@ using System.Reactive.Disposables;
 
 namespace BitFlyerDotNet.Historical
 {
+    static class MathEx
+    {
+        public static decimal Truncate(this decimal value, int precision)
+        {
+            var step = (decimal)Math.Pow(10, precision);
+            var trunc = Math.Truncate(step * value);
+            return trunc / step;
+        }
+
+        public static decimal Ceiling(this decimal value, int precision)
+        {
+            var step = (decimal)Math.Pow(10, precision);
+            var ceil = Math.Ceiling(step * value);
+            return ceil / step;
+        }
+    }
+
     static class EnumUtil
     {
         public static string ToEnumString<TEnum>(this TEnum type) where TEnum : struct

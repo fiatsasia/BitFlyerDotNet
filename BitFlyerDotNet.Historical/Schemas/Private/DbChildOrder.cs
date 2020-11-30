@@ -103,6 +103,11 @@ namespace BitFlyerDotNet.Historical
                 OrderPrice = request.Price;
             }
             OrderSize = request.Size;
+            TimeInForce = request.TimeInForce;
+            if (TimeInForce == BfTimeInForce.NotSpecified)
+            {
+                TimeInForce = BfTimeInForce.GTC;
+            }
             MinuteToExpire = request.MinuteToExpire;
 
             ChildOrderIndex = -1;
@@ -226,30 +231,35 @@ namespace BitFlyerDotNet.Historical
             ChildOrderIndex = childOrderIndex;
         }
 
-        public DbChildOrder(BfProductCode productCode, BfParentOrderDetail order, int childOrderIndex)
+        public DbChildOrder(BfProductCode productCode, BfParentOrderDetail detail, int childOrderIndex)
         {
             ProductCode = productCode;
-            OrderType = order.Parameters[childOrderIndex].ConditionType;
-            Side = order.Parameters[childOrderIndex].Side;
-            OrderSize = order.Parameters[childOrderIndex].Size;
-            ExpireDate = order.ExpireDate;
-            TimeInForce = order.TimeInForce;
+            Update(detail, childOrderIndex);
+        }
+
+        public void Update(BfParentOrderDetail detail, int childOrderIndex)
+        {
+            OrderType = detail.Parameters[childOrderIndex].ConditionType; // To overwrite limit/market to stop/stop limit/trail
+            Side = detail.Parameters[childOrderIndex].Side;
+            OrderSize = detail.Parameters[childOrderIndex].Size;
+            ExpireDate = detail.ExpireDate;
+            TimeInForce = detail.TimeInForce;
 
             if (OrderType is BfOrderType.Limit or BfOrderType.StopLimit)
             {
-                OrderPrice = order.Parameters[childOrderIndex].Price;
+                OrderPrice = detail.Parameters[childOrderIndex].Price;
             }
             if (OrderType is BfOrderType.Stop or BfOrderType.StopLimit)
             {
-                TriggerPrice = order.Parameters[childOrderIndex].TriggerPrice;
+                TriggerPrice = detail.Parameters[childOrderIndex].TriggerPrice;
             }
             if (OrderType == BfOrderType.Trail)
             {
-                Offset = order.Parameters[childOrderIndex].Offset;
+                Offset = detail.Parameters[childOrderIndex].Offset;
             }
 
-            ParentOrderAcceptanceId = order.ParentOrderAcceptanceId;
-            ParentOrderId = order.ParentOrderId;
+            ParentOrderAcceptanceId = detail.ParentOrderAcceptanceId;
+            ParentOrderId = detail.ParentOrderId;
             ChildOrderIndex = childOrderIndex;
         }
 
@@ -258,7 +268,7 @@ namespace BitFlyerDotNet.Historical
             ParentOrderAcceptanceId = poe.ParentOrderAcceptanceId;
             ParentOrderId = poe.ParentOrderId;
             AcceptanceId = poe.ChildOrderAcceptanceId;
-            ChildOrderIndex = poe.ChildOrderIndex;
+            ChildOrderIndex = poe.ChildOrderIndex - 1;
 
             switch (poe.EventType)
             {

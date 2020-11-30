@@ -12,13 +12,13 @@ namespace BitFlyerDotNet.Historical
 {
     public class DbPrivateExecution : IBfPrivateExecution
     {
-        [Key]
+        [Required]
         [Column(Order = 0)]
-        public int ExecutionId { get; set; }
+        public BfProductCode ProductCode { get; set; }
 
         [Required]
         [Column(Order = 1)]
-        public BfProductCode ProductCode { get; set; }
+        public int ExecutionId { get; set; }
 
         [Required]
         [Column(Order = 2)]
@@ -38,18 +38,21 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 6)]
-        public decimal? Commission { get; set; }
+        public decimal Amount{ get; set; }
 
-        //[Key]
         [Required]
         [Column(Order = 7)]
-        public DateTime ExecutedTime { get; set; }
+        public decimal? Commission { get; set; }
 
         [Required]
         [Column(Order = 8)]
+        public DateTime ExecutedTime { get; set; }
+
+        [Required]
+        [Column(Order = 9)]
         public string ChildOrderAcceptanceId { get; set; }
 
-        [Column(Order = 9)]
+        [Column(Order = 10)]
         public decimal? SwapForDifference { get; set; }
 
         public DbPrivateExecution()
@@ -58,11 +61,19 @@ namespace BitFlyerDotNet.Historical
 
         public DbPrivateExecution(BfProductCode productCode, BfPrivateExecution exec)
         {
-            ExecutionId = exec.ExecutionId;
             ProductCode = productCode;
+            ExecutionId = exec.ExecutionId;
             Side = exec.Side;
             Price = exec.Price;
             Size = exec.Size;
+            if (exec.Side == BfTradeSide.Sell)
+            {
+                Amount = (exec.Price * exec.Size).Truncate(productCode.GetPriceDecimals());
+            }
+            else
+            {
+                Amount = (exec.Price * exec.Size).Ceiling(productCode.GetPriceDecimals());
+            }
 
             ChildOrderId = exec.ChildOrderId;
             ChildOrderAcceptanceId = exec.ChildOrderAcceptanceId;
@@ -73,11 +84,19 @@ namespace BitFlyerDotNet.Historical
 
         public DbPrivateExecution(BfProductCode productCode, BfChildOrderEvent coe)
         {
-            ExecutionId = coe.ExecutionId;
             ProductCode = productCode;
+            ExecutionId = coe.ExecutionId;
             Side = coe.Side;
             Price = coe.Price;
             Size = coe.Size;
+            if (coe.Side == BfTradeSide.Sell)
+            {
+                Amount = (coe.Price * coe.Size).Truncate(productCode.GetPriceDecimals());
+            }
+            else
+            {
+                Amount = (coe.Price * coe.Size).Ceiling(productCode.GetPriceDecimals());
+            }
 
             ChildOrderId = coe.ChildOrderId;
             ChildOrderAcceptanceId = coe.ChildOrderAcceptanceId;

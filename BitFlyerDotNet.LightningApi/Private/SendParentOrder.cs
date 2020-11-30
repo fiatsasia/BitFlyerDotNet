@@ -39,7 +39,7 @@ namespace BitFlyerDotNet.LightningApi
         public bool ShouldSerializeOffset() { return ConditionType == BfOrderType.Trail; }
 
         // Message builders
-        public static BfParentOrderRequestParameter MarketPrice(BfProductCode productCode, BfTradeSide side, decimal size)
+        public static BfParentOrderRequestParameter Market(BfProductCode productCode, BfTradeSide side, decimal size)
         {
             return new ()
             {
@@ -50,7 +50,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfParentOrderRequestParameter LimitPrice(BfProductCode productCode, BfTradeSide side, decimal price, decimal size)
+        public static BfParentOrderRequestParameter Limit(BfProductCode productCode, BfTradeSide side, decimal price, decimal size)
         {
             return new ()
             {
@@ -176,6 +176,10 @@ namespace BitFlyerDotNet.LightningApi
 
         public static BfParentOrderRequest OCO(BfParentOrderRequestParameter first, BfParentOrderRequestParameter second, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
+            if (first.ConditionType == second.ConditionType && first.Side == second.Side)
+            {
+                throw new ArgumentException("OCO child orders should not be same."); // Ordering limitations will start at Dec/2/2020
+            }
             return new ()
             {
                 OrderMethod = BfOrderType.OCO,
@@ -187,6 +191,10 @@ namespace BitFlyerDotNet.LightningApi
 
         public static BfParentOrderRequest IFDOCO(BfParentOrderRequestParameter ifdone, BfParentOrderRequestParameter ocoFirst, BfParentOrderRequestParameter ocoSecond, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
+            if (ocoFirst.ConditionType == ocoSecond.ConditionType && ocoFirst.Side == ocoSecond.Side)
+            {
+                throw new ArgumentException("OCO child orders should not be same."); // Ordering limitations will start at Dec/2/2020
+            }
             return new ()
             {
                 OrderMethod = BfOrderType.IFDOCO,

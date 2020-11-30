@@ -61,8 +61,8 @@ namespace OrderApiTests
                         case 'I':
                             {
                                 var request = BfParentOrderRequest.IFD(
-                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
-                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Buy, _ticker.BestBid - UnexecuteGap, OrderSize)
+                                    BfParentOrderRequestParameter.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
+                                    BfParentOrderRequestParameter.Limit(ProductCode, BfTradeSide.Buy, _ticker.BestBid - UnexecuteGap, OrderSize)
                                 );
                                 var content = _client.SendParentOrder(request).GetContent();
                                 _parentOrderAcceptanceIds.Enqueue(content.ParentOrderAcceptanceId);
@@ -72,8 +72,8 @@ namespace OrderApiTests
                         case 'O':
                             {
                                 var request = BfParentOrderRequest.OCO(
-                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
-                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Buy, _ticker.BestBid - UnexecuteGap, OrderSize)
+                                    BfParentOrderRequestParameter.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
+                                    BfParentOrderRequestParameter.Limit(ProductCode, BfTradeSide.Buy, _ticker.BestBid - UnexecuteGap, OrderSize)
                                 );
                                 var content = _client.SendParentOrder(request).GetContent();
                                 _parentOrderAcceptanceIds.Enqueue(content.ParentOrderAcceptanceId);
@@ -83,9 +83,9 @@ namespace OrderApiTests
                         case 'D':
                             {
                                 var request = BfParentOrderRequest.IFDOCO(
-                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
-                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
-                                    BfParentOrderRequestParameter.LimitPrice(ProductCode, BfTradeSide.Buy, _ticker.BestBid - UnexecuteGap, OrderSize)
+                                    BfParentOrderRequestParameter.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
+                                    BfParentOrderRequestParameter.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize),
+                                    BfParentOrderRequestParameter.Limit(ProductCode, BfTradeSide.Buy, _ticker.BestBid - UnexecuteGap, OrderSize)
                                 );
                                 var content = _client.SendParentOrder(request).GetContent();
                                 _parentOrderAcceptanceIds.Enqueue(content.ParentOrderAcceptanceId);

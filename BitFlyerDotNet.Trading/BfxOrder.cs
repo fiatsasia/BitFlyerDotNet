@@ -48,16 +48,16 @@ namespace BitFlyerDotNet.Trading
         internal abstract void ApplyParameters(BfProductCode productCode, int minutesToExpire, BfTimeInForce timeInForce);
 
         #region Request Builders
-        public static IBfxOrder MarketPrice(BfTradeSide side, decimal size)
+        public static IBfxOrder Market(BfTradeSide side, decimal size)
         {
-            var request = BfChildOrderRequest.MarketPrice(BfProductCode.Unknown, side, size, 0, BfTimeInForce.NotSpecified);
+            var request = BfChildOrderRequest.Market(BfProductCode.Unknown, side, size, 0, BfTimeInForce.NotSpecified);
             var order = new BfxChildOrder(request);
             return order;
         }
 
-        public static IBfxOrder LimitPrice(BfTradeSide side, decimal price, decimal size)
+        public static IBfxOrder Limit(BfTradeSide side, decimal price, decimal size)
         {
-            var request = BfChildOrderRequest.LimitPrice(BfProductCode.Unknown, side, price, size, 0, BfTimeInForce.NotSpecified);
+            var request = BfChildOrderRequest.Limit(BfProductCode.Unknown, side, price, size, 0, BfTimeInForce.NotSpecified);
             var order = new BfxChildOrder(request);
             return order;
         }

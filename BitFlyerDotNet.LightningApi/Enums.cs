@@ -55,16 +55,16 @@ namespace BitFlyerDotNet.LightningApi
     {
         static Dictionary<BfProductCode, int> _priceDecimals = new ()
         {
-            { BfProductCode.BTCJPY, 1 },
-            { BfProductCode.FXBTCJPY, 1 },
+            { BfProductCode.BTCJPY, 0 },
+            { BfProductCode.FXBTCJPY, 0 },
             { BfProductCode.ETHBTC, 5 },
             { BfProductCode.BCHBTC, 5 },
             { BfProductCode.BTCUSD, 2 },
             { BfProductCode.BTCEUR, 2 },
-            { BfProductCode.BTCJPYMAT1WK, 1 },
-            { BfProductCode.BTCJPYMAT2WK, 1 },
-            { BfProductCode.BTCJPYMAT3M, 1 },
-            { BfProductCode.ETHJPY, 1 },
+            { BfProductCode.BTCJPYMAT1WK, 0 },
+            { BfProductCode.BTCJPYMAT2WK, 0 },
+            { BfProductCode.BTCJPYMAT3M, 0 },
+            { BfProductCode.ETHJPY, 0 },
         };
 
         static Dictionary<string, BfProductCode> _originalTable = new ();
@@ -368,5 +368,13 @@ namespace BitFlyerDotNet.LightningApi
                 _ => false
             };
         }
+    }
+
+    public enum BfCollateralReason
+    {
+        Post,
+        Clearing,
+        Cancel,
+        SFD,
     }
 }

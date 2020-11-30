@@ -33,6 +33,7 @@ namespace BitFlyerDotNet.Historical
             modelBuilder.Entity<DbParentOrder>().HasIndex(b => b.PagingId);
             modelBuilder.Entity<DbParentOrder>().HasIndex(b => b.AcceptanceId);
             modelBuilder.Entity<DbParentOrder>().HasIndex(b => b.OrderId);
+            modelBuilder.Entity<DbParentOrder>().HasIndex(b => b.State);
             modelBuilder.Entity<DbParentOrder>().HasIndex(b => b.OrderDate);
 
             modelBuilder.Entity<DbChildOrder>().Property(e => e.Id).ValueGeneratedOnAdd();
@@ -40,11 +41,12 @@ namespace BitFlyerDotNet.Historical
             modelBuilder.Entity<DbChildOrder>().HasIndex(b => b.ProductCode);
             modelBuilder.Entity<DbChildOrder>().HasIndex(b => b.AcceptanceId);
             modelBuilder.Entity<DbChildOrder>().HasIndex(b => b.OrderId);
+            modelBuilder.Entity<DbChildOrder>().HasIndex(b => b.State);
             modelBuilder.Entity<DbChildOrder>().HasIndex(b => b.OrderDate);
             modelBuilder.Entity<DbChildOrder>().HasIndex(b => b.ParentOrderAcceptanceId);
             modelBuilder.Entity<DbChildOrder>().HasIndex(b => b.ChildOrderIndex);
 
-            modelBuilder.Entity<DbPrivateExecution>().HasIndex(b => b.ProductCode);
+            modelBuilder.Entity<DbPrivateExecution>().HasKey(b => new { b.ProductCode, b.ExecutionId }); // multiple key
             modelBuilder.Entity<DbPrivateExecution>().HasIndex(b => b.ChildOrderId);
             modelBuilder.Entity<DbPrivateExecution>().HasIndex(b => b.ExecutedTime);
 
@@ -115,6 +117,22 @@ namespace BitFlyerDotNet.Historical
                 rec.ParentOrderAcceptanceId = parentOrderAcceptanceId;
                 rec.ParentOrderId = parentOrderId;
                 rec.ChildOrderIndex = childOrderIndex;
+                rec.Update(order);
+            }
+        }
+
+        public void Upsert(BfProductCode productCode, BfChildOrder order, BfParentOrderDetail detail, int childOrderIndex)
+        {
+            var rec = ChildOrders.Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
+            if (rec == default)
+            {
+                rec = new DbChildOrder(productCode, detail, childOrderIndex);
+                rec.Update(order);
+                ChildOrders.Add(rec);
+            }
+            else
+            {
+                rec.Update(detail, childOrderIndex);
                 rec.Update(order);
             }
         }

@@ -61,9 +61,12 @@ namespace BitFlyerDotNet.Historical
             OrderType = req.OrderMethod;
             MinuteToExpire = req.MinuteToExpire;
             TimeInForce = req.TimeInForce;
+            if (TimeInForce == BfTimeInForce.NotSpecified)
+            {
+                TimeInForce = BfTimeInForce.GTC;
+            }
             AcceptanceId = resp.ParentOrderAcceptanceId;
-            MinuteToExpire = req.MinuteToExpire; //
-            TimeInForce = req.TimeInForce;
+            MinuteToExpire = req.MinuteToExpire;
         }
 
         public DbParentOrder(BfProductCode productCode, BfParentOrderDetail order)
