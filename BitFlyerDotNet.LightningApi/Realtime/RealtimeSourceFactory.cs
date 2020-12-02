@@ -153,8 +153,8 @@ namespace BitFlyerDotNet.LightningApi
 #endif
         }
 
-        ConcurrentDictionary<string, IConnectableObservable<BfExecution>> _executionColdSources = new ();
-        public IObservable<BfExecution> GetExecutionSource(BfProductCode productCode, bool hotStart = false)
+        ConcurrentDictionary<string, IConnectableObservable<BfaExecution>> _executionColdSources = new ();
+        public IObservable<BfaExecution> GetExecutionSource(BfProductCode productCode, bool hotStart = false)
         {
             TryOpen();
             var symbol = _availableMarkets[productCode];

@@ -9,7 +9,7 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfParentOrderParameter
+    public class BfaParentOrderParameter
     {
         [JsonProperty(PropertyName = "product_code")]
         public string ProductCode { get; private set; }
@@ -35,7 +35,7 @@ namespace BitFlyerDotNet.LightningApi
         public decimal Offset { get; private set; }
     }
 
-    public class BfParentOrderDetail
+    public class BfaParentOrderDetail
     {
         [JsonProperty(PropertyName = "id")]
         public uint PagingId { get; private set; }
@@ -55,7 +55,7 @@ namespace BitFlyerDotNet.LightningApi
         public BfTimeInForce TimeInForce { get; set; }
 
         [JsonProperty(PropertyName = "parameters")]
-        public BfParentOrderParameter[] Parameters { get; private set; }
+        public BfaParentOrderParameter[] Parameters { get; private set; }
 
         [JsonProperty(PropertyName = "parent_order_acceptance_id")]
         public string ParentOrderAcceptanceId { get; private set; }
@@ -71,7 +71,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="parentOrderId"></param>
         /// <param name="parentOrderAcceptanceId"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfParentOrderDetail> GetParentOrderDetail(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
+        public BitFlyerResponse<BfaParentOrderDetail> GetParentOrderDetail(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
         {
             if (string.IsNullOrEmpty(parentOrderId) && string.IsNullOrEmpty(parentOrderAcceptanceId))
             {
@@ -84,7 +84,7 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(parentOrderAcceptanceId) ? "&parent_order_acceptance_id=" + parentOrderAcceptanceId : ""
             );
 
-            return PrivateGetAsync<BfParentOrderDetail>("getparentorder", query).Result;
+            return PrivateGetAsync<BfaParentOrderDetail>("getparentorder", query).Result;
         }
     }
 }

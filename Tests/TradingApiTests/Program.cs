@@ -11,7 +11,6 @@ using System.IO;
 using System.Xml.Linq;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
-
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
 using BitFlyerDotNet.Historical;
@@ -50,7 +49,7 @@ namespace TradingApiTests
                 key = secret = string.Empty;
             }
 
-            var connStr = "data source=" + Path.Combine(Properties["CacheDirectoryPath"].ToString(), OrderCacheFileName);
+            var connStr = "data source=" + Path.Combine(Properties["CacheDirectoryPath"], OrderCacheFileName);
             using (_account = new BfxAccount(key, secret))
             {
                 _market = _account.GetMarket(ProductCode);

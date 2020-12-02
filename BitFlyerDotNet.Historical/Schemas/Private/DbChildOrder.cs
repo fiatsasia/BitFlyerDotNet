@@ -113,7 +113,7 @@ namespace BitFlyerDotNet.Historical
             ChildOrderIndex = -1;
         }
 
-        public DbChildOrder(BfProductCode productCode, BfChildOrder order)
+        public DbChildOrder(BfProductCode productCode, BfaChildOrder order)
         {
             ProductCode = productCode;
             Side = order.Side;
@@ -125,7 +125,7 @@ namespace BitFlyerDotNet.Historical
             Update(order);
         }
 
-        public void Update(BfChildOrder order)
+        public void Update(BfaChildOrder order)
         {
             PagingId = order.PagingId;
             AcceptanceId = order.ChildOrderAcceptanceId;
@@ -231,13 +231,13 @@ namespace BitFlyerDotNet.Historical
             ChildOrderIndex = childOrderIndex;
         }
 
-        public DbChildOrder(BfProductCode productCode, BfParentOrderDetail detail, int childOrderIndex)
+        public DbChildOrder(BfProductCode productCode, BfaParentOrderDetail detail, int childOrderIndex)
         {
             ProductCode = productCode;
             Update(detail, childOrderIndex);
         }
 
-        public void Update(BfParentOrderDetail detail, int childOrderIndex)
+        public void Update(BfaParentOrderDetail detail, int childOrderIndex)
         {
             OrderType = detail.Parameters[childOrderIndex].ConditionType; // To overwrite limit/market to stop/stop limit/trail
             Side = detail.Parameters[childOrderIndex].Side;

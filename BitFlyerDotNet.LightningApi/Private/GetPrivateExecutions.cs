@@ -11,7 +11,7 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfPrivateExecution : IBfExecution
+    public class BfaPrivateExecution : IBfExecution
     {
         [JsonProperty(PropertyName = "id")]
         public int ExecutionId { get; private set; }
@@ -52,7 +52,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="childOrderId"></param>
         /// <param name="childOrderAcceptanceId"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfPrivateExecution[]> GetPrivateExecutions(BfProductCode productCode, int count = 0, int before = 0, int after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
+        public BitFlyerResponse<BfaPrivateExecution[]> GetPrivateExecutions(BfProductCode productCode, int count = 0, int before = 0, int after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
         {
             var query = string.Format("product_code={0}{1}{2}{3}{4}{5}",
                 productCode.ToEnumString(),
@@ -63,10 +63,10 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(childOrderAcceptanceId) ? "&child_order_acceptance_id=" + childOrderAcceptanceId : ""
             );
 
-            return PrivateGetAsync<BfPrivateExecution[]>("getexecutions", query).Result;
+            return PrivateGetAsync<BfaPrivateExecution[]>("getexecutions", query).Result;
         }
 
-        public IEnumerable<BfPrivateExecution> GetPrivateExecutions(BfProductCode productCode, int before, Func<BfPrivateExecution, bool> predicate)
+        public IEnumerable<BfaPrivateExecution> GetPrivateExecutions(BfProductCode productCode, int before, Func<BfaPrivateExecution, bool> predicate)
         {
             while (true)
             {
@@ -93,7 +93,7 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        public IEnumerable<BfPrivateExecution> GetPrivateExecutions(BfProductCode productCode, DateTime after)
+        public IEnumerable<BfaPrivateExecution> GetPrivateExecutions(BfProductCode productCode, DateTime after)
             => GetPrivateExecutions(productCode, 0, e => e.ExecutedTime >= after);
     }
 }

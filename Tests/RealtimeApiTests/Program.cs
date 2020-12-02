@@ -117,7 +117,7 @@ namespace RealtimeApiTests
             Console.Write("Message received: ");
             switch (message)
             {
-                case BfExecution[] execs:
+                case BfaExecution[] execs:
                     Console.WriteLine($"BfExecution[{execs.Length}]:");
                     break;
 

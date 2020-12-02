@@ -4,8 +4,9 @@
 //
 
 using System;
+using BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.LightningApi
+namespace BitFlyerDotNet
 {
     public interface IBfChildOrder
     {

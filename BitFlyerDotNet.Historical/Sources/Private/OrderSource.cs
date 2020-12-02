@@ -86,7 +86,7 @@ namespace BitFlyerDotNet.Historical
                     _ctx.ParentOrders.Add(new DbParentOrder(_productCode, parent, detail));
                 }
 
-                var children = new Queue<BfChildOrder>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
+                var children = new Queue<BfaChildOrder>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
                 var baseIndex = -1;
                 if (children.Count > 0)
                 {
@@ -238,7 +238,7 @@ namespace BitFlyerDotNet.Historical
 
                 // Matches child orders and parent orders with generating child index.
                 // - OCO and only single active child, 
-                var children = new Queue<BfChildOrder>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
+                var children = new Queue<BfaChildOrder>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
                 int baseIndex = -1;
                 if (children.Count > 0)
                 {

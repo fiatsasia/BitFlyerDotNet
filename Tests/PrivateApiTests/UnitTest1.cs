@@ -67,7 +67,7 @@ namespace PrivateApiTests
             Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
-        void Dump(BfChildOrder order)
+        void Dump(BfaChildOrder order)
         {
             Console.WriteLine($"{order.PagingId} {order.ChildOrderDate} {order.ChildOrderType} {order.ChildOrderState}");
         }

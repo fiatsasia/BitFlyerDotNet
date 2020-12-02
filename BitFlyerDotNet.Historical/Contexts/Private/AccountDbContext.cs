@@ -87,21 +87,21 @@ namespace BitFlyerDotNet.Historical
             ChildOrders.Add(new DbChildOrder(req, resp.ChildOrderAcceptanceId));
         }
 
-        public void Update(BfProductCode productCode, BfChildOrder order)
+        public void Update(BfProductCode productCode, BfaChildOrder order)
         {
             ChildOrders.Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).First().Update(order);
         }
 
-        public void Upsert(BfProductCode productCode, BfChildOrder order)
+        public void Upsert(BfProductCode productCode, BfaChildOrder order)
         {
             var rec = ChildOrders.Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
             if (rec == default) { ChildOrders.Add(new DbChildOrder(productCode, order)); }
             else { rec.Update(order); }
         }
 
-        public void Upsert(BfProductCode productCode, IEnumerable<BfChildOrder> orders) => orders.ForEach(e => Upsert(productCode, e));
+        public void Upsert(BfProductCode productCode, IEnumerable<BfaChildOrder> orders) => orders.ForEach(e => Upsert(productCode, e));
 
-        public void Upsert(BfProductCode productCode, BfChildOrder order, string parentOrderAcceptanceId, string parentOrderId, int childOrderIndex)
+        public void Upsert(BfProductCode productCode, BfaChildOrder order, string parentOrderAcceptanceId, string parentOrderId, int childOrderIndex)
         {
             var rec = ChildOrders.Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
             if (rec == default)
@@ -121,7 +121,7 @@ namespace BitFlyerDotNet.Historical
             }
         }
 
-        public void Upsert(BfProductCode productCode, BfChildOrder order, BfParentOrderDetail detail, int childOrderIndex)
+        public void Upsert(BfProductCode productCode, BfaChildOrder order, BfaParentOrderDetail detail, int childOrderIndex)
         {
             var rec = ChildOrders.Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
             if (rec == default)
@@ -137,7 +137,7 @@ namespace BitFlyerDotNet.Historical
             }
         }
 
-        public void InsertIfNotExits(BfProductCode productCode, BfPrivateExecution exec)
+        public void InsertIfNotExits(BfProductCode productCode, BfaPrivateExecution exec)
         {
             var rec = Executions.Where(e => e.ExecutionId == exec.ExecutionId).FirstOrDefault();
             if (rec == default)
@@ -146,6 +146,6 @@ namespace BitFlyerDotNet.Historical
             }
         }
 
-        public void InsertIfNotExits(BfProductCode productCode, IEnumerable<BfPrivateExecution> execs) => execs.ForEach(e => InsertIfNotExits(productCode, e));
+        public void InsertIfNotExits(BfProductCode productCode, IEnumerable<BfaPrivateExecution> execs) => execs.ForEach(e => InsertIfNotExits(productCode, e));
     }
 }

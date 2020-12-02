@@ -1,6 +1,8 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
@@ -40,12 +42,9 @@ namespace BitFlyerDotNet.Historical
         public DateTime ExpireDate { get; set; }
 
         [Column(Order = 8)]
-        public int MinuteToExpire { get; set; }
-
-        [Column(Order = 9)]
         public BfTimeInForce TimeInForce { get; set; }
 
-        [Column(Order = 10)]
+        [Column(Order = 9)]
         public string OrderFailedReason { get; set; }
 
         [NotMapped]
@@ -59,17 +58,15 @@ namespace BitFlyerDotNet.Historical
         {
             ProductCode = productCode;
             OrderType = req.OrderMethod;
-            MinuteToExpire = req.MinuteToExpire;
             TimeInForce = req.TimeInForce;
             if (TimeInForce == BfTimeInForce.NotSpecified)
             {
                 TimeInForce = BfTimeInForce.GTC;
             }
             AcceptanceId = resp.ParentOrderAcceptanceId;
-            MinuteToExpire = req.MinuteToExpire;
         }
 
-        public DbParentOrder(BfProductCode productCode, BfParentOrderDetail order)
+        public DbParentOrder(BfProductCode productCode, BfaParentOrderDetail order)
         {
             ProductCode = productCode;
 
@@ -81,7 +78,7 @@ namespace BitFlyerDotNet.Historical
             AcceptanceId = order.ParentOrderAcceptanceId;
         }
 
-        public DbParentOrder(BfProductCode productCode, BfParentOrder order, BfParentOrderDetail detail)
+        public DbParentOrder(BfProductCode productCode, BfaParentOrder order, BfaParentOrderDetail detail)
         {
             ProductCode = productCode;
 
@@ -95,7 +92,7 @@ namespace BitFlyerDotNet.Historical
             OrderDate = order.ParentOrderDate;
         }
 
-        public void Update(BfParentOrder order, BfParentOrderDetail detail)
+        public void Update(BfaParentOrder order, BfaParentOrderDetail detail)
         {
             PagingId = order.PagingId;
             State = order.ParentOrderState;

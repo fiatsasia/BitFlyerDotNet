@@ -9,7 +9,7 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfExecution : IBfExecution
+    public class BfaExecution : IBfExecution
     {
         [JsonProperty(PropertyName = "id")]
         public int ExecutionId { get; private set; }
@@ -48,7 +48,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfExecution[]> GetExecutions(BfProductCode productCode, int count = 0, int before = 0, int after = 0)
+        public BitFlyerResponse<BfaExecution[]> GetExecutions(BfProductCode productCode, int count = 0, int before = 0, int after = 0)
         {
             var query = string.Format("product_code={0}{1}{2}{3}",
                 productCode.ToEnumString(),
@@ -56,7 +56,7 @@ namespace BitFlyerDotNet.LightningApi
                 (before > 0) ? $"&before={before}" : "",
                 (after > 0) ? $"&after={after}" : ""
             );
-            return GetAsync<BfExecution[]>(nameof(GetExecutions), query).Result;
+            return GetAsync<BfaExecution[]>(nameof(GetExecutions), query).Result;
         }
     }
 }

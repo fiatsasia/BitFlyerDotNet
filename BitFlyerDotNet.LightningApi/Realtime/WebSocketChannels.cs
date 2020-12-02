@@ -10,17 +10,15 @@ using System.Linq;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Threading;
-using System.IO;
-using System.Net.Sockets;
+using System.Threading.Tasks;
+using System.Net.WebSockets;
 using System.Security.Cryptography;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
-using WebSocket4Net;
-using System.Threading.Tasks;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    class WebSocketChannels3 : IDisposable
+    class WebSocketChannels : IDisposable
     {
         public static int WebSocketReconnectionIntervalMs { get; set; } = 3000;
         public long TotalReceivedMessageChars { get; private set; }
@@ -31,23 +29,26 @@ namespace BitFlyerDotNet.LightningApi
         public Action<string> MessageSent;
         public Action<string, object> MessageReceived;
 
-        WebSocket _webSocket;
+        ClientWebSocket _socket;
+        WebSocketStream _istream;
+        WebSocketStream _ostream;
+        Task _receiver;
+
         Timer _reconnectionTimer;
         AutoResetEvent _openedEvent = new (false);
-        AutoResetEvent _closedEvent = new (false);
         ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new ();
 
         string _uri;
         string _apiKey;
         HMACSHA256 _hash;
 
-        public WebSocketChannels3(string uri)
+        public WebSocketChannels(string uri)
         {
             _uri = uri;
             CreateWebSocket();
         }
 
-        public WebSocketChannels3(string uri, string apiKey, string apiSecret)
+        public WebSocketChannels(string uri, string apiKey, string apiSecret)
             : this(uri)
         {
             _apiKey = apiKey;
@@ -57,30 +58,36 @@ namespace BitFlyerDotNet.LightningApi
         void CreateWebSocket()
         {
             Log.Trace($"Creating WebSocket...");
-            _webSocket?.Dispose();
+            _socket?.Dispose();
             _opened = false;
 
-            _webSocket = new WebSocket(_uri);
-            _webSocket.Security.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
-            _reconnectionTimer = new Timer(OnReconnection);
+            try
+            {
+                System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+                _socket = new();
+                _socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
 
-            _webSocket.Opened += OnOpened;
-            _webSocket.Closed += OnClosed;
-            _webSocket.MessageReceived += OnMessageReceived;
-            _webSocket.DataReceived += OnDataReceived;
-            _webSocket.Error += OnError;
+                _istream = new WebSocketStream(_socket);
+                _ostream = new WebSocketStream(_socket);
 
-            _openedEvent.Reset();
+                _reconnectionTimer = new Timer(OnReconnection);
+
+                //_socket.DataReceived += OnDataReceived;
+                //_socket.Error += OnError;
+            }
+            catch (AggregateException ex)
+            {
+
+            }
         }
 
         public void Dispose()
         {
-            Log.Trace($"{nameof(WebSocketChannels3)}.Dispose");
+            Log.Trace($"{nameof(WebSocketChannels)}.Dispose");
             _opened = false;
-            _webSocket.CloseAsync();
-            _closedEvent.WaitOne(1000);
-            _webSocket.Dispose();
-            Log.Trace($"{nameof(WebSocketChannels3)}.Dispose exit");
+            _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None).Wait();
+            _socket.Dispose();
+            Log.Trace($"{nameof(WebSocketChannels)}.Dispose exit");
         }
 
         bool _opened = false;
@@ -89,14 +96,57 @@ namespace BitFlyerDotNet.LightningApi
             if (!_opened)
             {
                 Log.Trace("Opening WebSocket...");
-                _opened = true;
-
-                _webSocket.OpenAsync();
-                _openedEvent.WaitOne(10000);
-
-                if (!string.IsNullOrEmpty(_apiKey) && _hash != null)
+                try
                 {
-                    Authenticate();
+                    _opened = true;
+                    _socket.ConnectAsync(new Uri(_uri), CancellationToken.None).Wait();
+                    _receiver = Task.Run(ReaderThread);
+
+                    if (!string.IsNullOrEmpty(_apiKey) && _hash != null)
+                    {
+                        Authenticate();
+                    }
+
+                    OnOpened();
+                }
+                catch (AggregateException ex)
+                {
+                    var wsEx = ex.InnerExceptions.FirstOrDefault() as WebSocketException;
+                    if (wsEx != null)
+                    {
+                        Log.Warn($"WebSocket failed to connect to server. {wsEx.Message}");
+                    }
+                    throw;
+                }
+            }
+        }
+
+        // OrderBook message is the largest that around 20K bytes
+        const int BufferSize = 1024*32; // 32K
+        byte[] buffer = new byte[BufferSize];
+        event Action<string> WsReceived;
+        async void ReaderThread()
+        {
+            while (true)
+            {
+                var length = await _istream.ReadAsync(buffer, 0, buffer.Length, CancellationToken.None);
+                if (length == 0)
+                {
+                    Log.Info("WebSocket ReadAsync respond empty. Disconnected from client or probably disconnected from the server.");
+                    OnClosed();
+                    return; // Thread will be restarted.
+                }
+                try
+                {
+                    var json = Encoding.UTF8.GetString(buffer, 0, length);
+                    OnMessageReceived(json);
+                    WsReceived?.Invoke(json);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn($"WebSocket ReaderThread caused exception: {ex.Message}");
+                    // Call OnError
+                    // Rethrow exception - after alpha
                 }
             }
         }
@@ -105,9 +155,8 @@ namespace BitFlyerDotNet.LightningApi
         {
             Log.Trace("Closing WebSocket...");
             _opened = false;
-            _webSocket.CloseAsync();
-            _closedEvent.WaitOne(1000);
-            _webSocket.Dispose();
+            _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None).Wait();
+            _socket.Dispose();
             Opened = null;
             MessageSent = null;
             MessageReceived = null;
@@ -118,10 +167,13 @@ namespace BitFlyerDotNet.LightningApi
             _webSocketSources[source.ChannelName] = source;
         }
 
-        public void Send(string message)
+        public void Send(string json)
         {
-            _webSocket.Send(message);
-            MessageSent?.Invoke(message);
+            var jsonBytes = Encoding.UTF8.GetBytes(json);
+            _ostream.WriteAsync(jsonBytes, 0, jsonBytes.Length);
+            _ostream.FlushAsync(CancellationToken.None).Wait();
+            Log.Trace($"WebSocket sent: {json}");
+            MessageSent?.Invoke(json);
         }
 
         bool Authenticate()
@@ -146,19 +198,19 @@ namespace BitFlyerDotNet.LightningApi
             // Send auto command and wait response synchronously
             var jsonResult = "";
             var resultReceived = new AutoResetEvent(false);
-            void OnAuthenticateResultReceived(object sender, MessageReceivedEventArgs args)
+            void OnAuthenticateResultReceived(string json)
             {
-                Log.Trace($"WebSocket authention result received. '{args.Message}'");
-                jsonResult = args.Message;
+                Log.Trace($"WebSocket authention result received. '{json}'");
+                jsonResult = json;
                 resultReceived.Set();
             }
 
-            _webSocket.MessageReceived += OnAuthenticateResultReceived;
+            WsReceived += OnAuthenticateResultReceived;
             Log.Trace("WebSocket sending authentication message..");
             Send(authCommand);
             Log.Trace("WebSocket sent authentication message.");
             resultReceived.WaitOne();
-            _webSocket.MessageReceived -= OnAuthenticateResultReceived;
+            WsReceived -= OnAuthenticateResultReceived;
 
             // Parse auth result
             var joResult = (JObject)JsonConvert.DeserializeObject(jsonResult);
@@ -168,7 +220,7 @@ namespace BitFlyerDotNet.LightningApi
             return authResult;
         }
 
-        void OnOpened(object sender, EventArgs args)
+        void OnOpened()
         {
             Log.Trace("WebSocket opened.");
             _reconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
@@ -191,66 +243,28 @@ namespace BitFlyerDotNet.LightningApi
                     Opened?.Invoke();
                 }
             });
-            _openedEvent.Set();
         }
 
-        void OnMessageReceived(object sender, MessageReceivedEventArgs args)
+        void OnMessageReceived(string json)
         {
             //Log.Trace($"Socket message received : {args.Message}");
-            TotalReceivedMessageChars += args.Message.Length;
-            var subscriptionResult = JObject.Parse(args.Message)["params"];
+            TotalReceivedMessageChars += json.Length;
+            var subscriptionResult = JObject.Parse(json)["params"];
             if (subscriptionResult != null)
             {
                 var channel = subscriptionResult["channel"].Value<string>();
                 var message = _webSocketSources[channel].OnMessageReceived(subscriptionResult["message"]);
-                MessageReceived?.Invoke(args.Message, message);
+                MessageReceived?.Invoke(json, message);
             }
             //else (on receive auth result message)
         }
 
-        void OnDataReceived(object sender, WebSocket4Net.DataReceivedEventArgs args)
-        {
-            Log.Trace($"Socket data received : Length={args.Data.Length}");
-        }
-
         public event Action<WebSocketErrorStatus> Error;
-        void OnError(object sender, SuperSocket.ClientEngine.ErrorEventArgs args)
-        {
-            Log.Error($"Socket error : {args.Exception.Message}");
-            // Classifies expected or unexpexted
-            var error = new WebSocketErrorStatus();
-            switch (args.Exception)
-            {
-                case IOException ioex:
-                    error.Message = (ioex.InnerException != null) ? ioex.InnerException.Message : ioex.Message;
-                    break;
 
-                case SocketException sockex:
-                    Log.Error($"Caused socket exception. Will be closed. code:{sockex.SocketErrorCode} {sockex.Message}");
-                    error.SocketError = sockex.SocketErrorCode;
-                    error.Message = sockex.Message;
-                    break;
-
-                default:
-                    switch ((uint)args.Exception.HResult)
-                    {
-                        case 0x80131500: // Bad gateway - probably terminated from host
-                            error.Message = args.Exception.Message;
-                            break;
-
-                        default: // Unexpected exception
-                            throw args.Exception;
-                    }
-                    break;
-            }
-            Error?.Invoke(error);
-        }
-
-        void OnClosed(object sender, EventArgs args)
+        void OnClosed()
         {
             if (!_opened) // from Close() or Dispose()
             {
-                _closedEvent.Set();
                 return;
             }
 
@@ -262,16 +276,14 @@ namespace BitFlyerDotNet.LightningApi
         void OnReconnection(object _)
         {
             _reconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
-            Log.Info($"WebSocket is reopening connection... state={_webSocket.State}");
-            switch (_webSocket.State)
+            Log.Info($"WebSocket is reopening connection... state={_socket.State}");
+            switch (_socket.State)
             {
                 case WebSocketState.None:
                 case WebSocketState.Closed:
                     try
                     {
-                        //CreateWebSocket();
-                        //TryOpen();
-                        _webSocket.OpenAsync(); // Open() だと返ってこない場合がある。
+                        _socket.ConnectAsync(new Uri(_uri), CancellationToken.None).Wait();
                     }
                     catch (Exception ex)
                     {

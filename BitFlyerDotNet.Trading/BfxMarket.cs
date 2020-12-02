@@ -7,10 +7,10 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using BitFlyerDotNet.LightningApi;
-using System.Threading.Tasks;
 
 namespace BitFlyerDotNet.Trading
 {
@@ -25,8 +25,6 @@ namespace BitFlyerDotNet.Trading
         public decimal BestBidPrice { get; private set; }
         public decimal LastTradedPrice { get; private set; }
 
-        public IBfOrderSource OrderCache { get; private set; }
-
         TimeSpan _serverTimeSpan;
         public DateTime ServerTime => DateTime.UtcNow + _serverTimeSpan;
         public IEnumerable<IBfxOrderTransaction> GetActiveTransactions() =>
@@ -36,6 +34,8 @@ namespace BitFlyerDotNet.Trading
 
         // Events
         public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionChanged;
+
+        internal IBfOrderSource OrderCache { get; private set; }
 
         // Private properties
         CompositeDisposable _disposables = new CompositeDisposable();
@@ -49,22 +49,20 @@ namespace BitFlyerDotNet.Trading
             _account = account;
             ProductCode = productCode;
             Config = config ?? new BfxConfiguration();
-
             _serverTimeSpan = TimeSpan.Zero;
             _ticker = new BfxTickerSource(this).Publish().RefCount();
-
             _account.RealtimeSource.ConnectionResumed += RealtimeSource_ConnectionResumed;
         }
 
         void RealtimeSource_ConnectionResumed()
         {
+            if (OrderCache == default)
+            {
+                return;
+            }
+
             Task.Run(() =>
             {
-                if (OrderCache == default)
-                {
-                    return;
-                }
-
                 OrderCache.UpdateActiveOrders();
                 foreach (var parent in _parentOrderTransactions.Values.ToArray())
                 {
@@ -119,6 +117,11 @@ namespace BitFlyerDotNet.Trading
 
         public void LoadMarketInformations()
         {
+            if (OrderCache == default)
+            {
+                return;
+            }
+
             OrderCache.UpdateActiveOrders();
 
             // Load active parent orders
@@ -145,7 +148,7 @@ namespace BitFlyerDotNet.Trading
 
         internal void ForwardChildOrderEvents(BfChildOrderEvent coe)
         {
-            OrderCache.RegisterChildOrderEvent(coe);
+            OrderCache?.RegisterChildOrderEvent(coe);
 
             var tx = _childOrderTransactions.GetOrAdd(coe.ChildOrderAcceptanceId, key => new BfxChildTransactionPlaceHolder());
             if (tx is BfxChildTransactionPlaceHolder placeHolder)
@@ -172,7 +175,7 @@ namespace BitFlyerDotNet.Trading
 
         internal void ForwardParentOrderEvents(BfParentOrderEvent poe)
         {
-            OrderCache.RegisterParentOrderEvent(poe);
+            OrderCache?.RegisterParentOrderEvent(poe);
 
             // Sometimes parent order event arraives faster than send order process completes.
             var tx = _parentOrderTransactions.GetOrAdd(poe.ParentOrderAcceptanceId, key => new BfxParentTransactionPlaceHolder());

@@ -11,7 +11,7 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfChildOrder
+    public class BfaChildOrder
     {
         [JsonProperty(PropertyName = "id")]
         public uint PagingId { get; private set; }
@@ -80,7 +80,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="childOrderAcceptanceId"></param>
         /// <param name="parentOrderId"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfChildOrder[]> GetChildOrders(
+        public BitFlyerResponse<BfaChildOrder[]> GetChildOrders(
             BfProductCode productCode,
             BfOrderState orderState = BfOrderState.Unknown,
             int count = 0,
@@ -102,10 +102,10 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(parentOrderId) ? "&parent_order_id=" + parentOrderId : ""
             );
 
-            return PrivateGetAsync<BfChildOrder[]>(nameof(GetChildOrders), query).Result;
+            return PrivateGetAsync<BfaChildOrder[]>(nameof(GetChildOrders), query).Result;
         }
 
-        public IEnumerable<BfChildOrder> GetChildOrders(BfProductCode productCode, BfOrderState orderState, uint before, Func<BfChildOrder, bool> predicate)
+        public IEnumerable<BfaChildOrder> GetChildOrders(BfProductCode productCode, BfOrderState orderState, uint before, Func<BfaChildOrder, bool> predicate)
         {
             while (true)
             {
@@ -132,7 +132,7 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        public IEnumerable<BfChildOrder> GetChildOrders(BfProductCode productCode, DateTime after) =>
+        public IEnumerable<BfaChildOrder> GetChildOrders(BfProductCode productCode, DateTime after) =>
             GetChildOrders(productCode, BfOrderState.Active, 0, e => e.ChildOrderDate >= after)
             .Concat(GetChildOrders(productCode, BfOrderState.Completed, 0, e => e.ChildOrderDate >= after))
             .Concat(GetChildOrders(productCode, BfOrderState.Canceled, 0, e => e.ChildOrderDate >= after))

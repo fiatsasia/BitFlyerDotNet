@@ -1,6 +1,8 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
@@ -16,7 +18,6 @@ namespace BitFlyerDotNet.LightningApi
         DateTime OrderDate { get; }
         DateTime ExpireDate { get; }
         BfOrderState State { get; }
-        int MinuteToExpire { get; }
         IBfChildOrder[] Children { get; }
     }
 }

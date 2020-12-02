@@ -48,7 +48,7 @@ namespace BitFlyerDotNet.Trading
                     var resp = await Market.Client.SendParentOrderAsync(_order.Request, _cts.Token);
                     if (!resp.IsError)
                     {
-                        Market.OrderCache.OpenParentOrder(_order.Request, resp.GetContent());
+                        Market.OrderCache?.OpenParentOrder(_order.Request, resp.GetContent());
                         _order.Update(resp.GetContent());
                         ChangeState(BfxOrderTransactionState.WaitingOrderAccepted);
                         NotifyEvent(BfxOrderTransactionEventType.OrderSent, Market.ServerTime, resp);

@@ -1,6 +1,8 @@
 ﻿//==============================================================================
 // Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
@@ -18,7 +20,7 @@ namespace BitFlyerDotNet.Historical
 
         public delegate void RealtimeOhlcUpdated(RealtimeOhlc ohlc);
 
-        public RealtimeOhlcSource(ExecutionCachedSourceFactory historicalFactory, BfProductCode productCode, TimeSpan frameSpan, IObservable<BfExecution> realtime)
+        public RealtimeOhlcSource(ExecutionCachedSourceFactory historicalFactory, BfProductCode productCode, TimeSpan frameSpan, IObservable<BfaExecution> realtime)
         {
             IDisposable subscribed = null;
             _source = Observable.Create<RealtimeOhlc>(observer =>
@@ -26,9 +28,9 @@ namespace BitFlyerDotNet.Historical
                 var firstOhlc = default(RealtimeOhlc);
                 var currentOhlc = default(RealtimeOhlc);
 
-                return realtime.Scan(default(BfExecution), (prev, current) =>
+                return realtime.Scan(default(BfaExecution), (prev, current) =>
                 {
-                    if (prev == default(BfExecution))
+                    if (prev == default(BfaExecution))
                     {
                         firstOhlc = currentOhlc = new RealtimeOhlc(current);
                         var refTime = current.ExecutedTime.Round(frameSpan);

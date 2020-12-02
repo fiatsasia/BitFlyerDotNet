@@ -29,7 +29,7 @@ namespace BitFlyerDotNet.Trading
             OrderId = coe.ChildOrderId;
         }
 
-        public BfxExecution(BfPrivateExecution exec)
+        public BfxExecution(BfaPrivateExecution exec)
         {
             Id = exec.ExecutionId;
             Time = exec.ExecutedTime;

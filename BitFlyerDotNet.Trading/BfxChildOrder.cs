@@ -84,7 +84,7 @@ namespace BitFlyerDotNet.Trading
         }
 
         // Market/Limit/Stop/StopLimit/Trail of parent order from market
-        public BfxChildOrder(BfProductCode productCode, BfParentOrderParameter order)
+        public BfxChildOrder(BfProductCode productCode, BfaParentOrderParameter order)
         {
             ProductCode = productCode;
             Update(order);
@@ -124,7 +124,7 @@ namespace BitFlyerDotNet.Trading
             LastUpdatedTime = _executions.Last().Time;
         }
 
-        public void Update(BfParentOrderParameter order)
+        public void Update(BfaParentOrderParameter order)
         {
             OrderType = order.ConditionType;
             Side = order.Side;

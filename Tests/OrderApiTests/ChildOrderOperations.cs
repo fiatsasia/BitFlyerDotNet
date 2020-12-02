@@ -138,7 +138,7 @@ namespace OrderApiTests
                                         break;
                                 }
 
-                                BitFlyerResponse<BfChildOrder[]> resp = null;
+                                BitFlyerResponse<BfaChildOrder[]> resp = null;
                                 if (!string.IsNullOrEmpty(parentOrderId))
                                 {
                                     resp = _client.GetChildOrders(ProductCode, orderState: orderState, parentOrderId: parentOrderId);
