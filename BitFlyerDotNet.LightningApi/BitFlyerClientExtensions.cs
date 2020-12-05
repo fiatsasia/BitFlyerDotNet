@@ -31,5 +31,27 @@ namespace BitFlyerDotNet.LightningApi
             }
             return result.Distinct(e => e.ProductCode);
         }
+
+        public static async IAsyncEnumerable<(BfProductCode ProductCode, string Symbol)> GetAvailableMarketsAsync(this BitFlyerClient client)
+        {
+            await foreach (var markets in client.GetMarketsAllAsync().SelectAwait(async (e) => (await e).GetContent()))
+            {
+                foreach (var market in markets)
+                {
+                    if (market.ProductCode.StartsWith("BTCJPY"))
+                    {
+                        if (string.IsNullOrEmpty(market.Alias))
+                        {
+                            continue; // ******** BTCJPY future somtimes missing alias, skip it ********
+                        }
+                        yield return ((BfProductCode)Enum.Parse(typeof(BfProductCode), market.Alias.Replace("_", "")), market.ProductCode);
+                    }
+                    else
+                    {
+                        yield return ((BfProductCode)Enum.Parse(typeof(BfProductCode), market.ProductCode.Replace("_", "")), market.ProductCode);
+                    }
+                }
+            }
+        }
     }
 }

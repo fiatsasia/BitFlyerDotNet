@@ -3,9 +3,9 @@
 // https://www.fiats.asia/
 //
 
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using System;
 
 namespace BitFlyerDotNet.LightningApi
 {
@@ -24,21 +24,14 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="productCode"></param>
         /// <returns></returns>
-        [Obsolete("This method is obsolete. Use GetHealth instead.", false)]
-        public BitFlyerResponse<BfMarketHealth> GetMarketHealth(BfProductCode productCode)
-        {
-            return GetAsync<BfMarketHealth>("gethealth", "product_code=" + productCode.ToEnumString()).Result;
-        }
-
-        /// <summary>
-        /// Exchange status
-        /// <see href="https://scrapbox.io/BitFlyerDotNet/GetMarketHealth">Online help</see>
-        /// </summary>
-        /// <param name="productCode"></param>
-        /// <returns></returns>
         public BitFlyerResponse<BfMarketHealth> GetHealth(BfProductCode productCode)
         {
             return GetAsync<BfMarketHealth>(nameof(GetHealth), "product_code=" + productCode.ToEnumString()).Result;
+        }
+
+        public Task<BitFlyerResponse<BfMarketHealth>> GetHealthAsync(BfProductCode productCode)
+        {
+            return GetAsync<BfMarketHealth>(nameof(GetHealth), "product_code=" + productCode.ToEnumString());
         }
     }
 }

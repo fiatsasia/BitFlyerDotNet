@@ -151,7 +151,7 @@ namespace BitFlyerDotNet.Historical
         //
         public List<IManageRecord> GetManageTable()
         {
-            return _ctxManage.Instance.OrderByDescending(e => e.StartExecutionId).Cast<IManageRecord>().ToList();
+            return _ctxManage.Instance.AsQueryable().OrderByDescending(e => e.StartExecutionId).Cast<IManageRecord>().ToList();
         }
 
         public void UpdateManageTable(IEnumerable<IManageRecord> manageRecs)

@@ -65,7 +65,7 @@ namespace BitFlyerDotNet.LightningApi
             {
                 System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
                 _socket = new();
-                _socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+                //_socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
 
                 _istream = new WebSocketStream(_socket);
                 _ostream = new WebSocketStream(_socket);
@@ -121,12 +121,43 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
+        public async Task TryOpenAsync()
+        {
+            if (!_opened)
+            {
+                Log.Trace("Opening WebSocket...");
+                try
+                {
+                    _opened = true;
+                    await _socket.ConnectAsync(new Uri(_uri), CancellationToken.None);
+                    _receiver = Task.Run(ReaderThread);
+
+                    if (!string.IsNullOrEmpty(_apiKey) && _hash != null)
+                    {
+                        Authenticate();
+                    }
+
+                    OnOpened();
+                }
+                catch (AggregateException ex)
+                {
+                    var wsEx = ex.InnerExceptions.FirstOrDefault() as WebSocketException;
+                    if (wsEx != null)
+                    {
+                        Log.Warn($"WebSocket failed to connect to server. {wsEx.Message}");
+                    }
+                    throw;
+                }
+            }
+        }
+
         // OrderBook message is the largest that around 20K bytes
         const int BufferSize = 1024*32; // 32K
         byte[] buffer = new byte[BufferSize];
         event Action<string> WsReceived;
-        async void ReaderThread()
+        internal async Task ReaderThread()
         {
+            Log.Trace("Start reader thread loop");
             while (true)
             {
                 var length = await _istream.ReadAsync(buffer, 0, buffer.Length, CancellationToken.None);
@@ -247,7 +278,7 @@ namespace BitFlyerDotNet.LightningApi
 
         void OnMessageReceived(string json)
         {
-            //Log.Trace($"Socket message received : {args.Message}");
+            //Log.Trace($"Socket message received : {json}");
             TotalReceivedMessageChars += json.Length;
             var subscriptionResult = JObject.Parse(json)["params"];
             if (subscriptionResult != null)

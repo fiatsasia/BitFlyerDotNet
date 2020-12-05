@@ -3,6 +3,9 @@
 // https://www.fiats.asia/
 //
 
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -33,6 +36,11 @@ namespace BitFlyerDotNet.LightningApi
             return GetAsync<BfMarket[]>(nameof(GetMarkets)).Result;
         }
 
+        public Task<BitFlyerResponse<BfMarket[]>> GetMarketsAsync()
+        {
+            return GetAsync<BfMarket[]>(nameof(GetMarkets));
+        }
+
         /// <summary>
         /// Market List (U.S.)
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetMarkets">Online help</see>
@@ -43,6 +51,11 @@ namespace BitFlyerDotNet.LightningApi
             return GetAsync<BfMarket[]>(nameof(GetMarkets) + UsaMarket).Result;
         }
 
+        public Task<BitFlyerResponse<BfMarket[]>> GetMarketsUsaAsync()
+        {
+            return GetAsync<BfMarket[]>(nameof(GetMarkets) + UsaMarket);
+        }
+
         /// <summary>
         /// Market List (E.U.)
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetMarkets">Online help</see>
@@ -51,6 +64,11 @@ namespace BitFlyerDotNet.LightningApi
         public BitFlyerResponse<BfMarket[]> GetMarketsEu()
         {
             return GetAsync<BfMarket[]>(nameof(GetMarkets) + EuMarket).Result;
+        }
+
+        public Task<BitFlyerResponse<BfMarket[]>> GetMarketsEuAsync()
+        {
+            return GetAsync<BfMarket[]>(nameof(GetMarkets) + EuMarket);
         }
 
         /// <summary>
@@ -66,6 +84,16 @@ namespace BitFlyerDotNet.LightningApi
                 GetMarketsUsa(),
                 GetMarketsEu()
             };
+        }
+
+        public IAsyncEnumerable<Task<BitFlyerResponse<BfMarket[]>>> GetMarketsAllAsync()
+        {
+            return new Task<BitFlyerResponse<BfMarket[]>>[]
+            {
+                GetMarketsAsync(),
+                GetMarketsUsaAsync(),
+                GetMarketsEuAsync(),
+            }.ToAsyncEnumerable();
         }
     }
 }

@@ -18,6 +18,13 @@ namespace BitFlyerDotNet.Historical
         public DbSet<DbCollateral> Collaterals { get; set; }
         public DbSet<DbBalance> Balances { get; set; }
 
+        // EF Core 3.0 bugs cause conflicts System.Linq.Async
+        public IQueryable<DbParentOrder> GetParentOrders() => ParentOrders.AsQueryable();
+        public IQueryable<DbChildOrder> GetChildOrders() => ChildOrders.AsQueryable();
+        public IQueryable<DbPrivateExecution> GetExecutions() => Executions.AsQueryable();
+        public IQueryable<DbCollateral> GetCollaterals() => Collaterals.AsQueryable();
+        public IQueryable<DbBalance> GetBalances() => Balances.AsQueryable();
+
         readonly string _connStr;
 
         public AccountDbContext(string connStr)
@@ -66,10 +73,10 @@ namespace BitFlyerDotNet.Historical
         public DbParentOrder FindParentOrder(BfProductCode productCode, string acceptanceId) => ParentOrders.Find(productCode, acceptanceId);
 
         public DbChildOrder FindChildOrder(BfProductCode productCode, string acceptanceId)
-            => ChildOrders.Where(e => e.ProductCode == productCode && e.AcceptanceId == acceptanceId).FirstOrDefault();
+            => GetChildOrders().Where(e => e.ProductCode == productCode && e.AcceptanceId == acceptanceId).FirstOrDefault();
 
         public DbChildOrder FindChildOrder(BfProductCode productCode, string parentOrderAcceptanceId, int childOrderIndex)
-            => ChildOrders.Where(e => e.ProductCode == productCode && e.ParentOrderAcceptanceId == parentOrderAcceptanceId && e.ChildOrderIndex == childOrderIndex).FirstOrDefault();
+            => GetChildOrders().Where(e => e.ProductCode == productCode && e.ParentOrderAcceptanceId == parentOrderAcceptanceId && e.ChildOrderIndex == childOrderIndex).FirstOrDefault();
 
         // Parent orders
         public void Insert(BfProductCode productCode, BfParentOrderRequest req, BfParentOrderResponse resp)
@@ -89,12 +96,12 @@ namespace BitFlyerDotNet.Historical
 
         public void Update(BfProductCode productCode, BfaChildOrder order)
         {
-            ChildOrders.Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).First().Update(order);
+            GetChildOrders().Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).First().Update(order);
         }
 
         public void Upsert(BfProductCode productCode, BfaChildOrder order)
         {
-            var rec = ChildOrders.Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
+            var rec = GetChildOrders().Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
             if (rec == default) { ChildOrders.Add(new DbChildOrder(productCode, order)); }
             else { rec.Update(order); }
         }
@@ -103,7 +110,7 @@ namespace BitFlyerDotNet.Historical
 
         public void Upsert(BfProductCode productCode, BfaChildOrder order, string parentOrderAcceptanceId, string parentOrderId, int childOrderIndex)
         {
-            var rec = ChildOrders.Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
+            var rec = GetChildOrders().Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
             if (rec == default)
             {
                 rec = new DbChildOrder(productCode, order);
@@ -123,7 +130,7 @@ namespace BitFlyerDotNet.Historical
 
         public void Upsert(BfProductCode productCode, BfaChildOrder order, BfaParentOrderDetail detail, int childOrderIndex)
         {
-            var rec = ChildOrders.Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
+            var rec = GetChildOrders().Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
             if (rec == default)
             {
                 rec = new DbChildOrder(productCode, detail, childOrderIndex);
@@ -139,7 +146,7 @@ namespace BitFlyerDotNet.Historical
 
         public void InsertIfNotExits(BfProductCode productCode, BfaPrivateExecution exec)
         {
-            var rec = Executions.Where(e => e.ExecutionId == exec.ExecutionId).FirstOrDefault();
+            var rec = GetExecutions().Where(e => e.ExecutionId == exec.ExecutionId).FirstOrDefault();
             if (rec == default)
             {
                 Executions.Add(new DbPrivateExecution(productCode, exec));

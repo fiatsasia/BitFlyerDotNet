@@ -61,10 +61,10 @@ namespace BitFlyerDotNet.Historical
             });
         }
 
-        public void Dispose()
+        public async void Dispose()
         {
             _procQ.Add(() => { _exitTask = true; return true; });
-            _procTask.Wait();
+            await _procTask;
         }
 
         #region Initial updates
@@ -133,10 +133,10 @@ namespace BitFlyerDotNet.Historical
             UpdateRecentExecutions(after);
 
             // Recover paret - children missing link
-            var parents = _ctx.ParentOrders.Where(e => e.ProductCode == _productCode && e.OrderDate >= after);
+            var parents = _ctx.GetParentOrders().Where(e => e.ProductCode == _productCode && e.OrderDate >= after);
             foreach (var parent in parents)
             {
-                var recs = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == parent.AcceptanceId).OrderBy(e => e.ChildOrderIndex).ToList();
+                var recs = _ctx.GetChildOrders().Where(e => e.ParentOrderAcceptanceId == parent.AcceptanceId).OrderBy(e => e.ChildOrderIndex).ToList();
                 if (recs.Count == parent.OrderType.GetChildCount())
                 {
                     continue; // Already linked all children
@@ -147,7 +147,7 @@ namespace BitFlyerDotNet.Historical
                 var childOrderIndex = 0;
                 foreach (var child in children)
                 {
-                    var rec = _ctx.ChildOrders.Where(e => e.AcceptanceId == child.ChildOrderAcceptanceId).FirstOrDefault();
+                    var rec = _ctx.GetChildOrders().Where(e => e.AcceptanceId == child.ChildOrderAcceptanceId).FirstOrDefault();
                     if (rec == default)
                     {
                         _ctx.Upsert(_productCode, child, parent.AcceptanceId, parent.OrderId, childOrderIndex);
@@ -175,7 +175,7 @@ namespace BitFlyerDotNet.Historical
         void UpdateActiveChildOrders()
         {
             var activeChildren = _client.GetChildOrders(_productCode, BfOrderState.Active).GetContent();
-            var inactivatedChildIds = _ctx.ChildOrders.Where(e => e.State == BfOrderState.Active).Select(e => e.AcceptanceId).ToList()
+            var inactivatedChildIds = _ctx.GetChildOrders().Where(e => e.State == BfOrderState.Active).Select(e => e.AcceptanceId).ToList()
                 .Except(activeChildren.Select(e => e.ChildOrderAcceptanceId));
 
             // Inactivate child orders
@@ -185,7 +185,7 @@ namespace BitFlyerDotNet.Historical
                 var inactivatedChild = _client.GetChildOrders(_productCode, childOrderAcceptanceId: inactivatedAcceptanceId).GetContent();
                 if (inactivatedChild.Length == 0) // Probably canceled
                 {
-                    var rec = _ctx.ChildOrders.Where(e => e.AcceptanceId == inactivatedAcceptanceId).First();
+                    var rec = _ctx.GetChildOrders().Where(e => e.AcceptanceId == inactivatedAcceptanceId).First();
                     rec.State = BfOrderState.Canceled;
                 }
                 else
@@ -211,7 +211,7 @@ namespace BitFlyerDotNet.Historical
         {
             // Update active parent orders, descendants and executions
             var activeParents = _client.GetParentOrders(_productCode, BfOrderState.Active).GetContent();
-            var inactivatedParents = _ctx.ParentOrders.Where(e => e.State == BfOrderState.Active).ToList()
+            var inactivatedParents = _ctx.GetParentOrders().Where(e => e.State == BfOrderState.Active).ToList()
                 .Where(e => !activeParents.Any(f => f.ParentOrderAcceptanceId == e.AcceptanceId));
 
             // Inactivate parent orders
@@ -345,10 +345,10 @@ namespace BitFlyerDotNet.Historical
                     // ParentOrderEvent = completed 以降に発生した IFDOCO/OCO の cancel failed は親注文が不明なため
                     // acceptance ID の部分から兄弟を探し、兄弟の parent order acceptance ID から自分を探す。
                     var key = string.Join("-", coe.ChildOrderAcceptanceId.Split('-').Take(2));
-                    var sibling = _ctx.ChildOrders.Where(e => e.AcceptanceId.StartsWith(key)).FirstOrDefault();
+                    var sibling = _ctx.GetChildOrders().Where(e => e.AcceptanceId.StartsWith(key)).FirstOrDefault();
                     if (sibling != default)
                     {
-                        var me = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == sibling.ParentOrderAcceptanceId && e.AcceptanceId == default).FirstOrDefault();
+                        var me = _ctx.GetChildOrders().Where(e => e.ParentOrderAcceptanceId == sibling.ParentOrderAcceptanceId && e.AcceptanceId == default).FirstOrDefault();
                         if (me != default)
                         {
                             Log.Trace($"Cancel faile which child order acceptance ID not matched but found parent. COAID:{coe.ChildOrderAcceptanceId}");
@@ -397,13 +397,13 @@ namespace BitFlyerDotNet.Historical
         {
             lock (_txLock)
             {
-                var parents = _ctx.ParentOrders.Where(e => e.State == BfOrderState.Active).ToArray();
+                var parents = _ctx.GetParentOrders().Where(e => e.State == BfOrderState.Active).ToArray();
                 foreach (var parent in parents)
                 {
-                    parent.Children = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == parent.AcceptanceId).OrderBy(e => e.ChildOrderIndex).ToArray();
+                    parent.Children = _ctx.GetChildOrders().Where(e => e.ParentOrderAcceptanceId == parent.AcceptanceId).OrderBy(e => e.ChildOrderIndex).ToArray();
                     foreach (var child in parent.Children)
                     {
-                        child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).OrderBy(e => e.ExecutedTime).ToArray();
+                        child.Executions = _ctx.GetExecutions().Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).OrderBy(e => e.ExecutedTime).ToArray();
                     }
                 }
                 return parents;
@@ -414,10 +414,10 @@ namespace BitFlyerDotNet.Historical
         {
             lock (_txLock)
             {
-                var children = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == default && e.State == BfOrderState.Active).ToArray();
+                var children = _ctx.GetChildOrders().Where(e => e.ParentOrderAcceptanceId == default && e.State == BfOrderState.Active).ToArray();
                 foreach (var child in children)
                 {
-                    child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).ToArray();
+                    child.Executions = _ctx.GetExecutions().Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).ToArray();
                 }
                 return children;
             }
@@ -433,10 +433,10 @@ namespace BitFlyerDotNet.Historical
                     return default;
                 }
 
-                parent.Children = _ctx.ChildOrders.Where(e => e.ParentOrderAcceptanceId == parent.AcceptanceId).ToArray();
+                parent.Children = _ctx.GetChildOrders().Where(e => e.ParentOrderAcceptanceId == parent.AcceptanceId).ToArray();
                 foreach (var child in parent.Children)
                 {
-                    child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).ToArray();
+                    child.Executions = _ctx.GetExecutions().Where(e => e.ChildOrderAcceptanceId == child.AcceptanceId).ToArray();
                 }
                 return parent;
             }
@@ -446,12 +446,12 @@ namespace BitFlyerDotNet.Historical
         {
             lock (_txLock)
             {
-                var child = _ctx.ChildOrders.Where(e => e.AcceptanceId == childOrderAcceptanceId).FirstOrDefault();
+                var child = _ctx.GetChildOrders().Where(e => e.AcceptanceId == childOrderAcceptanceId).FirstOrDefault();
                 if (child == default)
                 {
                     return default;
                 }
-                child.Executions = _ctx.Executions.Where(e => e.ChildOrderAcceptanceId == childOrderAcceptanceId).OrderByDescending(e => e.ExecutedTime).ToArray();
+                child.Executions = _ctx.GetExecutions().Where(e => e.ChildOrderAcceptanceId == childOrderAcceptanceId).OrderByDescending(e => e.ExecutedTime).ToArray();
                 return child;
             }
         }
@@ -461,7 +461,7 @@ namespace BitFlyerDotNet.Historical
             lock (_txLock)
             {
                 var until = DateTime.UtcNow - span;
-                var execs = _ctx.Executions.Where(e => e.ProductCode == _productCode && e.ExecutedTime >= until).OrderBy(e => e.ExecutedTime);
+                var execs = _ctx.GetExecutions().Where(e => e.ProductCode == _productCode && e.ExecutedTime >= until).OrderBy(e => e.ExecutedTime);
                 return execs.ToList().Select(exec => exec.Amount * (exec.Side == BfTradeSide.Buy ? -1m : 1m)).Sum();
             }
         }
@@ -473,7 +473,7 @@ namespace BitFlyerDotNet.Historical
         // Private executions
         public IEnumerable<DbPrivateExecution> GetExecutions(BfProductCode productCode, DateTime start, DateTime end)
         {
-            var latestQuery = _ctx.Executions.OrderByDescending(e => e.ExecutionId).Take(1);
+            var latestQuery = _ctx.GetExecutions().OrderByDescending(e => e.ExecutionId).Take(1);
             if (latestQuery.Count() == 0)
             {
                 _client.GetPrivateExecutions(productCode, 0, e => e.ExecutedTime >= start)
@@ -487,7 +487,7 @@ namespace BitFlyerDotNet.Historical
                     .ForEach(e => _ctx.Executions.Add(new DbPrivateExecution(productCode, e)));
                 _ctx.SaveChanges();
 
-                var oldestQuery = _ctx.Executions.OrderBy(e => e.ExecutionId).Take(1);
+                var oldestQuery = _ctx.GetExecutions().OrderBy(e => e.ExecutionId).Take(1);
                 if (oldestQuery.Count() > 0)
                 {
                     var oldest = oldestQuery.First();
@@ -497,12 +497,12 @@ namespace BitFlyerDotNet.Historical
                 }
             }
 
-            return _ctx.Executions.OrderBy(e => e.ExecutedTime).Where(e => e.ExecutedTime >= start && e.ExecutedTime <= end);
+            return _ctx.GetExecutions().OrderBy(e => e.ExecutedTime).Where(e => e.ExecutedTime >= start && e.ExecutedTime <= end);
         }
 
         public IEnumerable<DbCollateral> GetCollaterals(DateTime start, DateTime end)
         {
-            var latestQuery = _ctx.Collaterals.OrderByDescending(e => e.Id).Take(1);
+            var latestQuery = _ctx.GetCollaterals().OrderByDescending(e => e.Id).Take(1);
             if (latestQuery.Count() == 0)
             {
                 _client.GetCollateralHistory(0, e => e.Date >= start)
@@ -516,7 +516,7 @@ namespace BitFlyerDotNet.Historical
                     .ForEach(e => _ctx.Collaterals.Add(new DbCollateral(e)));
                 _ctx.SaveChanges();
 
-                var oldestQuery = _ctx.Collaterals.OrderBy(e => e.Id).Take(1);
+                var oldestQuery = _ctx.GetCollaterals().OrderBy(e => e.Id).Take(1);
                 if (oldestQuery.Count() > 0)
                 {
                     var oldest = oldestQuery.First();
@@ -526,12 +526,12 @@ namespace BitFlyerDotNet.Historical
                 }
             }
 
-            return _ctx.Collaterals.OrderBy(e => e.Date).Where(e => e.Date >= start && e.Date <= end);
+            return _ctx.GetCollaterals().OrderBy(e => e.Date).Where(e => e.Date >= start && e.Date <= end);
         }
 
         public IEnumerable<DbBalance> GetBalances(BfCurrencyCode currencyCode, DateTime start, DateTime end)
         {
-            var latestQuery = _ctx.Balances.OrderByDescending(e => e.Id).Take(1);
+            var latestQuery = _ctx.GetBalances().OrderByDescending(e => e.Id).Take(1);
             if (latestQuery.Count() == 0)
             {
                 _client.GetBalanceHistory(currencyCode, 0, e => e.EventDate >= start)
@@ -545,7 +545,7 @@ namespace BitFlyerDotNet.Historical
                     .ForEach(e => _ctx.Balances.Add(new DbBalance(e)));
                 _ctx.SaveChanges();
 
-                var oldestQuery = _ctx.Balances.OrderBy(e => e.Id).Take(1);
+                var oldestQuery = _ctx.GetBalances().OrderBy(e => e.Id).Take(1);
                 if (oldestQuery.Count() > 0)
                 {
                     var oldest = oldestQuery.First();
@@ -555,7 +555,7 @@ namespace BitFlyerDotNet.Historical
                 }
             }
 
-            return _ctx.Balances.OrderBy(e => e.Date).Where(e => e.Date >= start && e.Date <= end);
+            return _ctx.GetBalances().OrderBy(e => e.Date).Where(e => e.Date >= start && e.Date <= end);
         }
     }
 }

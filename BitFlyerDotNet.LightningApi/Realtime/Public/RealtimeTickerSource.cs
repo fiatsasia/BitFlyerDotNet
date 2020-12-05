@@ -28,6 +28,7 @@ namespace BitFlyerDotNet.LightningApi
 
         public override object OnMessageReceived(JToken token)
         {
+            //Log.Trace($"{nameof(RealtimeTickerSource)}.{nameof(OnMessageReceived)}");
             return DispatchMessage(token);
         }
     }

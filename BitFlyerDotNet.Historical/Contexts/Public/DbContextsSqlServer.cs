@@ -207,7 +207,7 @@ namespace BitFlyerDotNet.Historical
         //
         public List<IManageRecord> GetManageTable()
         {
-            return _ctx.GetManageTable().OrderByDescending(e => e.StartExecutionId).Cast<IManageRecord>().ToList();
+            return _ctx.GetManageTable().AsQueryable().OrderByDescending(e => e.StartExecutionId).Cast<IManageRecord>().ToList();
         }
 
         public void AddManageRecord(IManageRecord manageRec)
@@ -231,7 +231,7 @@ namespace BitFlyerDotNet.Historical
 
         public IEnumerable<IBfExecution> GetBackwardExecutions(int before, int after)
         {
-            return _ctx.GetExecutions()
+            return _ctx.GetExecutions().AsQueryable()
                 .Where(exec => exec.ExecutionId < before && exec.ExecutionId > after)
                 .OrderByDescending(exec => exec.ExecutedTime)
                 .ThenByDescending(exec => exec.ExecutionId);
@@ -248,7 +248,7 @@ namespace BitFlyerDotNet.Historical
         public IEnumerable<IOhlcvv> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span)
         {
             var end = endFrom - span + frameSpan;
-            return _ctx.GetOhlc().Where(e => e.FrameSpan == frameSpan && e.Start <= endFrom && e.Start >= end).OrderByDescending(e => e.Start);
+            return _ctx.GetOhlc().AsQueryable().Where(e => e.FrameSpan == frameSpan && e.Start <= endFrom && e.Start >= end).OrderByDescending(e => e.Start);
         }
 
         public void AddOhlc(TimeSpan frameSpan, IOhlcvv ohlc)

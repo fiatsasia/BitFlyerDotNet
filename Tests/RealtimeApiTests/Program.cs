@@ -48,7 +48,7 @@ namespace RealtimeApiTests
             _factory.MessageSent += OnRealtimeMessageSent;
             _factory.MessageReceived += OnRealtimeMessageReceived;
             _factory.Error += (error) => Console.WriteLine("Error: {0} Socket Error = {1}", error.Message, error.SocketError);
-            _factory.Open();
+            _factory.TryOpenAsync().Wait();
 
             while (true)
             {

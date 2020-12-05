@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Reactive.Subjects;
 using System.Reactive.Linq;
@@ -54,6 +55,7 @@ namespace BitFlyerDotNet.LightningApi
         internal WebSocketChannels Channels { get; private set; }
         public event Action<string> MessageSent;
         public event Action<string, object> MessageReceived;
+        public Task ReaderThread() => Channels.ReaderThread();
 
         void OnMessageSent(string json) => MessageSent?.Invoke(json);
         void OnMessageReceived(string json, object message) => MessageReceived?.Invoke(json, message);
@@ -110,21 +112,23 @@ namespace BitFlyerDotNet.LightningApi
 
         // Convert BfProdcutCode (inc. futures) to native product codes
         Dictionary<BfProductCode, string> _availableMarkets = new ();
-        void GetAvailableMarkets()
+        async Task GetAvailableMarkets()
         {
             _availableMarkets.Clear();
-            _client.GetAvailableMarkets().ForEach(market => _availableMarkets.Add(market.ProductCode, market.Symbol));
+            await foreach (var market in _client.GetAvailableMarketsAsync())
+            {
+                _availableMarkets[market.ProductCode] = market.Symbol;
+            }
         }
 
         bool _opened = false;
-        public void Open() => TryOpen();
-        void TryOpen()
+        public async Task TryOpenAsync()
         {
             if (!_opened)
             {
-                Channels.Resumed += () => GetAvailableMarkets(); // To refresh markets when is resumed
-                Channels.TryOpen(); // TryOpen will return after GetAvailableMarkets() finished.
-                GetAvailableMarkets();
+                Channels.Resumed += async () => await GetAvailableMarkets(); // To refresh markets when is resumed
+                await Channels.TryOpenAsync();
+                await GetAvailableMarkets();
                 _opened = true;
             }
         }
@@ -156,7 +160,6 @@ namespace BitFlyerDotNet.LightningApi
         ConcurrentDictionary<string, IConnectableObservable<BfaExecution>> _executionColdSources = new ();
         public IObservable<BfaExecution> GetExecutionSource(BfProductCode productCode, bool hotStart = false)
         {
-            TryOpen();
             var symbol = _availableMarkets[productCode];
             var result = _executionColdSources.GetOrAdd(symbol, _ =>
             {
@@ -174,7 +177,6 @@ namespace BitFlyerDotNet.LightningApi
 
         public void StartExecutionSource(BfProductCode productCode)
         {
-            TryOpen();
             if (_executionColdSources.TryGetValue(_availableMarkets[productCode], out var source))
             {
                 source.Connect().AddTo(_disposables);
@@ -183,7 +185,6 @@ namespace BitFlyerDotNet.LightningApi
 
         public void StartAllExecutionSources()
         {
-            TryOpen();
             foreach (var source in _executionColdSources.Values)
             {
                 source.Connect().AddTo(_disposables);
@@ -193,7 +194,6 @@ namespace BitFlyerDotNet.LightningApi
         ConcurrentDictionary<string, IObservable<BfTicker>> _tickSources = new ();
         public IObservable<BfTicker> GetTickerSource(BfProductCode productCode)
         {
-            TryOpen();
             var symbol = _availableMarkets[productCode];
             return _tickSources.GetOrAdd(symbol, _ => // Cause ArgumentException if key not found.
             {
@@ -210,7 +210,6 @@ namespace BitFlyerDotNet.LightningApi
         ConcurrentDictionary<string, IObservable<BfOrderBook>> _orderBookSnapshotSources = new ();
         public IObservable<BfOrderBook> GetOrderBookSource(BfProductCode productCode)
         {
-            TryOpen();
             var symbol = _availableMarkets[productCode];
             return _orderBookSnapshotSources.GetOrAdd(symbol, _ => // Cause ArgumentException if key not found.
             {
@@ -240,7 +239,6 @@ namespace BitFlyerDotNet.LightningApi
                 return _childOrderEventSource;
             }
 
-            TryOpen();
             var source = new RealtimeChildOrderEventsSource(Channels, s=>
             {    _childOrderEventSource = null;
                 OnSourceClosed();
@@ -263,7 +261,6 @@ namespace BitFlyerDotNet.LightningApi
                 return _parentOrderEventSource;
             }
 
-            TryOpen();
             var source = new RealtimeParentOrderEventsSource(Channels, s =>
             {
                 _parentOrderEventSource = null;

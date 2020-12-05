@@ -46,6 +46,7 @@ namespace BitFlyerDotNet.LightningApi
 
         protected object DispatchMessage(JToken token)
         {
+            //Log.Trace($"RealtimeSourceBase.{nameof(DispatchMessage)} observer is {_observer != null}");
             var message = token.ToObject<TSource>();
             _observer?.OnNext(message);
             return message;
