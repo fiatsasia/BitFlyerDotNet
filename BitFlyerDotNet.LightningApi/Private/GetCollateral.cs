@@ -1,6 +1,9 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using Newtonsoft.Json;
@@ -30,7 +33,7 @@ namespace BitFlyerDotNet.LightningApi
     {
         public BitFlyerResponse<BfCollateral> GetCollateral()
         {
-            return PrivateGetAsync<BfCollateral>(nameof(GetCollateral)).Result;
+            return GetPrivateAsync<BfCollateral>(nameof(GetCollateral)).Result;
         }
     }
 }

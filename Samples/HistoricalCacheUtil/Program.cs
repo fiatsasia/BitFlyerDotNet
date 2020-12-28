@@ -1,6 +1,9 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
@@ -68,7 +71,7 @@ namespace HistoricalCacheUtil
             }
 #endif
             Console.WriteLine("BitFlyerDotNet cache management utilities");
-            Console.WriteLine("Copyright (C) 2017-2020 Fiats Inc.");
+            Console.WriteLine("Copyright (C) 2017-2021 Fiats Inc.");
 
             try
             {

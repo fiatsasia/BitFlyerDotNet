@@ -1,11 +1,15 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using BitFlyerDotNet.LightningApi;
@@ -68,7 +72,7 @@ namespace BitFlyerDotNet.Trading
             });
         }
 
-        public void Open()
+        public async Task OpenAsync()
         {
             InitializeMarkets();
 
@@ -78,7 +82,7 @@ namespace BitFlyerDotNet.Trading
             }
 
             Positions.Update(Client.GetPositions(BfProductCode.FXBTCJPY).GetContent());
-
+            await RealtimeSource.TryOpenAsync();
             RealtimeSource.GetChildOrderEventsSource().Subscribe(coe =>
             {
                 var productCode = _marketSymbols[coe.ProductCode];

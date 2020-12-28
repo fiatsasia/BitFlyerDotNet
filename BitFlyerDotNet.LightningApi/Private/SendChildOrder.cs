@@ -1,6 +1,9 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
@@ -100,7 +103,7 @@ namespace BitFlyerDotNet.LightningApi
         public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(BfChildOrderRequest request)
         {
             Validate(ref request);
-            return PrivatePostAsync<BfChildOrderResponse>(nameof(SendChildOrder), request, CancellationToken.None).Result;
+            return PostPrivateAsync<BfChildOrderResponse>(nameof(SendChildOrder), request, CancellationToken.None).Result;
         }
 
         /// <summary>
@@ -112,7 +115,7 @@ namespace BitFlyerDotNet.LightningApi
         public async Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(BfChildOrderRequest request, CancellationToken ct)
         {
             Validate(ref request);
-            return await PrivatePostAsync<BfChildOrderResponse>(nameof(SendChildOrder), request, ct);
+            return await PostPrivateAsync<BfChildOrderResponse>(nameof(SendChildOrder), request, ct);
         }
 
         /// <summary>

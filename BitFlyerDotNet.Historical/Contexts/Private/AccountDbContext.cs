@@ -1,6 +1,9 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System.Linq;
@@ -31,7 +34,6 @@ namespace BitFlyerDotNet.Historical
             : base(new DbContextOptionsBuilder<AccountDbContext>().Options)
         {
             _connStr = connStr;
-            this.Database.EnsureCreated();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

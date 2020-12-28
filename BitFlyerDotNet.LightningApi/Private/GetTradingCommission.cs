@@ -1,6 +1,9 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using Newtonsoft.Json;
@@ -23,7 +26,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public BitFlyerResponse<BfTradingCommission> GetTradingCommission(BfProductCode productCode)
         {
-            return PrivateGetAsync<BfTradingCommission>(nameof(GetTradingCommission), "product_code=" + productCode.ToEnumString()).Result;
+            return GetPrivateAsync<BfTradingCommission>(nameof(GetTradingCommission), "product_code=" + productCode.ToEnumString()).Result;
         }
     }
 }

@@ -1,6 +1,9 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
@@ -71,7 +74,7 @@ namespace BitFlyerDotNet.LightningApi
                 (before > 0) ? $"&before={before}" : "",
                 (after > 0) ? $"&after={after}" : ""
             );
-            return PrivateGetAsync<BfBalanceHistory[]>(nameof(GetBalanceHistory), query).Result;
+            return GetPrivateAsync<BfBalanceHistory[]>(nameof(GetBalanceHistory), query).Result;
         }
 
         public IEnumerable<BfBalanceHistory> GetBalanceHistory(BfCurrencyCode currencyCode, int before, Func<BfBalanceHistory, bool> predicate)

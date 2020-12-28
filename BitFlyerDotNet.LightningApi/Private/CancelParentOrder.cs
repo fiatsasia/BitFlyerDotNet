@@ -1,6 +1,9 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
@@ -42,7 +45,7 @@ namespace BitFlyerDotNet.LightningApi
         public BitFlyerResponse<string> CancelParentOrder(BfCancelParentOrderRequest request)
         {
             Validate(ref request);
-            return PrivatePostAsync<string>(nameof(CancelParentOrder), request, CancellationToken.None).Result;
+            return PostPrivateAsync<string>(nameof(CancelParentOrder), request, CancellationToken.None).Result;
         }
 
         /// <summary>
@@ -54,7 +57,7 @@ namespace BitFlyerDotNet.LightningApi
         public async Task<BitFlyerResponse<string>> CancelParentOrderAsync(BfCancelParentOrderRequest request, CancellationToken ct)
         {
             Validate(ref request);
-            return await PrivatePostAsync<string>(nameof(CancelParentOrder), request, ct);
+            return await PostPrivateAsync<string>(nameof(CancelParentOrder), request, ct);
         }
 
         /// <summary>
@@ -74,7 +77,7 @@ namespace BitFlyerDotNet.LightningApi
                 ParentOrderAcceptanceId = parentOrderAcceptanceId
             };
             Validate(ref request);
-            return PrivatePostAsync<string>(nameof(CancelParentOrder), request, CancellationToken.None).Result;
+            return PostPrivateAsync<string>(nameof(CancelParentOrder), request, CancellationToken.None).Result;
         }
 
         /// <summary>
@@ -94,7 +97,7 @@ namespace BitFlyerDotNet.LightningApi
                 ParentOrderAcceptanceId = parentOrderAcceptanceId
             };
             Validate(ref request);
-            return await PrivatePostAsync<string>(nameof(CancelParentOrder), request, ct);
+            return await PostPrivateAsync<string>(nameof(CancelParentOrder), request, ct);
         }
     }
 }

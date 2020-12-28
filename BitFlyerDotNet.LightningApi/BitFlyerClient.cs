@@ -1,6 +1,9 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
@@ -289,7 +292,7 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        internal async Task<BitFlyerResponse<T>> PrivateGetAsync<T>(string apiName, string queryParameters = "")
+        internal async Task<BitFlyerResponse<T>> GetPrivateAsync<T>(string apiName, string queryParameters = "")
         {
             if (!IsAuthenticated)
             {
@@ -367,7 +370,7 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        internal async Task<BitFlyerResponse<T>> PrivatePostAsync<T>(string apiName, object requestObject, CancellationToken ct)
+        internal async Task<BitFlyerResponse<T>> PostPrivateAsync<T>(string apiName, object requestObject, CancellationToken ct)
         {
             if (!IsAuthenticated)
             {

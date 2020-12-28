@@ -1,6 +1,9 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
@@ -27,7 +30,15 @@ namespace BitFlyerDotNet.Historical
         {
             _client = client;
             _productCode = productCode;
-            _ctx = new AccountDbContext(connStr);
+
+            try
+            {
+                _ctx = new AccountDbContext(connStr);
+                _ctx.Database.EnsureCreated();
+            }
+            catch (Exception ex)
+            {
+            }
 
             _procTask = Task.Run(() =>
             {

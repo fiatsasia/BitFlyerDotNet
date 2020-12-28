@@ -1,6 +1,9 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2020 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
 // https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
 //
 
 using System;
@@ -36,7 +39,7 @@ namespace TradingApiTests
         static ConcurrentDictionary<Guid, IBfxOrderTransaction> _transactions = new ConcurrentDictionary<Guid, IBfxOrderTransaction>();
         static decimal _orderSize;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
             LoadSettings(args[0]);
@@ -58,7 +61,7 @@ namespace TradingApiTests
                 _market.OrderTransactionChanged += OnOrderTransactionChanged;
 
 
-                _account.Open();
+                await _account.OpenAsync();
                 _orderCache = new OrderSource(_account.Client, connStr, ProductCode);
                 _market.Open(_orderCache);
                 _market.GetActiveTransactions().ForEach(e => _transactions[Guid.NewGuid()] = e);
