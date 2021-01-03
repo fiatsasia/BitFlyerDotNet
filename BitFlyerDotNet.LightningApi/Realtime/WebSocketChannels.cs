@@ -37,7 +37,8 @@ namespace BitFlyerDotNet.LightningApi
 
         Timer _reconnectionTimer;
         AutoResetEvent _openedEvent = new (false);
-        ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new ();
+        ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new();
+        CancellationToken _ct = new();
 
         string _uri;
         string _apiKey;
@@ -66,7 +67,7 @@ namespace BitFlyerDotNet.LightningApi
             {
                 System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
                 _socket = new();
-                //_socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+                _socket.Options.KeepAliveInterval = TimeSpan.Zero;
 
                 _istream = new WebSocketStream(_socket);
                 _ostream = new WebSocketStream(_socket);
@@ -84,44 +85,18 @@ namespace BitFlyerDotNet.LightningApi
 
         public void Dispose()
         {
-            Log.Trace($"{nameof(WebSocketChannels)}.Dispose");
+            Log.Trace($"{nameof(WebSocketChannels)} disposing...");
+            _ct.ThrowIfCancellationRequested();
             _opened = false;
-            _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None).Wait();
-            _socket.Dispose();
-            Log.Trace($"{nameof(WebSocketChannels)}.Dispose exit");
+            _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+            //_socket.Dispose();
+            Opened = null;
+            MessageSent = null;
+            MessageReceived = null;
+            Log.Trace($"{nameof(WebSocketChannels)} disposed");
         }
 
         bool _opened = false;
-        public void TryOpen()
-        {
-            if (!_opened)
-            {
-                Log.Trace("Opening WebSocket...");
-                try
-                {
-                    _opened = true;
-                    _socket.ConnectAsync(new Uri(_uri), CancellationToken.None).Wait();
-                    _receiver = Task.Run(ReaderThread);
-
-                    if (!string.IsNullOrEmpty(_apiKey) && _hash != null)
-                    {
-                        Authenticate();
-                    }
-
-                    OnOpened();
-                }
-                catch (AggregateException ex)
-                {
-                    var wsEx = ex.InnerExceptions.FirstOrDefault() as WebSocketException;
-                    if (wsEx != null)
-                    {
-                        Log.Warn($"WebSocket failed to connect to server. {wsEx.Message}");
-                    }
-                    throw;
-                }
-            }
-        }
-
         public async Task TryOpenAsync()
         {
             if (!_opened)
@@ -161,18 +136,23 @@ namespace BitFlyerDotNet.LightningApi
             Log.Trace("Start reader thread loop");
             while (true)
             {
-                var length = await _istream.ReadAsync(buffer, 0, buffer.Length, CancellationToken.None);
-                if (length == 0)
-                {
-                    Log.Info("WebSocket ReadAsync respond empty. Disconnected from client or probably disconnected from the server.");
-                    OnClosed();
-                    return; // Thread will be restarted.
-                }
                 try
                 {
+                    var length = await _istream.ReadAsync(buffer, 0, buffer.Length, _ct);
+                    if (length == 0)
+                    {
+                        Log.Info("WebSocket ReadAsync respond empty. Disconnected from client or probably disconnected from the server.");
+                        OnClosed();
+                        return; // Thread will be restarted.
+                    }
+
                     var json = Encoding.UTF8.GetString(buffer, 0, length);
                     OnMessageReceived(json);
                     WsReceived?.Invoke(json);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
                 }
                 catch (Exception ex)
                 {
@@ -181,17 +161,6 @@ namespace BitFlyerDotNet.LightningApi
                     // Rethrow exception - after alpha
                 }
             }
-        }
-
-        public void Close()
-        {
-            Log.Trace("Closing WebSocket...");
-            _opened = false;
-            _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None).Wait();
-            _socket.Dispose();
-            Opened = null;
-            MessageSent = null;
-            MessageReceived = null;
         }
 
         public void RegisterSource(IRealtimeSource source)

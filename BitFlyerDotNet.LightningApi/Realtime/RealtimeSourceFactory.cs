@@ -108,9 +108,9 @@ namespace BitFlyerDotNet.LightningApi
 
         public void Dispose()
         {
-            Log.Trace($"{nameof(RealtimeSourceFactory)}.Dispose");
+            Log.Trace($"{nameof(RealtimeSourceFactory)} disposing...");
             _disposables.Dispose();
-            Log.Trace($"{nameof(RealtimeSourceFactory)}.Dispose exit");
+            Log.Trace($"{nameof(RealtimeSourceFactory)} diposed");
         }
 
         // Convert BfProdcutCode (inc. futures) to native product codes
