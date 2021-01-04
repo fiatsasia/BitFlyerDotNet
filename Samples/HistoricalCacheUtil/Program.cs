@@ -17,6 +17,8 @@ namespace HistoricalCacheUtil
 {
     class Program
     {
+        const int CommitCount = 500 * 500; // record/request * request limit count
+
         static char GetCh() { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); Console.WriteLine(ch); return ch; }
 
         static void Main(string[] args)
@@ -217,7 +219,7 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
             using (var cache = factory.GetExecutionCache(productCode))
             {
                 var recs = cache.GetManageTable();
-                cache.CommitCount *= 100;
+                cache.CommitCount = CommitCount;
                 var completed = new ManualResetEvent(false);
                 var recordCount = 0;
                 var sw = new Stopwatch();
@@ -245,7 +247,7 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
         {
             using (var cache = factory.GetExecutionCache(productCode))
             {
-                cache.CommitCount *= 100;
+                cache.CommitCount = CommitCount;
                 var completed = new ManualResetEvent(false);
                 var recordCount = 0;
                 var sw = new Stopwatch();
@@ -273,7 +275,7 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
         {
             using (var cache = factory.GetExecutionCache(productCode))
             {
-                cache.CommitCount *= 100;
+                cache.CommitCount = CommitCount;
                 var completed = new ManualResetEvent(false);
                 var recordCount = 0;
                 var sw = new Stopwatch();
@@ -303,7 +305,7 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
         {
             using (var cache = factory.GetExecutionCache(productCode))
             {
-                cache.CommitCount *= 100;
+                cache.CommitCount = CommitCount;
                 var completed = new ManualResetEvent(false);
                 var recordCount = 0;
                 var sw = new Stopwatch();
