@@ -75,6 +75,7 @@ namespace BitFlyerDotNet.Trading
         public async Task OpenAsync()
         {
             InitializeMarkets();
+            await RealtimeSource.TryOpenAsync();
 
             if (!Client.IsAuthenticated)
             {
@@ -82,7 +83,6 @@ namespace BitFlyerDotNet.Trading
             }
 
             Positions.Update(Client.GetPositions(BfProductCode.FXBTCJPY).GetContent());
-            await RealtimeSource.TryOpenAsync();
             RealtimeSource.GetChildOrderEventsSource().Subscribe(coe =>
             {
                 var productCode = _marketSymbols[coe.ProductCode];

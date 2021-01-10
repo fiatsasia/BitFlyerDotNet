@@ -24,9 +24,11 @@ namespace BitFlyerDotNet.Trading
         public decimal Commission { get; }
         public decimal SwapForDifference { get; }
         public decimal SwapPointAccumulate { get; }
+        public BfxPositions Positions { get; }
 
-        internal BfxPosition(BfxPositionsElement pos, BfChildOrderEvent? ev = default)
+        internal BfxPosition(BfxPositions positions, BfxPositionsElement pos, BfChildOrderEvent? ev = default)
         {
+            Positions = positions;
             Open = pos.Open;
             Close = ev?.EventDate;
             Side = pos.OpenSize > 0m ? BfTradeSide.Buy : BfTradeSide.Sell;
@@ -110,7 +112,7 @@ namespace BitFlyerDotNet.Trading
 
         public IEnumerable<BfxPosition> GetActivePositions()
         {
-            return _q.ToList().Select(e => new BfxPosition(e));
+            return _q.ToList().Select(e => new BfxPosition(this, e));
         }
 
         public void Update(BfPosition[] positions)
@@ -126,7 +128,7 @@ namespace BitFlyerDotNet.Trading
             {
                 var pos = new BfxPositionsElement(ev);
                 _q.Enqueue(pos);
-                return new BfxPosition[] { new BfxPosition(pos) };
+                return new BfxPosition[] { new BfxPosition(this, pos) };
             }
 
             // Process to another side
@@ -149,13 +151,13 @@ namespace BitFlyerDotNet.Trading
                 }
             }
             var result = new List<BfxPosition>();
-            closedPos.ForEach(e => result.Add(new BfxPosition(e, ev)));
+            closedPos.ForEach(e => result.Add(new BfxPosition(this, e, ev)));
 
             if (closeSize > 0m)
             {
                 var pos = new BfxPositionsElement(ev, Math.Abs(closeSize));
                 _q.Enqueue(pos);
-                result.Add(new BfxPosition(pos));
+                result.Add(new BfxPosition(this, pos));
             }
 
             return result.ToArray();
