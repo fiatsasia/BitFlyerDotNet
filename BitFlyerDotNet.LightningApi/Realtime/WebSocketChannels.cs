@@ -88,7 +88,10 @@ namespace BitFlyerDotNet.LightningApi
             Log.Trace($"{nameof(WebSocketChannels)} disposing...");
             _ct.ThrowIfCancellationRequested();
             _opened = false;
-            _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+            if (_socket.State == WebSocketState.Open)
+            {
+                _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+            }
             //_socket.Dispose();
             Opened = null;
             MessageSent = null;
