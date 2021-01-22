@@ -7,6 +7,7 @@
 //
 
 using System;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -60,6 +61,17 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0) ? $"&after={after}" : ""
             );
             return GetAsync<BfaExecution[]>(nameof(GetExecutions), query).Result;
+        }
+
+        public Task<BitFlyerResponse<BfaExecution[]>> GetExecutionsAsync(BfProductCode productCode, int count = 0, int before = 0, int after = 0)
+        {
+            var query = string.Format("product_code={0}{1}{2}{3}",
+                productCode.ToEnumString(),
+                (count > 0) ? $"&count={count}" : "",
+                (before > 0) ? $"&before={before}" : "",
+                (after > 0) ? $"&after={after}" : ""
+            );
+            return GetAsync<BfaExecution[]>(nameof(GetExecutions), query);
         }
     }
 }

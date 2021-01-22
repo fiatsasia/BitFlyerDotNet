@@ -43,11 +43,11 @@ namespace BitFlyerDotNet.Historical
         int ReadInterval = 3000; // Public API is limited 500 requests in a minute.
         IObservable<IBfExecution> GetExecutions(int before, int after)
         {
-            return Observable.Create<IBfExecution>(observer => { return Task.Run(() =>
+            return Observable.Create<IBfExecution>(observer => { return Task.Run(async () =>
             {
                 while (true)
                 {
-                    var result = _client.GetExecutions(_productCode, ReadCount, before, after);
+                    var result = await _client.GetExecutionsAsync(_productCode, ReadCount, before, after);
                     if (result.IsError)
                     {
                         Thread.Sleep(ReadInterval);
