@@ -78,7 +78,7 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        protected override async void SendCancelOrderRequestAsync()
+        protected override async Task SendCancelOrderRequestAsync()
         {
             if (State == BfxOrderTransactionState.SendingOrder)
             {

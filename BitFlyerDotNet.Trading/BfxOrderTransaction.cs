@@ -7,6 +7,7 @@
 //
 
 using System;
+using System.Threading.Tasks;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
@@ -25,7 +26,7 @@ namespace BitFlyerDotNet.Trading
         public abstract void OnChildOrderEvent(BfChildOrderEvent coe);
 
         protected BfxMarket Market { get; private set; }
-        protected abstract void SendCancelOrderRequestAsync();
+        protected abstract Task SendCancelOrderRequestAsync();
         protected abstract void CancelTransaction();
 
         string _derived;

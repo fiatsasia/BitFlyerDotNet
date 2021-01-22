@@ -89,7 +89,7 @@ namespace BitFlyerDotNet.Trading
         // - エラーリトライ(無限リトライ)
         // - 注文執行によるキャンセルの中止 => CancelFailed受信
         // - 注文送信リトライ中のキャンセル
-        protected override async void SendCancelOrderRequestAsync()
+        protected override async Task SendCancelOrderRequestAsync()
         {
             ChangeState(BfxOrderTransactionState.SendingCancel);
             NotifyEvent(BfxOrderTransactionEventType.CancelSending);
