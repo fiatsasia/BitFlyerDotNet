@@ -26,7 +26,7 @@ namespace HistoricalCacheUtil
             var productCode = BfProductCode.FXBTCJPY;
             var client = new BitFlyerClient();
 #if SQLSERVER
-            var connStr = @"server=(local);Initial Catalog=bitflyer;Integrated Security=True";
+            var connStr = @"server=(local);Initial Catalog=bitflyer2021;Integrated Security=True";
             var cacheFactory = new SqlServerCacheFactory(connStr);
 #elif SQLITE
             var folderPath = Path.Combine(

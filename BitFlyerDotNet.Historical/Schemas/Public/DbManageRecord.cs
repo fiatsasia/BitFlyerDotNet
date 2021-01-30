@@ -20,7 +20,7 @@ namespace BitFlyerDotNet.Historical
         DateTime StartExecutedTime { get; set; }
         long EndExecutionId { get; set; }
         DateTime EndExecutedTime { get; set; }
-        int ExecutionCount { get; set; }
+        long ExecutionCount { get; set; }
         string TransactionKind { get; set; }
         DateTime LastUpdatedTime { get; set; }
     }
@@ -49,7 +49,7 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 5)]
-        public int ExecutionCount { get; set; }
+        public long ExecutionCount { get; set; }
 
         [Required]
         [Column(Order = 6)]

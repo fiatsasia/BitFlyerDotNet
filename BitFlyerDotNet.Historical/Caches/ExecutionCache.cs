@@ -16,7 +16,7 @@ namespace BitFlyerDotNet.Historical
 {
     class ExecutionCache : IExecutionCache
     {
-        public int CommitCount { get; set; } = 10000;
+        public long CommitCount { get; set; } = 10000;
         readonly ICacheDbContext _ctx;
 
         public ExecutionCache(ICacheDbContext ctx)
@@ -138,7 +138,7 @@ namespace BitFlyerDotNet.Historical
 
         DbManageRecord _manageRec;
 
-        public int CurrentBlockTicks { get { return _manageRec == null ? 0 : _manageRec.ExecutionCount; } }
+        public long CurrentBlockTicks { get { return _manageRec == null ? 0 : _manageRec.ExecutionCount; } }
 
         public void Add(IBfExecution exec)
         {

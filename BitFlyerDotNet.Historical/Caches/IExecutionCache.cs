@@ -14,8 +14,8 @@ namespace BitFlyerDotNet.Historical
 {
     public interface IExecutionCache : IDisposable
     {
-        int CommitCount { get; set; }
-        int CurrentBlockTicks { get; }
+        long CommitCount { get; set; }
+        long CurrentBlockTicks { get; }
         void OptimizeManageTable();
         IObservable<IBfExecution> FillGaps(BitFlyerClient client);
         IObservable<IBfExecution> UpdateRecents(BitFlyerClient client);
