@@ -19,13 +19,13 @@ namespace BitFlyerDotNet.Historical
 {
     public class HistoricalExecutionSource : IObservable<IBfExecution>
     {
-        const int ReadCountMax = 500;
+        const long ReadCountMax = 500;
 
         CancellationTokenSource _cancel = new CancellationTokenSource();
         CompositeDisposable _disposables = new CompositeDisposable();
         IObservable<IBfExecution> _source;
 
-        public HistoricalExecutionSource(BitFlyerClient client, BfProductCode productCode, long before, long after, int readCount=ReadCountMax)
+        public HistoricalExecutionSource(BitFlyerClient client, BfProductCode productCode, long before, long after, long readCount=ReadCountMax)
         {
             readCount = Math.Min(readCount, ReadCountMax);
             _source = Observable.Create<IBfExecution>(observer => {

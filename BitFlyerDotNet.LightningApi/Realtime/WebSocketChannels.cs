@@ -297,7 +297,7 @@ namespace BitFlyerDotNet.LightningApi
                     break;
 
                 case WebSocketState.Aborted:
-                    _socket.CloseAsync(WebSocketCloseStatus.Empty, "Aborted", CancellationToken.None);
+                    _socket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
                     _reconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite);
                     break;
 

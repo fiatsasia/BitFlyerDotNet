@@ -39,7 +39,7 @@ namespace BitFlyerDotNet.Historical
             _source = (manageRecords.Count == 0) ? CreateSimpleCopySource(before, 0) : CreateMergedSource(manageRecords, before);
         }
 
-        const int ReadCount = 500;
+        const long ReadCount = 500;
         int ReadInterval = 3000; // Public API is limited 500 requests in a minute.
         IObservable<IBfExecution> GetExecutions(long before, long after)
         {
