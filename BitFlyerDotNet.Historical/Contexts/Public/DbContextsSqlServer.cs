@@ -232,7 +232,7 @@ namespace BitFlyerDotNet.Historical
             return _ctx.GetExecutions();
         }
 
-        public IEnumerable<IBfExecution> GetBackwardExecutions(int before, int after)
+        public IEnumerable<IBfExecution> GetBackwardExecutions(long before, long after)
         {
             return _ctx.GetExecutions().AsQueryable()
                 .Where(exec => exec.ExecutionId < before && exec.ExecutionId > after)

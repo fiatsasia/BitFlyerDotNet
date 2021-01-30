@@ -20,11 +20,11 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 1)]
-        public int StartExecutionId { get; set; }
+        public long StartExecutionId { get; set; }
 
         [Required]
         [Column(Order = 2)]
-        public int EndExecutionId { get; set; }
+        public long EndExecutionId { get; set; }
 
         [Required]
         [Column(Order = 3)]

@@ -24,7 +24,7 @@ namespace BitFlyerDotNet.Historical
 
         // Executions
         IEnumerable<IBfExecution> GetBackwardExecutions();
-        IEnumerable<IBfExecution> GetBackwardExecutions(int before, int after);
+        IEnumerable<IBfExecution> GetBackwardExecutions(long before, long after);
         void AddExecution(IBfExecution exec);
 
         // OHLCs

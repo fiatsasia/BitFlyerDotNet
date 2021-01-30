@@ -89,14 +89,14 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public IAsyncEnumerable<Task<BitFlyerResponse<BfMarket[]>>> GetMarketsAllAsync()
+        public Task<BitFlyerResponse<BfMarket[]>>[] GetMarketsAllAsync()
         {
             return new Task<BitFlyerResponse<BfMarket[]>>[]
             {
                 GetMarketsAsync(),
                 GetMarketsUsaAsync(),
                 GetMarketsEuAsync(),
-            }.ToAsyncEnumerable();
+            };
         }
     }
 }

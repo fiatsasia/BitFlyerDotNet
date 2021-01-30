@@ -9,6 +9,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace BitFlyerDotNet.LightningApi
 {
@@ -35,10 +36,12 @@ namespace BitFlyerDotNet.LightningApi
             return result.Distinct(e => e.ProductCode);
         }
 
-        public static async IAsyncEnumerable<(BfProductCode ProductCode, string Symbol)> GetAvailableMarketsAsync(this BitFlyerClient client)
+        public static async Task<IEnumerable<(BfProductCode ProductCode, string Symbol)>> GetAvailableMarketsAsync(this BitFlyerClient client)
         {
-            await foreach (var markets in client.GetMarketsAllAsync().SelectAwait(async (e) => (await e).GetContent()))
+            var result = new List<(BfProductCode ProductCode, string Symbol)>();
+            foreach (var task in client.GetMarketsAllAsync())
             {
+                var markets = (await task).GetContent();
                 foreach (var market in markets)
                 {
                     if (market.ProductCode.StartsWith("BTCJPY"))
@@ -47,14 +50,15 @@ namespace BitFlyerDotNet.LightningApi
                         {
                             continue; // ******** BTCJPY future somtimes missing alias, skip it ********
                         }
-                        yield return ((BfProductCode)Enum.Parse(typeof(BfProductCode), market.Alias.Replace("_", "")), market.ProductCode);
+                        result.Add(((BfProductCode)Enum.Parse(typeof(BfProductCode), market.Alias.Replace("_", "")), market.ProductCode));
                     }
                     else
                     {
-                        yield return ((BfProductCode)Enum.Parse(typeof(BfProductCode), market.ProductCode.Replace("_", "")), market.ProductCode);
+                        result.Add(((BfProductCode)Enum.Parse(typeof(BfProductCode), market.ProductCode.Replace("_", "")), market.ProductCode));
                     }
                 }
             }
+            return result.Distinct(e => e.ProductCode);
         }
     }
 }

@@ -16,7 +16,7 @@ namespace BitFlyerDotNet.LightningApi
     public class BfaExecution : IBfExecution
     {
         [JsonProperty(PropertyName = "id")]
-        public int ExecutionId { get; private set; }
+        public long ExecutionId { get; private set; }
 
         [JsonProperty(PropertyName = "side")]
         [JsonConverter(typeof(StringEnumConverter))]
@@ -52,7 +52,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfaExecution[]> GetExecutions(BfProductCode productCode, int count = 0, int before = 0, int after = 0)
+        public BitFlyerResponse<BfaExecution[]> GetExecutions(BfProductCode productCode, int count = 0, long before = 0, long after = 0)
         {
             var query = string.Format("product_code={0}{1}{2}{3}",
                 productCode.ToEnumString(),
@@ -63,7 +63,7 @@ namespace BitFlyerDotNet.LightningApi
             return GetAsync<BfaExecution[]>(nameof(GetExecutions), query).Result;
         }
 
-        public Task<BitFlyerResponse<BfaExecution[]>> GetExecutionsAsync(BfProductCode productCode, int count = 0, int before = 0, int after = 0)
+        public Task<BitFlyerResponse<BfaExecution[]>> GetExecutionsAsync(BfProductCode productCode, int count = 0, long before = 0, long after = 0)
         {
             var query = string.Format("product_code={0}{1}{2}{3}",
                 productCode.ToEnumString(),

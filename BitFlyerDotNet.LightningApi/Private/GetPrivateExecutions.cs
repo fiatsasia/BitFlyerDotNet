@@ -17,7 +17,7 @@ namespace BitFlyerDotNet.LightningApi
     public class BfaPrivateExecution : IBfExecution
     {
         [JsonProperty(PropertyName = "id")]
-        public int ExecutionId { get; private set; }
+        public long ExecutionId { get; private set; }
 
         [JsonProperty(PropertyName = "child_order_id")]
         public string ChildOrderId { get; private set; }
@@ -55,7 +55,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="childOrderId"></param>
         /// <param name="childOrderAcceptanceId"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfaPrivateExecution[]> GetPrivateExecutions(BfProductCode productCode, int count = 0, int before = 0, int after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
+        public BitFlyerResponse<BfaPrivateExecution[]> GetPrivateExecutions(BfProductCode productCode, int count = 0, long before = 0, long after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
         {
             var query = string.Format("product_code={0}{1}{2}{3}{4}{5}",
                 productCode.ToEnumString(),
@@ -69,7 +69,7 @@ namespace BitFlyerDotNet.LightningApi
             return GetPrivateAsync<BfaPrivateExecution[]>("getexecutions", query).Result;
         }
 
-        public IEnumerable<BfaPrivateExecution> GetPrivateExecutions(BfProductCode productCode, int before, Func<BfaPrivateExecution, bool> predicate)
+        public IEnumerable<BfaPrivateExecution> GetPrivateExecutions(BfProductCode productCode, long before, Func<BfaPrivateExecution, bool> predicate)
         {
             while (true)
             {

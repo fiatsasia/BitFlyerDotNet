@@ -12,7 +12,7 @@ namespace BitFlyerDotNet.Trading
 {
     public interface IBfxExecution
     {
-        int Id { get; }
+        long Id { get; }
         DateTime Time { get; }
         decimal Price { get; }
         decimal Size { get; }

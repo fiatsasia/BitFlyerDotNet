@@ -33,12 +33,12 @@ namespace BitFlyerDotNet.Trading
             if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiKey))
             {
                 Client = new BitFlyerClient().AddTo(_disposables);
-                RealtimeSource = new RealtimeSourceFactory(Client).AddTo(_disposables);
+                RealtimeSource = RealtimeSourceFactory.CreateAsSingleton().AddTo(_disposables);
             }
             else
             {
                 Client = new BitFlyerClient(apiKey, apiSecret).AddTo(_disposables);
-                RealtimeSource = new RealtimeSourceFactory(apiKey, apiSecret, Client).AddTo(_disposables);
+                RealtimeSource = RealtimeSourceFactory.CreateAsSingleton(apiKey, apiSecret).AddTo(_disposables);
             }
             RealtimeSource.ConnectionResumed += OnRealtimeConnectionResumed;
         }
@@ -58,14 +58,15 @@ namespace BitFlyerDotNet.Trading
             _disposables.DisposeReverse();
         }
 
-        void InitializeMarkets()
+        async Task InitializeMarketsAsync()
         {
             if (_markets.Count > 0)
             {
                 return;
             }
 
-            Client.GetAvailableMarkets().ForEach(e =>
+            var result = await Client.GetAvailableMarketsAsync();
+            result.ForEach(e =>
             {
                 _markets.Add(e.ProductCode, new BfxMarket(this, e.ProductCode).AddTo(_disposables));
                 _marketSymbols.Add(e.Symbol, e.ProductCode);
@@ -74,7 +75,7 @@ namespace BitFlyerDotNet.Trading
 
         public async Task OpenAsync()
         {
-            InitializeMarkets();
+            await InitializeMarketsAsync();
             await RealtimeSource.TryOpenAsync();
 
             if (!Client.IsAuthenticated)
@@ -99,9 +100,9 @@ namespace BitFlyerDotNet.Trading
             });
         }
 
-        public BfxMarket GetMarket(BfProductCode productCode)
+        public async Task<BfxMarket> GetMarketAsync(BfProductCode productCode)
         {
-            InitializeMarkets();
+            await InitializeMarketsAsync();
             return _markets[productCode];
         }
     }

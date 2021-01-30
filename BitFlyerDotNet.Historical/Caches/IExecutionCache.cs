@@ -22,10 +22,10 @@ namespace BitFlyerDotNet.Historical
         void Add(IBfExecution exec);
         void UpdateMarker(IBfExecution exec);
         void SaveChanges();
-        void InsertGap(int before, int after);
+        void InsertGap(long before, long after);
 
         IEnumerable<IBfExecution> GetBackwardExecutions();
-        IEnumerable<IBfExecution> GetBackwardExecutions(int before, int after);
+        IEnumerable<IBfExecution> GetBackwardExecutions(long before, long after);
         List<IManageRecord> GetManageTable();
     }
 }

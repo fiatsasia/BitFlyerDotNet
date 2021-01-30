@@ -25,7 +25,7 @@ namespace BitFlyerDotNet.Historical
         CompositeDisposable _disposables = new CompositeDisposable();
         IObservable<IBfExecution> _source;
 
-        public HistoricalExecutionSource(BitFlyerClient client, BfProductCode productCode, int before, int after, int readCount=ReadCountMax)
+        public HistoricalExecutionSource(BitFlyerClient client, BfProductCode productCode, long before, long after, int readCount=ReadCountMax)
         {
             readCount = Math.Min(readCount, ReadCountMax);
             _source = Observable.Create<IBfExecution>(observer => {

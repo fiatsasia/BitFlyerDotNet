@@ -27,7 +27,7 @@ namespace BitFlyerDotNet.Historical
         BitFlyerClient _client;
         BfProductCode _productCode;
 
-        public ExecutionCachedSource(BitFlyerClient client, IExecutionCache cache, BfProductCode productCode, int before)
+        public ExecutionCachedSource(BitFlyerClient client, IExecutionCache cache, BfProductCode productCode, long before)
         {
             _client = client;
             _productCode = productCode;
@@ -41,7 +41,7 @@ namespace BitFlyerDotNet.Historical
 
         const int ReadCount = 500;
         int ReadInterval = 3000; // Public API is limited 500 requests in a minute.
-        IObservable<IBfExecution> GetExecutions(int before, int after)
+        IObservable<IBfExecution> GetExecutions(long before, long after)
         {
             return Observable.Create<IBfExecution>(observer => { return Task.Run(async () =>
             {
@@ -75,7 +75,7 @@ namespace BitFlyerDotNet.Historical
             });});
         }
 
-        IObservable<IBfExecution> CreateReaderSource(int before, int after)
+        IObservable<IBfExecution> CreateReaderSource(long before, long after)
         {
             Log.Trace($"{nameof(ExecutionCachedSource)}.CreateReaderSource entered Before={before} After={after}");
             if (before == 0 || after == 0)
@@ -89,7 +89,7 @@ namespace BitFlyerDotNet.Historical
 
                 var ticks = 0;
 #if DEBUG
-                var last = 0;
+                var last = 0L;
 #endif
                 // IEnumerable.ToObservable() has bug that is never completed if subscriber sends completed.
                 foreach (var tick in _cache.GetBackwardExecutions(before, after))
@@ -115,14 +115,14 @@ namespace BitFlyerDotNet.Historical
             });});
         }
 
-        IObservable<IBfExecution> CreateSimpleCopySource(int before, int after)
+        IObservable<IBfExecution> CreateSimpleCopySource(long before, long after)
         {
             Log.Trace($"{nameof(ExecutionCachedSource)}.CreateSimpleCopySource entered Before={before} After={after}");
             return Observable.Create<IBfExecution>(observer =>
             {
                 Log.Trace($"{nameof(ExecutionCachedSource)}.CreateSimpleCopySource subscribed Before={before} After={after}");
 #if DEBUG
-                var last = 0;
+                var last = 0L;
 #endif
                 return GetExecutions(before, after).Subscribe(
                     tick =>
@@ -156,7 +156,7 @@ namespace BitFlyerDotNet.Historical
             });
         }
 
-        IObservable<IBfExecution> CreateMergedSource(List<IManageRecord> manageRecords, int before)
+        IObservable<IBfExecution> CreateMergedSource(List<IManageRecord> manageRecords, long before)
         {
             Log.Trace($"{nameof(ExecutionCachedSource)}.CreateMergedSource entered Before={before}");
             var histObservables = new List<IObservable<IBfExecution>>();
@@ -205,7 +205,7 @@ namespace BitFlyerDotNet.Historical
         {
             Log.Trace($"{nameof(ExecutionCachedSource)} subscribed.");
 #if DEBUG
-            var last = 0;
+            var last = 0L;
 #endif
             _source.Subscribe(
                 tick =>

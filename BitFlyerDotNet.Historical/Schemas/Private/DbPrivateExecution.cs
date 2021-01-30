@@ -21,7 +21,7 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 1)]
-        public int ExecutionId { get; set; }
+        public long ExecutionId { get; set; }
 
         [Required]
         [Column(Order = 2)]

@@ -176,7 +176,7 @@ namespace BitFlyerDotNet.Historical
             return _ctxExec.Instance.AsNoTracking();
         }
 
-        public IEnumerable<IBfExecution> GetBackwardExecutions(int before, int after)
+        public IEnumerable<IBfExecution> GetBackwardExecutions(long before, long after)
         {
             return _ctxExec.Instance.AsNoTracking()
                 .Where(exec => exec.ExecutionId < before && exec.ExecutionId > after)

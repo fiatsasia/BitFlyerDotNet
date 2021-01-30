@@ -13,7 +13,7 @@ namespace BitFlyerDotNet.LightningApi
     // Common interface between BfExecution and BfPrivateExecution
     public interface IBfExecution
     {
-        int ExecutionId { get; }
+        long ExecutionId { get; }
         BfTradeSide Side { get; }
         decimal Price { get; }
         decimal Size { get; }

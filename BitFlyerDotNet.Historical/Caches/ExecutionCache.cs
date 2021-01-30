@@ -31,7 +31,7 @@ namespace BitFlyerDotNet.Historical
         }
 
         public IEnumerable<IBfExecution> GetBackwardExecutions() { return _ctx.GetBackwardExecutions(); }
-        public IEnumerable<IBfExecution> GetBackwardExecutions(int before, int after) { return _ctx.GetBackwardExecutions(before, after); }
+        public IEnumerable<IBfExecution> GetBackwardExecutions(long before, long after) { return _ctx.GetBackwardExecutions(before, after); }
         public List<IManageRecord> GetManageTable() { return _ctx.GetManageTable(); }
 
         public void OptimizeManageTable()
@@ -117,7 +117,7 @@ namespace BitFlyerDotNet.Historical
 
         public IObservable<IBfExecution> UpdateRecents(BitFlyerClient client)
         {
-            var after = 0;
+            var after = 0L;
             var manageRec = _ctx.GetManageTable();
             if (manageRec.Count > 0)
             {
@@ -212,7 +212,7 @@ namespace BitFlyerDotNet.Historical
             Log.Trace("HistoricalCache committed.");
         }
 
-        public void InsertGap(int before, int after)
+        public void InsertGap(long before, long after)
         {
             if (before == 0 || after == 0)
             {

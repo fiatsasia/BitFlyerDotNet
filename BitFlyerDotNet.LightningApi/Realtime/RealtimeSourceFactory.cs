@@ -58,13 +58,13 @@ namespace BitFlyerDotNet.LightningApi
         internal WebSocketChannels Channels { get; private set; }
         public event Action<string> MessageSent;
         public event Action<string, object> MessageReceived;
-        public Task ReaderThread() => Channels.ReaderThread();
 
         void OnMessageSent(string json) => MessageSent?.Invoke(json);
         void OnMessageReceived(string json, object message) => MessageReceived?.Invoke(json, message);
 
         CompositeDisposable _disposables = new ();
         BitFlyerClient _client;
+        public static RealtimeSourceFactory Singleton { get; private set; }
 
         /// <summary>
         /// Create public realtime source
@@ -77,13 +77,7 @@ namespace BitFlyerDotNet.LightningApi
             _client = new BitFlyerClient().AddTo(_disposables);
         }
 
-        public RealtimeSourceFactory(BitFlyerClient client)
-        {
-            Channels = new WebSocketChannels(EndpointUrl).AddTo(_disposables);
-            Channels.MessageSent = OnMessageSent;
-            Channels.MessageReceived = OnMessageReceived;
-            _client = client;
-        }
+        public static RealtimeSourceFactory CreateAsSingleton() => Singleton = new RealtimeSourceFactory();
 
         /// <summary>
         /// Create pricate realtime source
@@ -98,13 +92,7 @@ namespace BitFlyerDotNet.LightningApi
             _client = new BitFlyerClient().AddTo(_disposables);
         }
 
-        public RealtimeSourceFactory(string apiKey, string apiSecret, BitFlyerClient client)
-        {
-            Channels = new WebSocketChannels(EndpointUrl, apiKey, apiSecret).AddTo(_disposables);
-            Channels.MessageSent = OnMessageSent;
-            Channels.MessageReceived = OnMessageReceived;
-            _client = client;
-        }
+        public static RealtimeSourceFactory CreateAsSingleton(string apiKey, string apiSecret) => Singleton = new RealtimeSourceFactory(apiKey, apiSecret);
 
         public void Dispose()
         {
@@ -118,7 +106,7 @@ namespace BitFlyerDotNet.LightningApi
         async Task GetAvailableMarkets()
         {
             _availableMarkets.Clear();
-            await foreach (var market in _client.GetAvailableMarketsAsync())
+            foreach (var market in await _client.GetAvailableMarketsAsync())
             {
                 _availableMarkets[market.ProductCode] = market.Symbol;
             }

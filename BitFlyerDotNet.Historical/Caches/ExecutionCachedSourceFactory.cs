@@ -14,7 +14,7 @@ namespace BitFlyerDotNet.Historical
 {
     public class ExecutionCachedSourceFactory
     {
-        ConcurrentDictionary<BfProductCode, ConcurrentDictionary<int, ExecutionCachedSource>> _sources = new ConcurrentDictionary<BfProductCode, ConcurrentDictionary<int, ExecutionCachedSource>>();
+        ConcurrentDictionary<BfProductCode, ConcurrentDictionary<long, ExecutionCachedSource>> _sources = new ();
 
         BitFlyerClient _client;
         ICacheFactory _cacheFactory;
@@ -25,9 +25,9 @@ namespace BitFlyerDotNet.Historical
             _cacheFactory = cacheFactory;
         }
 
-        public IObservable<IBfExecution> GetExecutionCachedSource(BfProductCode productCode, int before)
+        public IObservable<IBfExecution> GetExecutionCachedSource(BfProductCode productCode, long before)
         {
-            return _sources.GetOrAdd(productCode, _ => { return new ConcurrentDictionary<int, ExecutionCachedSource>(); })
+            return _sources.GetOrAdd(productCode, _ => { return new (); })
             .GetOrAdd(before, __ =>
             {
                 return new ExecutionCachedSource(_client, _cacheFactory.GetExecutionCache(productCode), productCode, before);

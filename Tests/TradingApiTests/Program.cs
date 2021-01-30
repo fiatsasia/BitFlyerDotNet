@@ -55,7 +55,7 @@ namespace TradingApiTests
             var connStr = "data source=" + Path.Combine(Properties["CacheDirectoryPath"], OrderCacheFileName);
             using (_account = new BfxAccount(key, secret))
             {
-                _market = _account.GetMarket(ProductCode);
+                _market = await _account.GetMarketAsync(ProductCode);
                 _account.PositionChanged += OnPositionChanged;
                 _orderSize = ProductCode.GetMinimumOrderSize();
                 _market.OrderTransactionChanged += OnOrderTransactionChanged;

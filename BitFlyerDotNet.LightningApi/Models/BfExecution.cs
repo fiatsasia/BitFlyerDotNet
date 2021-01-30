@@ -13,7 +13,7 @@ namespace BitFlyerDotNet
 {
     public class BfExecution : IBfPrivateExecution
     {
-        public int ExecutionId { get; }
+        public long ExecutionId { get; }
         public BfTradeSide Side { get; }
         public decimal Price { get; }
         public decimal Size { get; }

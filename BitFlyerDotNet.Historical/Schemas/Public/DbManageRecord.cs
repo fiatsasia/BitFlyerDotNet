@@ -16,9 +16,9 @@ namespace BitFlyerDotNet.Historical
     public interface IManageRecord
     {
         DateTime CreatedTime { get; set; }
-        int StartExecutionId { get; set; }
+        long StartExecutionId { get; set; }
         DateTime StartExecutedTime { get; set; }
-        int EndExecutionId { get; set; }
+        long EndExecutionId { get; set; }
         DateTime EndExecutedTime { get; set; }
         int ExecutionCount { get; set; }
         string TransactionKind { get; set; }
@@ -33,7 +33,7 @@ namespace BitFlyerDotNet.Historical
 
         [Key]
         [Column(Order = 1)]
-        public int StartExecutionId { get; set; }
+        public long StartExecutionId { get; set; }
 
         [Required]
         [Column(Order = 2)]
@@ -41,7 +41,7 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 3)]
-        public int EndExecutionId { get; set; }
+        public long EndExecutionId { get; set; }
 
         [Required]
         [Column(Order = 4)]
