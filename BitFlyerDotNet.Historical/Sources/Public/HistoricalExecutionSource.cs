@@ -29,17 +29,22 @@ namespace BitFlyerDotNet.Historical
         {
             readCount = Math.Min(readCount, ReadCountMax);
             _source = Observable.Create<IBfExecution>(observer => {
-                return Task.Run(() =>
+                return Task.Run(async () =>
                 {
                     while (true)
                     {
                         var resp = client.GetExecutions(productCode, ReadCountMax, before, 0);
                         if (resp.IsError)
                         {
-                            if (resp.StatusCode == HttpStatusCode.BadRequest) // no more records
+                            switch (resp.StatusCode)
                             {
-                                observer.OnCompleted();
-                                return;
+                                case HttpStatusCode.BadRequest: // no more records
+                                    observer.OnCompleted();
+                                    return;
+
+                                case HttpStatusCode.InternalServerError:
+                                    await Task.Delay(30 * 1000); // Probably server is in maintanace. wait 30 secs
+                                    break;
                             }
                             continue;
                         }

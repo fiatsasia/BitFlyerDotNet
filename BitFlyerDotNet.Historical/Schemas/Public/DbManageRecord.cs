@@ -63,9 +63,9 @@ namespace BitFlyerDotNet.Historical
         {
             ExecutionCount = 0;
             CreatedTime = LastUpdatedTime = DateTime.UtcNow;
-            StartExecutionId = int.MaxValue;
+            StartExecutionId = long.MaxValue;
             StartExecutedTime = DateTime.MaxValue;
-            EndExecutionId = int.MinValue;
+            EndExecutionId = long.MinValue;
             TransactionKind = "H";
             EndExecutedTime = DateTime.MinValue;
         }

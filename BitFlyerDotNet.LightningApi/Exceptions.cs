@@ -21,4 +21,10 @@ namespace BitFlyerDotNet.LightningApi
         public BitFlyerUnauthorizedException() : base() { }
         public BitFlyerUnauthorizedException(string message) : base(message) { }
     }
+
+    public class BitFlyerApiLimitException : BitFlyerDotNetException
+    {
+        public BitFlyerApiLimitException() : base() { }
+        public BitFlyerApiLimitException(string message) : base(message) { }
+    }
 }

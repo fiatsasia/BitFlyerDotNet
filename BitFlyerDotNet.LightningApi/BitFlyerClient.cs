@@ -247,6 +247,16 @@ namespace BitFlyerDotNet.LightningApi
                     var response = await _client.SendAsync(request);
                     responseObject.Set(response.StatusCode, await response.Content.ReadAsStringAsync());
                     TotalReceivedMessageChars += responseObject.Json.Length;
+                    switch (responseObject.StatusCode)
+                    {
+                        case HttpStatusCode.InternalServerError:
+                            // Internal server error causes in mainly reasons are server too busy or in maintanance.
+                            // Application will decide terminate, wait or confirm to user.
+                            break;
+
+                        case (HttpStatusCode)429:
+                            throw new BitFlyerApiLimitException($"{apiName}: Too many requests (HTTP response Status=429).");
+                    }
                     if (_apiLimitter.CheckLimitReached())
                     {
                         Log.Warn($"API limit reached. Inserting {ApiLimitterPenaltyMs}ms delay.");
@@ -321,9 +331,18 @@ namespace BitFlyerDotNet.LightningApi
                     var response = await _client.SendAsync(request);
                     responseObject.Set(response.StatusCode, await response.Content.ReadAsStringAsync());
                     TotalReceivedMessageChars += responseObject.Json.Length;
-                    if (responseObject.StatusCode == HttpStatusCode.Unauthorized)
+                    switch (responseObject.StatusCode)
                     {
-                        throw new BitFlyerUnauthorizedException($"{apiName}: Permission denied.");
+                        case HttpStatusCode.InternalServerError:
+                            // Internal server error causes in mainly reasons are server too busy or in maintanance.
+                            // Application will decide terminate, wait or confirm to user.
+                            break;
+
+                        case HttpStatusCode.Unauthorized:
+                            throw new BitFlyerUnauthorizedException($"{apiName}: Permission denied.");
+
+                        case (HttpStatusCode)429:
+                            throw new BitFlyerApiLimitException($"{apiName}: Too many requests (HTTP response Status=429).");
                     }
                     if (_apiLimitter.CheckLimitReached())
                     {

@@ -23,6 +23,7 @@ namespace BitFlyerDotNet.LightningApi
     {
         public static int WebSocketReconnectionIntervalMs { get; set; } = 3000;
         public long TotalReceivedMessageChars { get; private set; }
+        public bool IsOpened => (_socket?.State ?? WebSocketState.None) == WebSocketState.Open;
 
         public event Action Opened;
         public event Action Suspended;
@@ -38,8 +39,7 @@ namespace BitFlyerDotNet.LightningApi
         Timer _reconnectionTimer;
         AutoResetEvent _openedEvent = new (false);
         ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new();
-        CancellationToken _ct = new();
-
+        CancellationToken _ct;
         string _uri;
         string _apiKey;
         HMACSHA256 _hash;
@@ -61,13 +61,12 @@ namespace BitFlyerDotNet.LightningApi
         {
             Log.Trace($"Creating WebSocket...");
             _socket?.Dispose();
-            _opened = false;
 
             try
             {
                 System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
                 _socket = new();
-                _socket.Options.KeepAliveInterval = TimeSpan.Zero;
+                //_socket.Options.KeepAliveInterval = TimeSpan.Zero;
 
                 _istream = new WebSocketStream(_socket);
                 _ostream = new WebSocketStream(_socket);
@@ -87,7 +86,6 @@ namespace BitFlyerDotNet.LightningApi
         {
             Log.Trace($"{nameof(WebSocketChannels)} disposing...");
             _ct.ThrowIfCancellationRequested();
-            _opened = false;
             if (_socket.State == WebSocketState.Open)
             {
                 _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
@@ -99,15 +97,13 @@ namespace BitFlyerDotNet.LightningApi
             Log.Trace($"{nameof(WebSocketChannels)} disposed");
         }
 
-        bool _opened = false;
         public async Task TryOpenAsync()
         {
-            if (!_opened)
+            if (_socket.State != WebSocketState.Open)
             {
                 Log.Trace("Opening WebSocket...");
                 try
                 {
-                    _opened = true;
                     await _socket.ConnectAsync(new Uri(_uri), CancellationToken.None);
                     _receiver = Task.Run(ReaderThread);
 
@@ -137,6 +133,7 @@ namespace BitFlyerDotNet.LightningApi
         internal async Task ReaderThread()
         {
             Log.Trace("Start reader thread loop");
+            _ct = new();
             while (true)
             {
                 try
@@ -267,7 +264,7 @@ namespace BitFlyerDotNet.LightningApi
 
         void OnClosed()
         {
-            if (!_opened) // from Close() or Dispose()
+            if (_socket.State != WebSocketState.Open) // from Close() or Dispose()
             {
                 return;
             }
@@ -297,8 +294,9 @@ namespace BitFlyerDotNet.LightningApi
                     break;
 
                 case WebSocketState.Aborted:
+                    _ct.ThrowIfCancellationRequested();
                     _socket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
-                    _reconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite);
+                    TryOpenAsync();
                     break;
 
                 case WebSocketState.Open:

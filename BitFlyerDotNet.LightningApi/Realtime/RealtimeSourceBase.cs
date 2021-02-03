@@ -40,7 +40,10 @@ namespace BitFlyerDotNet.LightningApi
 
         protected virtual void OnDispose()
         {
-            _channels.Send(JsonConvert.SerializeObject(new { method = "unsubscribe", @params = new { channel = ChannelName }}));
+            if (_channels.IsOpened)
+            {
+                _channels.Send(JsonConvert.SerializeObject(new { method = "unsubscribe", @params = new { channel = ChannelName } }));
+            }
             _observer?.OnCompleted();
             _observer = null;
         }
