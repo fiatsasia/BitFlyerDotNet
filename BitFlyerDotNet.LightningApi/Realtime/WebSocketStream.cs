@@ -31,10 +31,18 @@ namespace BitFlyerDotNet.LightningApi
             }
 
             WebSocketReceiveResult wsrr;
-            do
+            int readBytes = 0;
+            while (true)
             {
                 wsrr = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer, offset, count), ct);
-            } while (!wsrr.EndOfMessage);
+                readBytes += wsrr.Count;
+                if (wsrr.EndOfMessage)
+                {
+                    break;
+                }
+                offset += wsrr.Count;
+                count -= wsrr.Count;
+            };
 
             if (wsrr.MessageType == WebSocketMessageType.Close)
             {
@@ -42,7 +50,7 @@ namespace BitFlyerDotNet.LightningApi
                 return 0;
             }
 
-            return wsrr.Count;
+            return readBytes;
         }
 
         public override async Task FlushAsync(CancellationToken ct)

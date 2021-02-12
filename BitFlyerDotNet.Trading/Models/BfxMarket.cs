@@ -45,7 +45,7 @@ namespace BitFlyerDotNet.Trading
         BfxAccount _account;
         ConcurrentDictionary<string, IBfxOrderTransaction> _childOrderTransactions = new ConcurrentDictionary<string, IBfxOrderTransaction>();
         ConcurrentDictionary<string, IBfxOrderTransaction> _parentOrderTransactions = new ConcurrentDictionary<string, IBfxOrderTransaction>();
-        IObservable<BfxTicker> _ticker;
+        IObservable<BfTicker> _ticker;
 
         public BfxMarket(BfxAccount account, BfProductCode productCode, BfxConfiguration config)
         {
@@ -53,11 +53,10 @@ namespace BitFlyerDotNet.Trading
             ProductCode = productCode;
             Config = config ?? new BfxConfiguration();
             _serverTimeSpan = TimeSpan.Zero;
-            _ticker = new BfxTickerSource(this).Publish().RefCount();
-            _account.RealtimeSource.ConnectionResumed += RealtimeSource_ConnectionResumed;
+            _account.RealtimeSource.ConnectionResumed += ConnectionResumed;
         }
 
-        void RealtimeSource_ConnectionResumed()
+        void ConnectionResumed()
         {
             if (OrderCache == default)
             {
@@ -104,16 +103,21 @@ namespace BitFlyerDotNet.Trading
             {
                 LoadMarketInformations();
             }
-            _ticker.Subscribe(e =>
+
+            if (_ticker == null)
             {
-                _serverTimeSpan = e.ServerTimeDiff;
-                LastTradedPrice = e.LastTradedPrice;
-                BestAskPrice = e.BestAskPrice;
-                BestBidPrice = e.BestBidPrice;
-            }).AddTo(_disposables);
+                _ticker = _account.RealtimeSource.GetTickerSource(ProductCode);
+                _ticker.Subscribe(e =>
+                {
+                    _serverTimeSpan = e.Timestamp - DateTime.UtcNow;
+                    LastTradedPrice = e.LastTradedPrice;
+                    BestAskPrice = e.BestAsk;
+                    BestBidPrice = e.BestBid;
+                }).AddTo(_disposables);
+            }
         }
 
-        public IObservable<BfxTicker> GetTickerSource()
+        public IObservable<BfTicker> GetTickerSource()
         {
             return _ticker;
         }

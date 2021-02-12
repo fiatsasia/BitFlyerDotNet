@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
@@ -66,7 +67,14 @@ namespace BitFlyerDotNet.LightningApi
             {
                 System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
                 _socket = new();
-                //_socket.Options.KeepAliveInterval = TimeSpan.Zero;
+
+                //==================================================
+                // Below option must be needed. If omit, serever will disconnect connection but not supported Blazer WebAssembly. 
+                // Feb/2021
+                if (RuntimeInformation.OSArchitecture != /*Architecture.Wasm*/(Architecture)4) // implemented .NET5 or later
+                {
+                    _socket.Options.KeepAliveInterval = TimeSpan.Zero;
+                }
 
                 _istream = new WebSocketStream(_socket);
                 _ostream = new WebSocketStream(_socket);
@@ -76,9 +84,8 @@ namespace BitFlyerDotNet.LightningApi
                 //_socket.DataReceived += OnDataReceived;
                 //_socket.Error += OnError;
             }
-            catch (AggregateException ex)
+            catch (AggregateException)
             {
-
             }
         }
 
@@ -134,6 +141,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             Log.Trace("Start reader thread loop");
             _ct = new();
+            var json = string.Empty;
             while (true)
             {
                 try
@@ -146,7 +154,7 @@ namespace BitFlyerDotNet.LightningApi
                         return; // Thread will be restarted.
                     }
 
-                    var json = Encoding.UTF8.GetString(buffer, 0, length);
+                    json = Encoding.UTF8.GetString(buffer, 0, length);
                     OnMessageReceived(json);
                     WsReceived?.Invoke(json);
                 }
@@ -156,9 +164,7 @@ namespace BitFlyerDotNet.LightningApi
                 }
                 catch (Exception ex)
                 {
-                    Log.Warn($"WebSocket ReaderThread caused exception: {ex.Message}");
-                    // Call OnError
-                    // Rethrow exception - after alpha
+                    Log.Warn($"WebSocket ReaderThread caused exception: {ex.Message} '{json}'");
                 }
             }
         }
