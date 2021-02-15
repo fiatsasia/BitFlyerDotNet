@@ -35,7 +35,8 @@ namespace BitFlyerDotNet.LightningApi
         ClientWebSocket _socket;
         WebSocketStream _istream;
         WebSocketStream _ostream;
-        Task _receiver;
+        Thread _receiver;
+        Task _receiveTask;
 
         Timer _reconnectionTimer;
         AutoResetEvent _openedEvent = new (false);
@@ -44,10 +45,12 @@ namespace BitFlyerDotNet.LightningApi
         string _uri;
         string _apiKey;
         HMACSHA256 _hash;
+        bool _isWasm;
 
         public WebSocketChannels(string uri)
         {
-            _uri = uri;
+            _isWasm = RuntimeInformation.OSArchitecture == /*Architecture.Wasm*/(Architecture)4; // implemented .NET5 or later
+                _uri = uri;
             CreateWebSocket();
         }
 
@@ -71,7 +74,7 @@ namespace BitFlyerDotNet.LightningApi
                 //==================================================
                 // Below option must be needed. If omit, serever will disconnect connection but not supported Blazer WebAssembly. 
                 // Feb/2021
-                if (RuntimeInformation.OSArchitecture != /*Architecture.Wasm*/(Architecture)4) // implemented .NET5 or later
+                if (!_isWasm) // implemented .NET5 or later
                 {
                     _socket.Options.KeepAliveInterval = TimeSpan.Zero;
                 }
@@ -112,7 +115,15 @@ namespace BitFlyerDotNet.LightningApi
                 try
                 {
                     await _socket.ConnectAsync(new Uri(_uri), CancellationToken.None);
-                    _receiver = Task.Run(ReaderThread);
+                    if (_isWasm)
+                    {
+                        _receiveTask = Task.Run(ReaderThread); // WASM does not support Thread.Start()
+                    }
+                    else
+                    {
+                        _receiver = new Thread(ReaderThread) { IsBackground = true };
+                        _receiver.Start();
+                    }
 
                     if (!string.IsNullOrEmpty(_apiKey) && _hash != null)
                     {
@@ -137,7 +148,7 @@ namespace BitFlyerDotNet.LightningApi
         const int BufferSize = 1024*32; // 32K
         byte[] buffer = new byte[BufferSize];
         event Action<string> WsReceived;
-        internal async Task ReaderThread()
+        internal async void ReaderThread()
         {
             Log.Trace("Start reader thread loop");
             _ct = new();

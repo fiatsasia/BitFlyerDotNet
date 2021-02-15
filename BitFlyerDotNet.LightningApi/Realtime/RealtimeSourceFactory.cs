@@ -77,7 +77,7 @@ namespace BitFlyerDotNet.LightningApi
             _client = new BitFlyerClient().AddTo(_disposables);
         }
 
-        public static RealtimeSourceFactory CreateAsSingleton() => Singleton = new RealtimeSourceFactory();
+        public static RealtimeSourceFactory CreateAsSingleton() => Singleton = new ();
 
         /// <summary>
         /// Create pricate realtime source
@@ -92,7 +92,7 @@ namespace BitFlyerDotNet.LightningApi
             _client = new BitFlyerClient().AddTo(_disposables);
         }
 
-        public static RealtimeSourceFactory CreateAsSingleton(string apiKey, string apiSecret) => Singleton = new RealtimeSourceFactory(apiKey, apiSecret);
+        public static RealtimeSourceFactory CreateAsSingleton(string apiKey, string apiSecret) => Singleton = new (apiKey, apiSecret);
 
         public void Dispose()
         {
@@ -148,37 +148,50 @@ namespace BitFlyerDotNet.LightningApi
 #endif
         }
 
-        ConcurrentDictionary<string, IConnectableObservable<BfaExecution>> _executionColdSources = new ();
-        public IObservable<BfaExecution> GetExecutionSource(BfProductCode productCode, bool hotStart = false)
+        ConcurrentDictionary<string, IObservable<BfaExecution>> _executionSources = new ();
+        public IObservable<BfaExecution> GetExecutionSource(BfProductCode productCode, bool startPending = false)
         {
             var symbol = _availableMarkets[productCode];
-            var result = _executionColdSources.GetOrAdd(symbol, _ =>
+            var result = _executionSources.GetOrAdd(symbol, _ =>
             {
                 var source = new RealtimeExecutionSource(Channels, symbol, s =>
                 {
-                    _executionColdSources.TryRemove(s.ProductCode, out var _);
+                    _executionSources.TryRemove(s.ProductCode, out var _);
                     OnSourceClosed();
                 });
                 Channels.RegisterSource(source);
-                return source.ObserveOn(Scheduler).SkipWhile(tick => tick.ExecutionId == 0).Publish();
+                if (startPending)
+                {
+                    return source.ObserveOn(Scheduler).SkipWhile(tick => tick.ExecutionId == 0).Publish();
+                }
+                else
+                {
+                    return source.ObserveOn(Scheduler).SkipWhile(tick => tick.ExecutionId == 0).Publish().RefCount();
+                }
             });
 
-            return hotStart ? result : result.RefCount();
+            return result;
         }
 
         public void StartExecutionSource(BfProductCode productCode)
         {
-            if (_executionColdSources.TryGetValue(_availableMarkets[productCode], out var source))
+            if (_executionSources.TryGetValue(_availableMarkets[productCode], out var source))
             {
-                source.Connect().AddTo(_disposables);
+                if (source is IConnectableObservable<BfaExecution> publishSource)
+                {
+                    publishSource.Connect().AddTo(_disposables);
+                }
             }
         }
 
         public void StartAllExecutionSources()
         {
-            foreach (var source in _executionColdSources.Values)
+            foreach (var source in _executionSources.Values)
             {
-                source.Connect().AddTo(_disposables);
+                if (source is IConnectableObservable<BfaExecution> publishSource)
+                {
+                    publishSource.Connect().AddTo(_disposables);
+                }
             }
         }
 

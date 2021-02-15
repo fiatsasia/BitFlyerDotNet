@@ -20,7 +20,8 @@ namespace RealtimeApiTests
     class Program
     {
         static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
-        static CompositeDisposable _disposables = new CompositeDisposable();
+        static CompositeDisposable _disposables = new();
+        static Queue<IDisposable> _disposeQ = new();
         static Dictionary<string, string> Properties;
 
         const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
@@ -58,6 +59,7 @@ namespace RealtimeApiTests
                 Console.WriteLine("========================================================================");
                 Console.WriteLine("E)xecution               T)icker                 O)rderBook");
                 Console.WriteLine("C)hild Order Events      P)arent Order Events    B)oard");
+                Console.WriteLine("A)dd subscription        R)emove subscription");
                 Console.WriteLine();
                 Console.WriteLine("D)etail                  S)top                   Q)uit");
                 Console.WriteLine("========================================================================");
@@ -86,6 +88,17 @@ namespace RealtimeApiTests
 
                     case 'B':
                         RealtimeOrderBookSample();
+                        break;
+
+                    case 'A':
+                        {
+                            var id = _disposeQ.Count;
+                            _disposeQ.Enqueue(_factory.GetExecutionSource(ProductCode).Subscribe(exec => { Console.Write($"{id}"); }));
+                        }
+                        break;
+
+                    case 'R':
+                        _disposeQ.Dequeue().Dispose();
                         break;
 
                     case 'D':
@@ -117,6 +130,11 @@ namespace RealtimeApiTests
 
         static void OnRealtimeMessageReceived(string json, object message)
         {
+            if (_disposables.Count == 0)
+            {
+                return;
+            }
+
             Console.Write("Message received: ");
             switch (message)
             {
