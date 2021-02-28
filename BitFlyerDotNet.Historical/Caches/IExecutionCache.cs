@@ -7,7 +7,6 @@
 //
 
 using System;
-using System.Collections.Generic;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -15,17 +14,11 @@ namespace BitFlyerDotNet.Historical
     public interface IExecutionCache : IDisposable
     {
         long CommitCount { get; set; }
-        long CurrentBlockTicks { get; }
         void OptimizeManageTable();
         IObservable<IBfExecution> FillGaps(BitFlyerClient client);
         IObservable<IBfExecution> UpdateRecents(BitFlyerClient client);
         void Add(IBfExecution exec);
-        void UpdateMarker(IBfExecution exec);
         void SaveChanges();
         void InsertGap(long before, long after);
-
-        IEnumerable<IBfExecution> GetBackwardExecutions();
-        IEnumerable<IBfExecution> GetBackwardExecutions(long before, long after);
-        List<IManageRecord> GetManageTable();
     }
 }

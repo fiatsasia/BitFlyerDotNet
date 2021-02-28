@@ -7,35 +7,27 @@
 //
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
-using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    interface ICacheDbContext : IDisposable
+    public interface ICacheDbContext : IDisposable
     {
-        BfProductCode ProductCode { get; }
+        IQueryable<DbManageRecord> ManageTable { get; }
+        IQueryable<DbExecution> Executions { get; }
+        IQueryable<DbOhlc> GetOhlcs(TimeSpan period);
 
-        // Manage table
-        List<IManageRecord> GetManageTable();
-        void AddManageRecord(IManageRecord manageRec);
-        void UpdateManageTable(IEnumerable<IManageRecord> manageRecs);
+        DateTime LastExecutionTime { get; }
+        DateTime LastOhlcTime { get; }
 
-        // Executions
-        IEnumerable<IBfExecution> GetBackwardExecutions();
-        IEnumerable<IBfExecution> GetBackwardExecutions(long before, long after);
-        void AddExecution(IBfExecution exec);
+        void Add(DbManageRecord manageRec);
+        void Update(IEnumerable<DbManageRecord> manageRecs);
 
-        // OHLCs
-        IEnumerable<IOhlcvv> GetOhlcsBackward(TimeSpan frameSpan, DateTime endFrom, TimeSpan span);
-        void AddOhlc(TimeSpan frameSpan, IOhlcvv ohlc);
-
-        DbSet<DbMinuteMarker> Marker { get; }
-
-        void SaveExecutionChanges();
-        void SaveOhlcChanges();
+        void Add(DbExecution exec);
+        void Add(DbOhlc ohlc);
 
         void ClearCache();
+        void SaveChanges();
     }
 }

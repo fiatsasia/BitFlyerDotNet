@@ -13,19 +13,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    public interface IManageRecord
-    {
-        DateTime CreatedTime { get; set; }
-        long StartExecutionId { get; set; }
-        DateTime StartExecutedTime { get; set; }
-        long EndExecutionId { get; set; }
-        DateTime EndExecutedTime { get; set; }
-        long ExecutionCount { get; set; }
-        string TransactionKind { get; set; }
-        DateTime LastUpdatedTime { get; set; }
-    }
-
-    class DbManageRecord : IManageRecord
+    public class DbManageRecord
     {
         [Required]
         [Column(Order = 0)]

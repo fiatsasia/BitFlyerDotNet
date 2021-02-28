@@ -106,19 +106,6 @@ namespace HistoricalApiTests
         }
 
         [TestMethod]
-        public void CryptowatchTest()
-        {
-            var frameSpan = TimeSpan.FromMinutes(1);
-            var nextMinutelyPeriod = (DateTime.UtcNow + frameSpan).Round(frameSpan);
-
-            CryptowatchOhlcSource.Get(BfProductCode.FXBTCJPY, frameSpan, nextMinutelyPeriod, nextMinutelyPeriod - TimeSpan.FromMinutes(5))
-            .ForEach(ohlc =>
-            {
-                Console.WriteLine("{0:yyyy/MM/dd hh:mm:ss.fff} O:{1} H:{2} L:{3} C:{4} V:{5}", ohlc.Start.ToLocalTime(), ohlc.Open, ohlc.High, ohlc.Low, ohlc.Close, ohlc.Volume);
-            });
-        }
-
-        [TestMethod]
         public void HistoricalOhlcSource()
         {
 #if false

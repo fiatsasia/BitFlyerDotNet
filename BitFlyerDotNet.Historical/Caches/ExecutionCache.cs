@@ -7,7 +7,6 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using BitFlyerDotNet.LightningApi;
@@ -17,26 +16,24 @@ namespace BitFlyerDotNet.Historical
     class ExecutionCache : IExecutionCache
     {
         public long CommitCount { get; set; } = 10000;
-        readonly ICacheDbContext _ctx;
+        readonly ICacheDbContext _dbctx;
+        readonly BfProductCode _productCode;
 
-        public ExecutionCache(ICacheDbContext ctx)
+        public ExecutionCache(ICacheDbContext dbctx, BfProductCode productCode)
         {
-            _ctx = ctx;
+            _dbctx = dbctx;
+            _productCode = productCode;
             OptimizeManageTable();
         }
 
         public void Dispose()
         {
-            _ctx.Dispose();
+            _dbctx.Dispose();
         }
-
-        public IEnumerable<IBfExecution> GetBackwardExecutions() { return _ctx.GetBackwardExecutions(); }
-        public IEnumerable<IBfExecution> GetBackwardExecutions(long before, long after) { return _ctx.GetBackwardExecutions(before, after); }
-        public List<IManageRecord> GetManageTable() { return _ctx.GetManageTable(); }
 
         public void OptimizeManageTable()
         {
-            var manageRecords = _ctx.GetManageTable();
+            var manageRecords = _dbctx.ManageTable.ToList();
 
             int index = 1;
             if (manageRecords.Count >= 3)
@@ -86,16 +83,16 @@ namespace BitFlyerDotNet.Historical
                     index++;
                 }
             }
-            _ctx.UpdateManageTable(manageRecords);
-            _ctx.SaveExecutionChanges();
+            _dbctx.Update(manageRecords);
+            _dbctx.SaveChanges();
         }
 
         public IObservable<IBfExecution> FillGaps(BitFlyerClient client)
         {
-            return _ctx.GetManageTable().Buffer(2, 1).SkipLast(1).Select(rec =>
+            return _dbctx.ManageTable.Buffer(2, 1).SkipLast(1).Select(rec =>
             {
                 var count = 0;
-                return new HistoricalExecutionSource(client, _ctx.ProductCode, rec[0].StartExecutionId, rec[1].EndExecutionId)
+                return new HistoricalExecutionSource(client, _productCode, rec[0].StartExecutionId, rec[1].EndExecutionId)
                 .Select(exec => { count++; return exec; })
                 .Finally(() =>
                 {
@@ -118,13 +115,13 @@ namespace BitFlyerDotNet.Historical
         public IObservable<IBfExecution> UpdateRecents(BitFlyerClient client)
         {
             var after = 0L;
-            var manageRec = _ctx.GetManageTable();
+            var manageRec = _dbctx.ManageTable.ToList();
             if (manageRec.Count > 0)
             {
                 after = manageRec[0].EndExecutionId;
             }
 
-            return new HistoricalExecutionSource(client, _ctx.ProductCode, 0, after)
+            return new HistoricalExecutionSource(client, _productCode, 0, after)
             .Select(exec =>
             {
                 Add(exec);
@@ -138,67 +135,25 @@ namespace BitFlyerDotNet.Historical
 
         DbManageRecord _manageRec;
 
-        public long CurrentBlockTicks { get { return _manageRec == null ? 0 : _manageRec.ExecutionCount; } }
-
         public void Add(IBfExecution exec)
         {
             if (_manageRec == null)
             {
                 _manageRec = new DbManageRecord();
             }
-            _ctx.AddExecution(new DbExecution(exec));
+            _dbctx.Add(new DbExecution(exec));
             _manageRec.Update(exec);
 
             if (_manageRec.ExecutionCount >= CommitCount)
             {
                 SaveChanges();
-                _ctx.ClearCache();
+                _dbctx.ClearCache();
             }
-        }
-
-        DbMinuteMarker _marker;
-        IBfExecution _lastExec = null;
-        static readonly TimeSpan MarkerSpan = TimeSpan.FromMinutes(1);
-        public void UpdateMarker(IBfExecution exec)
-        {
-            if (_lastExec == null)
-            {
-                _lastExec = exec;
-                return;
-            }
-
-            var lastMarkTime = _lastExec.ExecutedTime.Round(MarkerSpan);
-            var currentMarkTime = exec.ExecutedTime.Round(MarkerSpan);
-            if (lastMarkTime != currentMarkTime)
-            {
-                // Marked time changed
-                if (_marker != null)
-                {
-                    if (!_ctx.Marker.Any(e => e.MarkedTime == _marker.MarkedTime))
-                    {
-                        _marker.StartExecutionId = _lastExec.ExecutionId;
-                        _ctx.Marker.Add(_marker);
-                    }
-                }
-
-                _marker = new DbMinuteMarker
-                {
-                    MarkedTime = currentMarkTime,
-                    EndExecutionId = exec.ExecutionId
-                };
-            }
-
-            if (_marker != null)
-            {
-                _marker.ExecutionCount++;
-            }
-
-            _lastExec = exec;
         }
 
         public void SaveChanges()
         {
-            _ctx.SaveExecutionChanges();
+            _dbctx.SaveChanges();
 
             if (_manageRec == null)
             {
@@ -206,8 +161,8 @@ namespace BitFlyerDotNet.Historical
             }
 
             Log.Trace($"HistoricalCache committing executions... {_manageRec.StartExecutedTime.ToLocalTime()} - {_manageRec.EndExecutedTime.ToLocalTime()}");
-            _ctx.AddManageRecord(_manageRec);
-            _ctx.SaveExecutionChanges();
+            _dbctx.Add(_manageRec);
+            _dbctx.SaveChanges();
             _manageRec = null;
             Log.Trace("HistoricalCache committed.");
         }
@@ -225,8 +180,8 @@ namespace BitFlyerDotNet.Historical
             blockRow.EndExecutionId = before - 1;
             blockRow.StartExecutedTime = blockRow.EndExecutedTime = blockRow.CreatedTime;
             blockRow.TransactionKind = "I";
-            _ctx.AddManageRecord(blockRow);
-            _ctx.SaveExecutionChanges();
+            _dbctx.Add(blockRow);
+            _dbctx.SaveChanges();
 
             Log.Trace("HistoricalCache committed.");
         }

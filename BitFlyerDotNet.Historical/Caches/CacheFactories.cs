@@ -14,7 +14,7 @@ namespace BitFlyerDotNet.Historical
     public interface ICacheFactory
     {
         IExecutionCache GetExecutionCache(BfProductCode productCode);
-        IOhlcCache GetOhlcCache(BfProductCode productCode, TimeSpan frameSpan);
+        ICacheDbContext GetDbContext(BfProductCode productCode);
     }
 
     public class SqliteCacheFactory : ICacheFactory
@@ -28,12 +28,12 @@ namespace BitFlyerDotNet.Historical
 
         public IExecutionCache GetExecutionCache(BfProductCode productCode)
         {
-            return new ExecutionCache(new SqliteCacheDbContext(_cacheFolderPath, productCode));
+            return new ExecutionCache(new SqliteDbContext(_cacheFolderPath, productCode), productCode);
         }
 
-        public IOhlcCache GetOhlcCache(BfProductCode productCode, TimeSpan frameSpan)
+        public ICacheDbContext GetDbContext(BfProductCode productCode)
         {
-            return new OhlcCache(new SqliteCacheDbContext(_cacheFolderPath, productCode), frameSpan);
+            return new SqliteDbContext(_cacheFolderPath, productCode);
         }
     }
 
@@ -48,12 +48,12 @@ namespace BitFlyerDotNet.Historical
 
         public IExecutionCache GetExecutionCache(BfProductCode productCode)
         {
-            return new ExecutionCache(new SqlServerCacheDbContext(_connStr, productCode));
+            return new ExecutionCache(new SqlServerDbContext(_connStr, productCode), productCode);
         }
 
-        public IOhlcCache GetOhlcCache(BfProductCode productCode, TimeSpan frameSpan)
+        public ICacheDbContext GetDbContext(BfProductCode productCode)
         {
-            return new OhlcCache(new SqlServerCacheDbContext(_connStr, productCode), frameSpan);
+            return new SqlServerDbContext(_connStr, productCode);
         }
     }
 }

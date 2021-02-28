@@ -7,6 +7,7 @@
 //
 
 using System;
+using System.Linq;
 using System.IO;
 using System.Threading;
 using System.Diagnostics;
@@ -83,10 +84,8 @@ namespace HistoricalCacheUtil
                     Console.WriteLine("S)elect product");
                     Console.WriteLine("U)pdate recent historical executions in cache");
                     Console.WriteLine("F)ill fragmentations");
-                    Console.WriteLine("A)dd specified count");
-                    Console.WriteLine("R)ange updates");
                     Console.WriteLine("O)ptimize manage table");
-                    //Console.WriteLine("I)mport SQLite cache");
+                    Console.WriteLine("G)enerate OHLC");
                     Console.WriteLine();
                     Console.WriteLine("Hit Q key to exit.");
 
@@ -109,44 +108,19 @@ namespace HistoricalCacheUtil
                             Console.WriteLine("Completed.");
                             break;
 
-                        case 'A':
-                            {
-                                Console.Write("Count : "); var count = int.Parse(Console.ReadLine());
-                                Console.Write("Are you sure to start? (y/n)");
-                                if (GetCh() == 'Y')
-                                {
-                                    StackExecutions(client, cacheFactory, productCode, count);
-                                    Console.WriteLine("Completed.");
-                                }
-                            }
-                            break;
-
-                        case 'R':
-                            {
-                                Console.Write("Before : "); var before = int.Parse(Console.ReadLine());
-                                Console.Write("After  : "); var after = int.Parse(Console.ReadLine());
-                                Console.Write("Are you sure to start? (y/n)");
-                                if (GetCh() == 'Y')
-                                {
-                                    GetExecutionsRange(client, cacheFactory, productCode, before, after);
-                                    Console.WriteLine("Completed.");
-                                }
-                            }
-                            break;
-
                         case 'O':
                             OptimizaManageTable(cacheFactory, productCode);
                             break;
 
-                        case 'I':
-                            //ImportCache(sqliteCacheFactory, sqlserverCacheFactory, productCode);
+                        case 'G':
+                            GenerateOhlc(cacheFactory, productCode);
                             break;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex);
                 Console.WriteLine("Hit Q key to exit.");
                 while (GetCh() != 'Q') ;
             }
@@ -187,88 +161,9 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
             }
         }
 
-        static void ImportCache(ICacheFactory factorySqlite, ICacheFactory factorySqlserver, BfProductCode productCode)
-        {
-            var recordCount = 0;
-            var sw = new Stopwatch();
-            sw.Start();
-            using (var cacheSqlite = factorySqlite.GetExecutionCache(productCode))
-            using (var cacheSqlserver = factorySqlserver.GetExecutionCache(productCode))
-            {
-                cacheSqlserver.CommitCount = 1000000;
-                foreach (var exec in cacheSqlite.GetBackwardExecutions())
-                {
-                    cacheSqlserver.Add(exec);
-                    if ((++recordCount % 10000) == 0)
-                    {
-                        Console.WriteLine("{0} {1} Completed {2} Elapsed", exec.ExecutedTime.ToLocalTime(), recordCount, sw.Elapsed);
-                    }
-                }
-                cacheSqlserver.SaveChanges();
-            }
-            sw.Stop();
-        }
-
         static void OptimizaManageTable(ICacheFactory factory, BfProductCode productCode)
         {
             using (var cache = factory.GetExecutionCache(productCode)) { }
-        }
-
-        static void StackExecutions(BitFlyerClient client, ICacheFactory factory, BfProductCode productCode, int count)
-        {
-            using (var cache = factory.GetExecutionCache(productCode))
-            {
-                var recs = cache.GetManageTable();
-                cache.CommitCount = CommitCount;
-                var completed = new ManualResetEvent(false);
-                var recordCount = 0;
-                var sw = new Stopwatch();
-                sw.Start();
-                new HistoricalExecutionSource(client, productCode, recs[0].EndExecutionId + count, recs[0].EndExecutionId).Subscribe(exec =>
-                {
-                    cache.Add(exec);
-                    if ((++recordCount % 10000) == 0)
-                    {
-                        Console.WriteLine("{0} {1} Completed {2} Elapsed", exec.ExecutedTime.ToLocalTime(), recordCount, sw.Elapsed);
-                    }
-                },
-                () =>
-                {
-                    cache.SaveChanges();
-                    sw.Stop();
-                    completed.Set();
-                });
-                completed.WaitOne();
-                cache.SaveChanges();
-            }
-        }
-
-        static void GetExecutionsRange(BitFlyerClient client, ICacheFactory factory, BfProductCode productCode, int before, int after)
-        {
-            using (var cache = factory.GetExecutionCache(productCode))
-            {
-                cache.CommitCount = CommitCount;
-                var completed = new ManualResetEvent(false);
-                var recordCount = 0;
-                var sw = new Stopwatch();
-                sw.Start();
-                new HistoricalExecutionSource(client, productCode, before, after).Subscribe(exec =>
-                {
-                    cache.Add(exec);
-                    if ((++recordCount % 10000) == 0)
-                    {
-                        Console.WriteLine("{0} {1} Completed {2} Elapsed", exec.ExecutedTime.ToLocalTime(), recordCount, sw.Elapsed);
-                    }
-                },
-                () =>
-                {
-                    cache.SaveChanges();
-                    sw.Stop();
-                    completed.Set();
-                });
-                completed.WaitOne();
-                cache.SaveChanges();
-            }
         }
 
         static void UpdateRecent(BitFlyerClient client, ICacheFactory factory, BfProductCode productCode)
@@ -324,6 +219,73 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
                     completed.Set();
                 });
                 completed.WaitOne();
+            }
+        }
+
+        static void GenerateOhlc(ICacheFactory factory, BfProductCode productCode)
+        {
+            var frameSpan = TimeSpan.FromMinutes(1);
+            using (var ctx = factory.GetDbContext(productCode))
+            {
+                var lastExec = ctx.LastExecutionTime.Round(frameSpan);
+                var startOhlc = ctx.LastOhlcTime;
+                if (startOhlc == DateTime.MinValue)
+                {
+                    startOhlc = new DateTime(lastExec.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                }
+                else
+                {
+                    startOhlc += frameSpan;
+                }
+
+                var execs = ctx.Executions
+                    .Where(e => e.ExecutedTime >= startOhlc && e.ExecutedTime < lastExec)
+                    .OrderBy(e => e.ExecutedTime)
+                    .ThenBy(e => e.ExecutionId);
+                var ohlc = default(DbOhlc);
+                foreach (var exec in execs)
+                {
+                    if (ohlc == default)
+                    {
+                        ohlc = new DbOhlc(frameSpan, exec);
+                        continue;
+                    }
+
+                    var startNew = exec.ExecutedTime.Round(frameSpan);
+                    if (ohlc.Start == startNew) // In same frame
+                    {
+                        ohlc.Update(exec);
+                        continue;
+                    }
+
+                    // Frame changed
+                    ctx.Add(ohlc);
+                    if (ohlc.Start.Minute == 0 && ohlc.Start.Hour == 0)
+                    {
+                        Console.WriteLine(ohlc.Start);
+                    }
+
+                    if (ohlc.Start + frameSpan == startNew) // There aren't missing frames
+                    {
+                        ohlc = new DbOhlc(frameSpan, exec);
+                        continue;
+                    }
+
+                    // Complements missing frames
+                    while (true)
+                    {
+                        ohlc = DbOhlc.CreateMissingFrame(ohlc);
+                        ctx.Add(ohlc);
+                        if (ohlc.Start + frameSpan == startNew)
+                        {
+                            ohlc = new DbOhlc(frameSpan, exec);
+                            break;
+                        }
+                    }
+                }
+                ctx.Add(ohlc);
+                Console.WriteLine(ohlc.Start);
+                ctx.SaveChanges();
             }
         }
     }

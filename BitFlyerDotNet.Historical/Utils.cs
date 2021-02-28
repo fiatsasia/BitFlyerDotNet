@@ -50,7 +50,7 @@ namespace BitFlyerDotNet.Historical
         }
     }
 
-    static class DateTimeExtensions
+    public static class DateTimeExtensions
     {
         public static DateTime Round(this DateTime dt, TimeSpan unit)
         {

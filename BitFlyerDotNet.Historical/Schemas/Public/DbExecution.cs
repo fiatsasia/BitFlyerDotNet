@@ -13,7 +13,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    class DbExecution : IBfExecution
+    public class DbExecution
     {
         [Key]
         [Column(Order = 0)]
@@ -59,9 +59,6 @@ namespace BitFlyerDotNet.Historical
                 }
             }
         }
-
-        [NotMapped]
-        public string ChildOrderAcceptanceId { get { return string.Empty; } }
 
         public DbExecution()
         {
