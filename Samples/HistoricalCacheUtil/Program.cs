@@ -163,12 +163,12 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
 
         static void OptimizaManageTable(ICacheFactory factory, BfProductCode productCode)
         {
-            using (var cache = factory.GetExecutionCache(productCode)) { }
+            using (var cache = factory.CreateExecutionCache(productCode)) { }
         }
 
         static void UpdateRecent(BitFlyerClient client, ICacheFactory factory, BfProductCode productCode)
         {
-            using (var cache = factory.GetExecutionCache(productCode))
+            using (var cache = factory.CreateExecutionCache(productCode))
             {
                 cache.CommitCount = CommitCount;
                 var completed = new ManualResetEvent(false);
@@ -186,6 +186,12 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
                         cache.SaveChanges();
                     }
                 },
+                ex =>
+                {
+                    sw.Stop();
+                    Console.WriteLine(ex);
+                    completed.Set();
+                },
                 () =>
                 {
                     cache.SaveChanges();
@@ -198,7 +204,7 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
 
         static void FillGaps(BitFlyerClient client, ICacheFactory factory, BfProductCode productCode)
         {
-            using (var cache = factory.GetExecutionCache(productCode))
+            using (var cache = factory.CreateExecutionCache(productCode))
             {
                 cache.CommitCount = CommitCount;
                 var completed = new ManualResetEvent(false);
@@ -211,6 +217,12 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
                     {
                         Console.WriteLine("{0} {1} Completed {2} Elapsed", exec.ExecutedTime.ToLocalTime(), recordCount, sw.Elapsed);
                     }
+                },
+                ex =>
+                {
+                    sw.Stop();
+                    Console.WriteLine(ex);
+                    completed.Set();
                 },
                 () =>
                 {
@@ -225,7 +237,7 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
         static void GenerateOhlc(ICacheFactory factory, BfProductCode productCode)
         {
             var frameSpan = TimeSpan.FromMinutes(1);
-            using (var ctx = factory.GetDbContext(productCode))
+            using (var ctx = factory.CreateDbContext(productCode))
             {
                 var lastExec = ctx.LastExecutionTime.Round(frameSpan);
                 var startOhlc = ctx.LastOhlcTime;
@@ -236,6 +248,12 @@ dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
                 else
                 {
                     startOhlc += frameSpan;
+                }
+
+                if (lastExec == startOhlc)
+                {
+                    Console.WriteLine("OHLC had already up to date.");
+                    return;
                 }
 
                 var execs = ctx.Executions

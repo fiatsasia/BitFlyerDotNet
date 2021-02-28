@@ -13,8 +13,8 @@ namespace BitFlyerDotNet.Historical
 {
     public interface ICacheFactory
     {
-        IExecutionCache GetExecutionCache(BfProductCode productCode);
-        ICacheDbContext GetDbContext(BfProductCode productCode);
+        IExecutionCache CreateExecutionCache(BfProductCode productCode);
+        ICacheDbContext CreateDbContext(BfProductCode productCode);
     }
 
     public class SqliteCacheFactory : ICacheFactory
@@ -26,12 +26,12 @@ namespace BitFlyerDotNet.Historical
             _cacheFolderPath = cacheFolderPath;
         }
 
-        public IExecutionCache GetExecutionCache(BfProductCode productCode)
+        public IExecutionCache CreateExecutionCache(BfProductCode productCode)
         {
             return new ExecutionCache(new SqliteDbContext(_cacheFolderPath, productCode), productCode);
         }
 
-        public ICacheDbContext GetDbContext(BfProductCode productCode)
+        public ICacheDbContext CreateDbContext(BfProductCode productCode)
         {
             return new SqliteDbContext(_cacheFolderPath, productCode);
         }
@@ -46,12 +46,12 @@ namespace BitFlyerDotNet.Historical
             _connStr = connStr;
         }
 
-        public IExecutionCache GetExecutionCache(BfProductCode productCode)
+        public IExecutionCache CreateExecutionCache(BfProductCode productCode)
         {
             return new ExecutionCache(new SqlServerDbContext(_connStr, productCode), productCode);
         }
 
-        public ICacheDbContext GetDbContext(BfProductCode productCode)
+        public ICacheDbContext CreateDbContext(BfProductCode productCode)
         {
             return new SqlServerDbContext(_connStr, productCode);
         }

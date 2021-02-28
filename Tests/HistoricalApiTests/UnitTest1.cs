@@ -131,7 +131,7 @@ namespace HistoricalApiTests
         {
             var client = new BitFlyerClient();
             var cacheFactory = new SqlServerCacheFactory(@"server=(local);Initial Catalog=bitflyer;Integrated Security=True");
-            var cache = cacheFactory.GetExecutionCache(BfProductCode.FXBTCJPY);
+            var cache = cacheFactory.CreateExecutionCache(BfProductCode.FXBTCJPY);
             var completed = new ManualResetEvent(false);
             var recentTime = DateTime.UtcNow;
             cache.UpdateRecents(client).Subscribe(exec =>
@@ -154,7 +154,7 @@ namespace HistoricalApiTests
         {
             var client = new BitFlyerClient();
             var cacheFactory = new SqlServerCacheFactory(@"server=(local);Initial Catalog=bitflyer;Integrated Security=True");
-            var cache = cacheFactory.GetExecutionCache(BfProductCode.FXBTCJPY);
+            var cache = cacheFactory.CreateExecutionCache(BfProductCode.FXBTCJPY);
             var completed = new ManualResetEvent(false);
             var recentTime = DateTime.UtcNow;
             cache.FillGaps(client).Subscribe(exec =>

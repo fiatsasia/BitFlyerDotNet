@@ -249,13 +249,19 @@ namespace BitFlyerDotNet.LightningApi
                     TotalReceivedMessageChars += responseObject.Json.Length;
                     switch (responseObject.StatusCode)
                     {
-                        case HttpStatusCode.InternalServerError:
-                            // Internal server error causes in mainly reasons are server too busy or in maintanance.
-                            // Application will decide terminate, wait or confirm to user.
+                        case HttpStatusCode.OK:
                             break;
 
                         case (HttpStatusCode)429:
                             throw new BitFlyerApiLimitException($"{apiName}: Too many requests (HTTP response Status=429).");
+
+                        case HttpStatusCode.InternalServerError:
+                            // Internal server error causes in mainly reasons are server too busy or in maintanance.
+                            // Application will decide terminate, wait or confirm to user.
+
+                        default:
+                            Log.Warn($"{apiName} returns {response.StatusCode}");
+                            break;
                     }
                     if (_apiLimitter.CheckLimitReached())
                     {
@@ -333,9 +339,7 @@ namespace BitFlyerDotNet.LightningApi
                     TotalReceivedMessageChars += responseObject.Json.Length;
                     switch (responseObject.StatusCode)
                     {
-                        case HttpStatusCode.InternalServerError:
-                            // Internal server error causes in mainly reasons are server too busy or in maintanance.
-                            // Application will decide terminate, wait or confirm to user.
+                        case HttpStatusCode.OK:
                             break;
 
                         case HttpStatusCode.Unauthorized:
@@ -343,6 +347,14 @@ namespace BitFlyerDotNet.LightningApi
 
                         case (HttpStatusCode)429:
                             throw new BitFlyerApiLimitException($"{apiName}: Too many requests (HTTP response Status=429).");
+
+                        case HttpStatusCode.InternalServerError:
+                            // Internal server error causes in mainly reasons are server too busy or in maintanance.
+                            // Application will decide terminate, wait or confirm to user.
+
+                        default:
+                            Log.Warn($"{apiName} returns {response.StatusCode}");
+                            break;
                     }
                     if (_apiLimitter.CheckLimitReached())
                     {

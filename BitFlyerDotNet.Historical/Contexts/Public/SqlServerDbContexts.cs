@@ -11,6 +11,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using BitFlyerDotNet.LightningApi;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace BitFlyerDotNet.Historical
 {
@@ -42,9 +43,16 @@ namespace BitFlyerDotNet.Historical
             modelBuilder.Entity<DbOhlc>().HasKey(c => new { c.FrameSpanSeconds, c.Start });
         }
 
+        public class DynamicModelCacheKeyFactory : IModelCacheKeyFactory
+        {
+            public object Create(DbContext ctx) => ctx is BfDbContextSqlServer dynctx ? (ctx.GetType(), dynctx.ProductCode) : ctx.GetType();
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(ConnStr);
+            optionsBuilder
+                .UseSqlServer(ConnStr)
+                .ReplaceService<IModelCacheKeyFactory, DynamicModelCacheKeyFactory>();
         }
     }
 
