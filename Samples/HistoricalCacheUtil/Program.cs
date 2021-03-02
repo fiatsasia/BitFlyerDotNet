@@ -11,6 +11,7 @@ using System.Linq;
 using System.IO;
 using System.Threading;
 using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Historical;
 
@@ -27,7 +28,11 @@ namespace HistoricalCacheUtil
             var productCode = BfProductCode.FXBTCJPY;
             var client = new BitFlyerClient();
 #if SQLSERVER
-            var connStr = @"server=(local);Initial Catalog=bitflyer2021;Integrated Security=True";
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", true, true)
+                .Build();
+            var connStr = config.GetConnectionString("bitflyer");
             var cacheFactory = new SqlServerCacheFactory(connStr);
 #elif SQLITE
             var folderPath = Path.Combine(

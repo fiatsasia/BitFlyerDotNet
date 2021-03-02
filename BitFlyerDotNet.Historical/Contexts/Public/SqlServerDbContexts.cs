@@ -43,6 +43,8 @@ namespace BitFlyerDotNet.Historical
             modelBuilder.Entity<DbOhlc>().HasKey(c => new { c.FrameSpanSeconds, c.Start });
         }
 
+        // https://docs.microsoft.com/en-us/ef/core/modeling/dynamic-model
+        //
         public class DynamicModelCacheKeyFactory : IModelCacheKeyFactory
         {
             public object Create(DbContext ctx) => ctx is BfDbContextSqlServer dynctx ? (ctx.GetType(), dynctx.ProductCode) : ctx.GetType();
