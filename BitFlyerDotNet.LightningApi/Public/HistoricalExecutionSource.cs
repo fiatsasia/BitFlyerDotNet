@@ -13,9 +13,8 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
-using BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.Historical
+namespace BitFlyerDotNet.LightningApi
 {
     public class HistoricalExecutionSource : IObservable<IBfExecution>
     {

@@ -16,7 +16,7 @@ namespace BitFlyerDotNet.Historical
     {
         IQueryable<DbManageRecord> ManageTable { get; }
         IQueryable<DbExecution> Executions { get; }
-        IQueryable<DbOhlc> GetOhlcs(TimeSpan period);
+        IQueryable<DbOhlc> GetOhlcs(TimeSpan period, DateTime start, DateTime end);
 
         DateTime LastExecutionTime { get; }
         DateTime LastOhlcTime { get; }

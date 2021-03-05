@@ -62,10 +62,12 @@ namespace BitFlyerDotNet.Historical
     {
         public IQueryable<DbManageRecord> ManageTable => _ctx.ManageTable.OrderByDescending(e => e.StartExecutionId);
         public IQueryable<DbExecution> Executions => _ctx.Executions.AsNoTracking();
-        public IQueryable<DbOhlc> GetOhlcs(TimeSpan period)
+        public IQueryable<DbOhlc> GetOhlcs(TimeSpan period, DateTime start, DateTime end)
         {
             var sec = Convert.ToInt32(period.TotalSeconds); // to optimize for query builder
-            return _ctx.Ohlc.Where(e => e.FrameSpanSeconds == sec).OrderBy(e => e.Start);
+            return _ctx.Ohlc
+                .Where(e => e.FrameSpanSeconds == sec && e.Start >= start && e.Start <= end)
+                .OrderBy(e => e.Start);
         }
 
         readonly string _connStr;

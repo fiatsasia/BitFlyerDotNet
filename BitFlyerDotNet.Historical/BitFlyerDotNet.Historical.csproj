@@ -53,6 +53,7 @@
 
   <ItemGroup>
     <Folder Include="Private\" />
+    <Folder Include="Sources\Public\" />
   </ItemGroup>
 
 </Project>
