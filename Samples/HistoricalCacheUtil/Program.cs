@@ -27,57 +27,22 @@ namespace HistoricalCacheUtil
         {
             var productCode = BfProductCode.FXBTCJPY;
             var client = new BitFlyerClient();
-#if SQLSERVER
             var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", true, true)
                 .Build();
             var connStr = config.GetConnectionString("bitflyer");
             var cacheFactory = new SqlServerCacheFactory(connStr);
-#elif SQLITE
-            var folderPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().ProcessName)
-            );
-            var cacheFactory = new SqliteCacheFactory(folderPath);
-#else
-            if (args.Length == 0)
-            {
-                DisplayUsage();
-                return;
-            }
-            if (args.Length > 0 && args[0].ToUpper() != "/C")
+
+            if (args.Length > 0)
             {
                 productCode = Enum.Parse<BfProductCode>(args[0]);
-                switch (args[1].ToUpper())
-                {
-                    case "SQLITE":
-                        cacheFactory = new SqliteCacheFactory(args[2]);
-                        break;
-
-                    case "SQLSERVER":
-                        cacheFactory = new SqlServerCacheFactory(args[2]);
-                        break;
-
-                    default:
-                        DisplayUsage();
-                        return;
-                }
-
-                switch (args[3].ToUpper())
-                {
-                    case "/U":
-                        UpdateRecent(client, cacheFactory, productCode);
-                        break;
-
-                    default:
-                        DisplayUsage();
-                        return;
-                }
-
+                UpdateRecent(client, cacheFactory, productCode);
+                FillGaps(client, cacheFactory, productCode);
+                GenerateOhlc(cacheFactory, productCode);
                 return;
             }
-#endif
+
             Console.WriteLine("BitFlyerDotNet cache management utilities");
             Console.WriteLine("Copyright (C) 2017-2021 Fiats Inc.");
 
@@ -132,22 +97,6 @@ namespace HistoricalCacheUtil
             finally
             {
             }
-        }
-
-        static void DisplayUsage()
-        {
-            Console.WriteLine(
-@"Usage:
-1) Command mode
-dotnet CacheUtil.dll /C
-2) Update FXBTCJPY recent data to SQL Server (database name = 'bitflyer')
-dotnet CacheUtil.dll FXBTCJPY SQLSERVER ""server=(local);Initial Catalog=bitflyer;Integrated Security=True"" /U
-3) Update FXBTCJPY recent data to SQLite
-dotnet CacheUtil.dll FXBTCJPY SQLITE database-folder-path /U");
-        }
-
-        static void ExecuteArguments()
-        {
         }
 
         static BfProductCode SelectProduct()
