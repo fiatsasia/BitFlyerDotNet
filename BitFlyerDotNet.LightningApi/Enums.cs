@@ -34,24 +34,30 @@ namespace BitFlyerDotNet.LightningApi
         Unknown,
         [EnumMember(Value = "BTC_JPY")]
         BTCJPY,
-        [EnumMember(Value = "FX_BTC_JPY")]
-        FXBTCJPY,
+        [EnumMember(Value = "XRP_JPY")]
+        XRPJPY,
+        [EnumMember(Value = "ETH_JPY")]
+        ETHJPY,
+        [EnumMember(Value = "XLM_JPY")]
+        XLMJPY,
+        [EnumMember(Value = "MONA_JPY")]
+        MONAJPY,
         [EnumMember(Value = "ETH_BTC")]
         ETHBTC,
         [EnumMember(Value = "BCH_BTC")]
         BCHBTC,
-        [EnumMember(Value = "BTC_USD")]
-        BTCUSD,
-        [EnumMember(Value = "BTC_EUR")]
-        BTCEUR,
+        [EnumMember(Value = "FX_BTC_JPY")]
+        FXBTCJPY,
         [EnumMember(Value = "BTCJPY_MAT1WK")]
         BTCJPYMAT1WK,
         [EnumMember(Value = "BTCJPY_MAT2WK")]
         BTCJPYMAT2WK,
         [EnumMember(Value = "BTCJPY_MAT3M")]
         BTCJPYMAT3M,
-        [EnumMember(Value = "ETH_JPY")]
-        ETHJPY,
+        [EnumMember(Value = "BTC_USD")]
+        BTCUSD,
+        [EnumMember(Value = "BTC_EUR")]
+        BTCEUR,
     }
 
     public static class BfProductCodeEx
@@ -59,15 +65,18 @@ namespace BitFlyerDotNet.LightningApi
         static Dictionary<BfProductCode, int> _priceDecimals = new ()
         {
             { BfProductCode.BTCJPY, 0 },
-            { BfProductCode.FXBTCJPY, 0 },
+            { BfProductCode.XRPJPY, 0 },
+            { BfProductCode.ETHJPY, 0 },
+            { BfProductCode.XLMJPY, 0 },
+            { BfProductCode.MONAJPY, 0 },
             { BfProductCode.ETHBTC, 5 },
             { BfProductCode.BCHBTC, 5 },
-            { BfProductCode.BTCUSD, 2 },
-            { BfProductCode.BTCEUR, 2 },
+            { BfProductCode.FXBTCJPY, 0 },
             { BfProductCode.BTCJPYMAT1WK, 0 },
             { BfProductCode.BTCJPYMAT2WK, 0 },
             { BfProductCode.BTCJPYMAT3M, 0 },
-            { BfProductCode.ETHJPY, 0 },
+            { BfProductCode.BTCUSD, 2 },
+            { BfProductCode.BTCEUR, 2 },
         };
 
         static Dictionary<string, BfProductCode> _originalTable = new ();
