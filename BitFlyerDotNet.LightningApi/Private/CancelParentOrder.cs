@@ -42,18 +42,6 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public BitFlyerResponse<string> CancelParentOrder(BfCancelParentOrderRequest request)
-        {
-            Validate(ref request);
-            return PostPrivateAsync<string>(nameof(CancelParentOrder), request, CancellationToken.None).Result;
-        }
-
-        /// <summary>
-        /// Cancel parent order
-        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelParentOrder">Online help</see>
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public async Task<BitFlyerResponse<string>> CancelParentOrderAsync(BfCancelParentOrderRequest request, CancellationToken ct)
         {
             Validate(ref request);
@@ -64,21 +52,10 @@ namespace BitFlyerDotNet.LightningApi
         /// Cancel parent order
         /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelParentOrder">Online help</see>
         /// </summary>
-        /// <param name="productCode"></param>
-        /// <param name="parentOrderId"></param>
-        /// <param name="parentOrderAcceptanceId"></param>
+        /// <param name="request"></param>
         /// <returns></returns>
-        public BitFlyerResponse<string> CancelParentOrder(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
-        {
-            var request = new BfCancelParentOrderRequest
-            {
-                ProductCode = productCode,
-                ParentOrderId = parentOrderId,
-                ParentOrderAcceptanceId = parentOrderAcceptanceId
-            };
-            Validate(ref request);
-            return PostPrivateAsync<string>(nameof(CancelParentOrder), request, CancellationToken.None).Result;
-        }
+        public BitFlyerResponse<string> CancelParentOrder(BfCancelParentOrderRequest request)
+            => CancelParentOrderAsync(request, CancellationToken.None).Result;
 
         /// <summary>
         /// Cancel parent order
@@ -99,5 +76,16 @@ namespace BitFlyerDotNet.LightningApi
             Validate(ref request);
             return await PostPrivateAsync<string>(nameof(CancelParentOrder), request, ct);
         }
+
+        /// <summary>
+        /// Cancel parent order
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelParentOrder">Online help</see>
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="parentOrderId"></param>
+        /// <param name="parentOrderAcceptanceId"></param>
+        /// <returns></returns>
+        public BitFlyerResponse<string> CancelParentOrder(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
+            => CancelParentOrderAsync(productCode, parentOrderId, parentOrderAcceptanceId, CancellationToken.None).Result;
     }
 }

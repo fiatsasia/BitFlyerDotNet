@@ -7,6 +7,8 @@
 //
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -46,7 +48,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfWithdrawal[]> GetWithdrawals(string messageId = null, int count = 0, int before = 0, int after = 0)
+        public Task<BitFlyerResponse<BfWithdrawal[]>> GetWithdrawalsAsync(string messageId, int count, int before, int after, CancellationToken ct)
         {
             var query = string.Format("{0}{1}{2}{3}",
                 !string.IsNullOrEmpty(messageId) ? "message_id=" + messageId : "",
@@ -55,7 +57,10 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
-            return GetPrivateAsync<BfWithdrawal[]>(nameof(GetWithdrawals), query).Result;
+            return GetPrivateAsync<BfWithdrawal[]>(nameof(GetWithdrawals), query, ct);
         }
+
+        public BitFlyerResponse<BfWithdrawal[]> GetWithdrawals(string messageId = null, int count = 0, int before = 0, int after = 0)
+            => GetWithdrawalsAsync(messageId, count, before, after, CancellationToken.None).Result;
     }
 }

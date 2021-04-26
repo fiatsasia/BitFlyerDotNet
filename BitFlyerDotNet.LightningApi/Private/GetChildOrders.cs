@@ -9,6 +9,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -83,15 +85,16 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="childOrderAcceptanceId"></param>
         /// <param name="parentOrderId"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfaChildOrder[]> GetChildOrders(
+        public Task<BitFlyerResponse<BfaChildOrder[]>> GetChildOrdersAsync(
             BfProductCode productCode,
-            BfOrderState orderState = BfOrderState.Unknown,
-            int count = 0,
-            uint before = 0,
-            uint after = 0,
-            string childOrderId = null,
-            string childOrderAcceptanceId = null,
-            string parentOrderId = null
+            BfOrderState orderState,
+            int count,
+            uint before,
+            uint after,
+            string childOrderId,
+            string childOrderAcceptanceId,
+            string parentOrderId,
+            CancellationToken ct
         )
         {
             var query = string.Format("product_code={0}{1}{2}{3}{4}{5}{6}{7}",
@@ -105,8 +108,20 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(parentOrderId) ? "&parent_order_id=" + parentOrderId : ""
             );
 
-            return GetPrivateAsync<BfaChildOrder[]>(nameof(GetChildOrders), query).Result;
+            return GetPrivateAsync<BfaChildOrder[]>(nameof(GetChildOrders), query, ct);
         }
+
+        public BitFlyerResponse<BfaChildOrder[]> GetChildOrders(
+            BfProductCode productCode,
+            BfOrderState orderState = BfOrderState.Unknown,
+            int count = 0,
+            uint before = 0,
+            uint after = 0,
+            string childOrderId = null,
+            string childOrderAcceptanceId = null,
+            string parentOrderId = null
+        )
+            => GetChildOrdersAsync(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, CancellationToken.None).Result;
 
         public IEnumerable<BfaChildOrder> GetChildOrders(BfProductCode productCode, BfOrderState orderState, uint before, Func<BfaChildOrder, bool> predicate)
         {

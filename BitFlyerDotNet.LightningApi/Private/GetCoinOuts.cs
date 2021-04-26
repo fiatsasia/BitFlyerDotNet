@@ -7,6 +7,8 @@
 //
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -57,7 +59,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfCoinOut[]> GetCoinOuts(int count = 0, int before = 0, int after = 0)
+        public Task<BitFlyerResponse<BfCoinOut[]>> GetCoinOutsAsync(int count, int before, int after, CancellationToken ct)
         {
             var query = string.Format("{0}{1}{2}",
                 (count > 0)  ? $"&count={count}"   : "",
@@ -65,7 +67,10 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
-            return GetPrivateAsync<BfCoinOut[]>(nameof(GetCoinOuts), query).Result;
+            return GetPrivateAsync<BfCoinOut[]>(nameof(GetCoinOuts), query, ct);
         }
+
+        public BitFlyerResponse<BfCoinOut[]> GetCoinOuts(int count = 0, int before = 0, int after = 0)
+            => GetCoinOutsAsync(count, before, after, CancellationToken.None).Result;
     }
 }

@@ -9,6 +9,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
@@ -65,7 +66,7 @@ namespace BitFlyerDotNet.Trading
                 return;
             }
 
-            var result = await Client.GetAvailableMarketsAsync();
+            var result = await Client.GetAvailableMarketsAsync(CancellationToken.None);
             result.ForEach(e =>
             {
                 _markets.Add(e.ProductCode, new BfxMarket(this, e.ProductCode).AddTo(_disposables));
@@ -83,7 +84,7 @@ namespace BitFlyerDotNet.Trading
                 return;
             }
 
-            Positions.Update(Client.GetPositions(BfProductCode.FXBTCJPY).GetContent());
+            Positions.Update((await Client.GetPositionsAsync(BfProductCode.FXBTCJPY, CancellationToken.None)).GetContent());
             RealtimeSource.GetChildOrderEventsSource().Subscribe(coe =>
             {
                 var productCode = _marketSymbols[coe.ProductCode];

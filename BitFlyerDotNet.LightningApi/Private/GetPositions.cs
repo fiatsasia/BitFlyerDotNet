@@ -7,6 +7,8 @@
 //
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -57,9 +59,11 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="productCode"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfPosition[]> GetPositions(BfProductCode productCode)
+        public Task<BitFlyerResponse<BfPosition[]>> GetPositionsAsync(BfProductCode productCode, CancellationToken ct)
         {
-            return GetPrivateAsync<BfPosition[]>(nameof(GetPositions), "product_code=" + productCode.ToEnumString()).Result;
+            return GetPrivateAsync<BfPosition[]>(nameof(GetPositions), "product_code=" + productCode.ToEnumString(), ct);
         }
+
+        public BitFlyerResponse<BfPosition[]> GetPositions(BfProductCode productCode) => GetPositionsAsync(productCode, CancellationToken.None).Result;
     }
 }

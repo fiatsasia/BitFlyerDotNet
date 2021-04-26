@@ -7,6 +7,7 @@
 //
 
 using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -26,10 +27,13 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public BitFlyerResponse<string> CancelAllChildOrders(BfCancelAllChildOrdersRequest request)
+        public Task<BitFlyerResponse<string>> CancelAllChildOrdersAsync(BfCancelAllChildOrdersRequest request, CancellationToken ct)
         {
-            return PostPrivateAsync<string>(nameof(CancelAllChildOrders), request, CancellationToken.None).Result;
+            return PostPrivateAsync<string>(nameof(CancelAllChildOrders), request, ct);
         }
+
+        public BitFlyerResponse<string> CancelAllChildOrders(BfCancelAllChildOrdersRequest request)
+            => CancelAllChildOrdersAsync(request, CancellationToken.None).Result;
 
         /// <summary>
         /// Cancel All Orders
@@ -37,12 +41,10 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="productCode"></param>
         /// <returns></returns>
+        public Task<BitFlyerResponse<string>> CancelAllChildOrdersAsync(BfProductCode productCode, CancellationToken ct)
+            => CancelAllChildOrdersAsync(new BfCancelAllChildOrdersRequest { ProductCode = productCode }, ct);
+
         public BitFlyerResponse<string> CancelAllChildOrders(BfProductCode productCode)
-        {
-            return CancelAllChildOrders(new BfCancelAllChildOrdersRequest
-            {
-                ProductCode = productCode,
-            });
-        }
+            => CancelAllChildOrdersAsync(productCode, CancellationToken.None).Result;
     }
 }

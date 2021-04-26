@@ -9,6 +9,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -66,7 +68,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfBalanceHistory[]> GetBalanceHistory(BfCurrencyCode currencyCode, int count = 0, int before = 0, int after = 0)
+        public Task<BitFlyerResponse<BfBalanceHistory[]>> GetBalanceHistoryAsync(BfCurrencyCode currencyCode, int count, int before, int after, CancellationToken ct)
         {
             var query = string.Format("currency_code={0}{1}{2}{3}",
                 currencyCode.ToEnumString(),
@@ -74,8 +76,11 @@ namespace BitFlyerDotNet.LightningApi
                 (before > 0) ? $"&before={before}" : "",
                 (after > 0) ? $"&after={after}" : ""
             );
-            return GetPrivateAsync<BfBalanceHistory[]>(nameof(GetBalanceHistory), query).Result;
+            return GetPrivateAsync<BfBalanceHistory[]>(nameof(GetBalanceHistory), query, ct);
         }
+
+        public BitFlyerResponse<BfBalanceHistory[]> GetBalanceHistory(BfCurrencyCode currencyCode, int count = 0, int before = 0, int after = 0)
+            => GetBalanceHistoryAsync(currencyCode, count, before, after, CancellationToken.None).Result;
 
         public IEnumerable<BfBalanceHistory> GetBalanceHistory(BfCurrencyCode currencyCode, int before, Func<BfBalanceHistory, bool> predicate)
         {

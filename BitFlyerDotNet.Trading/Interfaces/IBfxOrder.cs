@@ -7,6 +7,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
@@ -47,7 +48,7 @@ namespace BitFlyerDotNet.Trading
         decimal? ExecutedPrice { get; }         // ---- 5--   5:AveragePrice
         decimal? Commission { get; }            // ---- 5--8   5:TotalCommission
         decimal? SfdCollectedAmount { get; }    // ---- ---8
-        IBfxExecution[] Executions { get; }     // ---- ---8    ExecutionId, Price, Size, EventDate
+        IReadOnlyList<IBfxExecution> Executions { get; }     // ---- ---8    ExecutionId, Price, Size, EventDate
 
         string OrderFailedReason { get; }      // ---- ---8
 

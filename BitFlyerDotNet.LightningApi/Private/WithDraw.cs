@@ -7,6 +7,7 @@
 //
 
 using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -41,10 +42,11 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
+        public Task<BitFlyerResponse<BfWithdrawResponse>> WithdrawAsync(BfWithdrawRequest request, CancellationToken ct)
+            => PostPrivateAsync<BfWithdrawResponse>(nameof(Withdraw), request, CancellationToken.None);
+
         public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfWithdrawRequest request)
-        {
-            return PostPrivateAsync<BfWithdrawResponse>(nameof(Withdraw), request, CancellationToken.None).Result;
-        }
+            => WithdrawAsync(request, CancellationToken.None).Result;
 
         /// <summary>
         /// Withdrawing Funds
@@ -55,15 +57,18 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="amount"></param>
         /// <param name="authenticationCode"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode)
+        public Task<BitFlyerResponse<BfWithdrawResponse>> WithdrawAsync(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode, CancellationToken ct)
         {
-            return Withdraw(new ()
+            return WithdrawAsync(new ()
             {
                 CurrencyCode = currencyCode,
                 BankAccountId = bankAccountId,
                 Amount = amount,
                 AuthenticationCode = authenticationCode,
-            });
+            }, ct);
         }
+
+        public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode)
+            => WithdrawAsync(currencyCode, bankAccountId, amount, authenticationCode, CancellationToken.None).Result;
     }
 }

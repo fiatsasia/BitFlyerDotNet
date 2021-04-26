@@ -6,6 +6,7 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -27,14 +28,9 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="productCode"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfMarketHealth> GetHealth(BfProductCode productCode)
-        {
-            return GetAsync<BfMarketHealth>(nameof(GetHealth), "product_code=" + productCode.ToEnumString()).Result;
-        }
+        public Task<BitFlyerResponse<BfMarketHealth>> GetHealthAsync(BfProductCode productCode, CancellationToken ct)
+            => GetAsync<BfMarketHealth>(nameof(GetHealth), "product_code=" + productCode.ToEnumString(), ct);
 
-        public Task<BitFlyerResponse<BfMarketHealth>> GetHealthAsync(BfProductCode productCode)
-        {
-            return GetAsync<BfMarketHealth>(nameof(GetHealth), "product_code=" + productCode.ToEnumString());
-        }
+        public BitFlyerResponse<BfMarketHealth> GetHealth(BfProductCode productCode) => GetHealthAsync(productCode, CancellationToken.None).Result;
     }
 }

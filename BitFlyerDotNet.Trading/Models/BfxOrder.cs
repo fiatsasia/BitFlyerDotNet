@@ -8,6 +8,7 @@
 
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
@@ -36,8 +37,8 @@ namespace BitFlyerDotNet.Trading
         public decimal? ExecutedPrice { get; protected set; }
         public decimal? Commission { get; protected set; }
 
-        static IBfxExecution[] EmptyExecutions = new IBfxExecution[0];
-        public virtual IBfxExecution[] Executions => EmptyExecutions;
+        static IReadOnlyList<IBfxExecution> EmptyExecutions = new List<IBfxExecution>();
+        public virtual IReadOnlyList<IBfxExecution> Executions => EmptyExecutions;
         public decimal? SfdCollectedAmount => Executions.Sum(e => e.SfdCollectedAmount);
 
         public BfxOrderState State { get; protected set; } = BfxOrderState.Outstanding;

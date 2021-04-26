@@ -6,6 +6,8 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace BitFlyerDotNet.LightningApi
@@ -41,9 +43,8 @@ namespace BitFlyerDotNet.LightningApi
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetBankAccounts">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public BitFlyerResponse<BfBankAccount[]> GetBankAccounts()
-        {
-            return GetPrivateAsync<BfBankAccount[]>(nameof(GetBankAccounts)).Result;
-        }
+        public Task<BitFlyerResponse<BfBankAccount[]>> GetBankAccountsAsync(CancellationToken ct) => GetPrivateAsync<BfBankAccount[]>(nameof(GetBankAccounts), string.Empty, ct);
+
+        public BitFlyerResponse<BfBankAccount[]> GetBankAccounts() => GetBankAccountsAsync(CancellationToken.None).Result;
     }
 }

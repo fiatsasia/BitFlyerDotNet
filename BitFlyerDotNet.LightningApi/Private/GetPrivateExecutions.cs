@@ -9,6 +9,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -55,7 +57,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="childOrderId"></param>
         /// <param name="childOrderAcceptanceId"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfaPrivateExecution[]> GetPrivateExecutions(BfProductCode productCode, int count = 0, long before = 0, long after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
+        public Task<BitFlyerResponse<BfaPrivateExecution[]>> GetPrivateExecutionsAsync(BfProductCode productCode, int count, long before, long after, string childOrderId, string childOrderAcceptanceId, CancellationToken ct)
         {
             var query = string.Format("product_code={0}{1}{2}{3}{4}{5}",
                 productCode.ToEnumString(),
@@ -66,8 +68,12 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(childOrderAcceptanceId) ? "&child_order_acceptance_id=" + childOrderAcceptanceId : ""
             );
 
-            return GetPrivateAsync<BfaPrivateExecution[]>("getexecutions", query).Result;
+            return GetPrivateAsync<BfaPrivateExecution[]>("getexecutions", query, ct);
         }
+
+        public BitFlyerResponse<BfaPrivateExecution[]> GetPrivateExecutions(BfProductCode productCode, int count = 0, long before = 0, long after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
+            => GetPrivateExecutionsAsync(productCode, count, before, after, childOrderId, childOrderAcceptanceId, CancellationToken.None).Result;
+
 
         public IEnumerable<BfaPrivateExecution> GetPrivateExecutions(BfProductCode productCode, long before, Func<BfaPrivateExecution, bool> predicate)
         {

@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Reactive.Subjects;
@@ -106,7 +107,7 @@ namespace BitFlyerDotNet.LightningApi
         async Task GetAvailableMarkets()
         {
             _availableMarkets.Clear();
-            foreach (var market in await _client.GetAvailableMarketsAsync())
+            foreach (var market in await _client.GetAvailableMarketsAsync(CancellationToken.None))
             {
                 _availableMarkets[market.ProductCode] = market.Symbol;
             }

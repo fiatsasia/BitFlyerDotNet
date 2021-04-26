@@ -9,6 +9,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BitFlyerDotNet.LightningApi
@@ -36,10 +37,10 @@ namespace BitFlyerDotNet.LightningApi
             return result.Distinct(e => e.ProductCode);
         }
 
-        public static async Task<IEnumerable<(BfProductCode ProductCode, string Symbol)>> GetAvailableMarketsAsync(this BitFlyerClient client)
+        public static async Task<IEnumerable<(BfProductCode ProductCode, string Symbol)>> GetAvailableMarketsAsync(this BitFlyerClient client, CancellationToken ct)
         {
             var result = new List<(BfProductCode ProductCode, string Symbol)>();
-            foreach (var task in client.GetMarketsAllAsync())
+            foreach (var task in client.GetMarketsAllAsync(ct))
             {
                 var markets = (await task).GetContent();
                 foreach (var market in markets)

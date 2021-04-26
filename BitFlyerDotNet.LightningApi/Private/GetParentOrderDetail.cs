@@ -7,6 +7,8 @@
 //
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -74,7 +76,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="parentOrderId"></param>
         /// <param name="parentOrderAcceptanceId"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfaParentOrderDetail> GetParentOrderDetail(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
+        public Task<BitFlyerResponse<BfaParentOrderDetail>> GetParentOrderDetailAsync(BfProductCode productCode, string parentOrderId, string parentOrderAcceptanceId, CancellationToken ct)
         {
             if (string.IsNullOrEmpty(parentOrderId) && string.IsNullOrEmpty(parentOrderAcceptanceId))
             {
@@ -87,7 +89,10 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(parentOrderAcceptanceId) ? "&parent_order_acceptance_id=" + parentOrderAcceptanceId : ""
             );
 
-            return GetPrivateAsync<BfaParentOrderDetail>("getparentorder", query).Result;
+            return GetPrivateAsync<BfaParentOrderDetail>("getparentorder", query, ct);
         }
+
+        public BitFlyerResponse<BfaParentOrderDetail> GetParentOrderDetail(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
+            => GetParentOrderDetailAsync(productCode, parentOrderId, parentOrderAcceptanceId, CancellationToken.None).Result;
     }
 }

@@ -231,7 +231,7 @@ namespace BitFlyerDotNet.LightningApi
             Log.Trace($"{nameof(BitFlyerClient)} disposed.");
         }
 
-        internal async Task<BitFlyerResponse<T>> GetAsync<T>(string apiName, string queryParameters = "")
+        internal async Task<BitFlyerResponse<T>> GetAsync<T>(string apiName, string queryParameters, CancellationToken ct)
         {
             var path = PublicBasePath + apiName.ToLower();
             if (!string.IsNullOrEmpty(queryParameters))
@@ -244,7 +244,7 @@ namespace BitFlyerDotNet.LightningApi
                 var responseObject = new BitFlyerResponse<T>();
                 try
                 {
-                    var response = await _client.SendAsync(request);
+                    var response = await _client.SendAsync(request, ct);
                     responseObject.Set(response.StatusCode, await response.Content.ReadAsStringAsync());
                     TotalReceivedMessageChars += responseObject.Json.Length;
                     switch (responseObject.StatusCode)
@@ -308,7 +308,7 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        internal async Task<BitFlyerResponse<T>> GetPrivateAsync<T>(string apiName, string queryParameters = "")
+        internal async Task<BitFlyerResponse<T>> GetPrivateAsync<T>(string apiName, string queryParameters, CancellationToken ct)
         {
             if (!IsAuthenticated)
             {
@@ -334,7 +334,7 @@ namespace BitFlyerDotNet.LightningApi
                 var responseObject = new BitFlyerResponse<T>();
                 try
                 {
-                    var response = await _client.SendAsync(request);
+                    var response = await _client.SendAsync(request, ct);
                     responseObject.Set(response.StatusCode, await response.Content.ReadAsStringAsync());
                     TotalReceivedMessageChars += responseObject.Json.Length;
                     switch (responseObject.StatusCode)

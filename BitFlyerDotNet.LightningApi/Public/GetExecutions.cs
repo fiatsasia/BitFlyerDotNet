@@ -7,6 +7,7 @@
 //
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -52,7 +53,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfaExecution[]> GetExecutions(BfProductCode productCode, long count = 0, long before = 0, long after = 0)
+        public Task<BitFlyerResponse<BfaExecution[]>> GetExecutionsAsync(BfProductCode productCode, long count, long before, long after, CancellationToken ct)
         {
             var query = string.Format("product_code={0}{1}{2}{3}",
                 productCode.ToEnumString(),
@@ -60,18 +61,10 @@ namespace BitFlyerDotNet.LightningApi
                 (before > 0) ? $"&before={before}" : "",
                 (after > 0) ? $"&after={after}" : ""
             );
-            return GetAsync<BfaExecution[]>(nameof(GetExecutions), query).Result;
+            return GetAsync<BfaExecution[]>(nameof(GetExecutions), query, ct);
         }
 
-        public Task<BitFlyerResponse<BfaExecution[]>> GetExecutionsAsync(BfProductCode productCode, long count = 0, long before = 0, long after = 0)
-        {
-            var query = string.Format("product_code={0}{1}{2}{3}",
-                productCode.ToEnumString(),
-                (count > 0) ? $"&count={count}" : "",
-                (before > 0) ? $"&before={before}" : "",
-                (after > 0) ? $"&after={after}" : ""
-            );
-            return GetAsync<BfaExecution[]>(nameof(GetExecutions), query);
-        }
+        public BitFlyerResponse<BfaExecution[]> GetExecutions(BfProductCode productCode, long count = 0, long before = 0, long after = 0)
+            => GetExecutionsAsync(productCode, count, before, after, CancellationToken.None).Result;
     }
 }

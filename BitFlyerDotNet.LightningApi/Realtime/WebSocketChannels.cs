@@ -188,8 +188,8 @@ namespace BitFlyerDotNet.LightningApi
         public void Send(string json)
         {
             var jsonBytes = Encoding.UTF8.GetBytes(json);
-            _ostream.WriteAsync(jsonBytes, 0, jsonBytes.Length);
-            _ostream.FlushAsync(CancellationToken.None).Wait();
+            _ = _ostream.WriteAsync(jsonBytes, 0, jsonBytes.Length);
+            _ = _ostream.FlushAsync(CancellationToken.None);
             Log.Trace($"WebSocket sent: {json}");
             MessageSent?.Invoke(json);
         }
@@ -301,7 +301,7 @@ namespace BitFlyerDotNet.LightningApi
                 case WebSocketState.Closed:
                     try
                     {
-                        _socket.ConnectAsync(new Uri(_uri), CancellationToken.None).Wait();
+                        _socket.ConnectAsync(new Uri(_uri), CancellationToken.None);
                     }
                     catch (Exception ex)
                     {
@@ -313,7 +313,7 @@ namespace BitFlyerDotNet.LightningApi
                 case WebSocketState.Aborted:
                     _ct.ThrowIfCancellationRequested();
                     _socket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
-                    TryOpenAsync();
+                    _ = TryOpenAsync();
                     break;
 
                 case WebSocketState.Open:

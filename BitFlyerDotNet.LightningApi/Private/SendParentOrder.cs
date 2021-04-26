@@ -247,10 +247,10 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest request)
+        public Task<BitFlyerResponse<BfParentOrderResponse>> SendParentOrderAsync(BfParentOrderRequest request, CancellationToken ct)
         {
             Validate(ref request);
-            return PostPrivateAsync<BfParentOrderResponse>(nameof(SendParentOrder), request, CancellationToken.None).Result;
+            return PostPrivateAsync<BfParentOrderResponse>(nameof(SendParentOrder), request, ct);
         }
 
         /// <summary>
@@ -259,10 +259,7 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<BitFlyerResponse<BfParentOrderResponse>> SendParentOrderAsync(BfParentOrderRequest request, CancellationToken ct)
-        {
-            Validate(ref request);
-            return await PostPrivateAsync<BfParentOrderResponse>(nameof(SendParentOrder), request, ct);
-        }
+        public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest request)
+            => SendParentOrderAsync(request, CancellationToken.None).Result;
     }
 }

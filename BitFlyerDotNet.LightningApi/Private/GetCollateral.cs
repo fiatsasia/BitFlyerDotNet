@@ -6,6 +6,8 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace BitFlyerDotNet.LightningApi
@@ -31,9 +33,9 @@ namespace BitFlyerDotNet.LightningApi
     /// </summary>
     public partial class BitFlyerClient
     {
-        public BitFlyerResponse<BfCollateral> GetCollateral()
-        {
-            return GetPrivateAsync<BfCollateral>(nameof(GetCollateral)).Result;
-        }
+        public Task<BitFlyerResponse<BfCollateral>> GetCollateralAsync(CancellationToken ct)
+            => GetPrivateAsync<BfCollateral>(nameof(GetCollateral), string.Empty, ct);
+
+        public BitFlyerResponse<BfCollateral> GetCollateral() => GetCollateralAsync(CancellationToken.None).Result;
     }
 }

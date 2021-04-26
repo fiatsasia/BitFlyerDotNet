@@ -112,10 +112,10 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(BfChildOrderRequest request, CancellationToken ct)
+        public Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(BfChildOrderRequest request, CancellationToken ct)
         {
             Validate(ref request);
-            return await PostPrivateAsync<BfChildOrderResponse>(nameof(SendChildOrder), request, ct);
+            return PostPrivateAsync<BfChildOrderResponse>(nameof(SendChildOrder), request, ct);
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="minuteToExpire"></param>
         /// <param name="timeInForce"></param>
         /// <returns></returns>
-        public async Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(
+        public Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(
             BfProductCode productCode,
             BfOrderType orderType,
             BfTradeSide side,
@@ -187,7 +187,7 @@ namespace BitFlyerDotNet.LightningApi
                 TimeInForce = timeInForce,
             };
             Validate(ref request);
-            return await SendChildOrderAsync(request, ct);
+            return SendChildOrderAsync(request, ct);
         }
     }
 }

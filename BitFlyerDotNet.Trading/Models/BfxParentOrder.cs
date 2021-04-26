@@ -8,13 +8,14 @@
 
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
     public class BfxParentOrder : BfxOrder
     {
-        public override IBfxExecution[] Executions => _orderMethod == BfOrderType.Simple ? _childOrders[0].Executions : base.Executions;
+        public override IReadOnlyList<IBfxExecution> Executions => _orderMethod == BfOrderType.Simple ? _childOrders[0].Executions : base.Executions;
         public override IBfxOrder[] Children => _childOrders.ToArray();
 
         public override string AcceptanceId { get; protected set; } = string.Empty;

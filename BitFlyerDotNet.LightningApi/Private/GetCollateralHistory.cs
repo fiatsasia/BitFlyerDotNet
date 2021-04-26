@@ -9,6 +9,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -46,7 +48,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfCollateralHistory[]> GetCollateralHistory(int count = 0, int before = 0, int after = 0)
+        public Task<BitFlyerResponse<BfCollateralHistory[]>> GetCollateralHistoryAsync(int count, int before, int after, CancellationToken ct)
         {
             var query = string.Format("{0}{1}{2}",
                 (count > 0)  ? $"&count={count}"   : "",
@@ -54,8 +56,11 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
-            return GetPrivateAsync<BfCollateralHistory[]>(nameof(GetCollateralHistory), query).Result;
+            return GetPrivateAsync<BfCollateralHistory[]>(nameof(GetCollateralHistory), query, ct);
         }
+
+        public BitFlyerResponse<BfCollateralHistory[]> GetCollateralHistory(int count = 0, int before = 0, int after = 0)
+            => GetCollateralHistoryAsync(count, before, after, CancellationToken.None).Result;
 
         public IEnumerable<BfCollateralHistory> GetCollateralHistory(int before, Func<BfCollateralHistory, bool> predicate)
         {

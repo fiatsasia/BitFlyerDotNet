@@ -15,7 +15,7 @@ namespace BitFlyerDotNet.Trading
 {
     public class BfxChildOrder : BfxOrder
     {
-        public override IBfxExecution[] Executions => _executions.ToArray();
+        public override IReadOnlyList<IBfxExecution> Executions => _executions;
 
         // Response fields
         public override string AcceptanceId { get; protected set; } = string.Empty;

@@ -7,6 +7,8 @@
 //
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace BitFlyerDotNet.LightningApi
@@ -58,9 +60,11 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="productCode"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfTicker> GetTicker(BfProductCode productCode)
+        public Task<BitFlyerResponse<BfTicker>> GetTickerAsync(BfProductCode productCode, CancellationToken ct)
         {
-            return GetAsync<BfTicker>(nameof(GetTicker), "product_code=" + productCode.ToEnumString()).Result;
+            return GetAsync<BfTicker>(nameof(GetTicker), "product_code=" + productCode.ToEnumString(), ct);
         }
+
+        public BitFlyerResponse<BfTicker> GetTicker(BfProductCode productCode) => GetTickerAsync(productCode, CancellationToken.None).Result;
     }
 }

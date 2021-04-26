@@ -6,6 +6,8 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -31,9 +33,8 @@ namespace BitFlyerDotNet.LightningApi
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetBalance">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public BitFlyerResponse<BfBalance[]> GetBalance()
-        {
-            return GetPrivateAsync<BfBalance[]>(nameof(GetBalance)).Result;
-        }
+        public Task<BitFlyerResponse<BfBalance[]>> GetBalanceAsync(CancellationToken ct) => GetPrivateAsync<BfBalance[]>(nameof(GetBalance), string.Empty, ct);
+
+        public BitFlyerResponse<BfBalance[]> GetBalance() => GetBalanceAsync(CancellationToken.None).Result;
     }
 }

@@ -9,6 +9,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -80,7 +82,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfaParentOrder[]> GetParentOrders(BfProductCode productCode, BfOrderState orderState = BfOrderState.Unknown, int count = 0, uint before = 0, uint after = 0)
+        public Task<BitFlyerResponse<BfaParentOrder[]>> GetParentOrdersAsync(BfProductCode productCode, BfOrderState orderState, int count, uint before, uint after, CancellationToken ct)
         {
             var query = string.Format("product_code={0}{1}{2}{3}",
                 productCode.ToEnumString(),
@@ -90,8 +92,11 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             );
 
-            return GetPrivateAsync<BfaParentOrder[]>(nameof(GetParentOrders), query).Result;
+            return GetPrivateAsync<BfaParentOrder[]>(nameof(GetParentOrders), query, ct);
         }
+
+        public BitFlyerResponse<BfaParentOrder[]> GetParentOrders(BfProductCode productCode, BfOrderState orderState = BfOrderState.Unknown, int count = 0, uint before = 0, uint after = 0)
+            => GetParentOrdersAsync(productCode, orderState, count, before, after, CancellationToken.None).Result;
 
         public IEnumerable<BfaParentOrder> GetParentOrders(BfProductCode productCode, BfOrderState orderState, uint before, Func<BfaParentOrder, bool> predicate)
         {

@@ -6,8 +6,7 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System.Linq;
-using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -34,51 +33,38 @@ namespace BitFlyerDotNet.LightningApi
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetMarkets">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public BitFlyerResponse<BfMarket[]> GetMarkets()
-        {
-            return GetAsync<BfMarket[]>(nameof(GetMarkets)).Result;
-        }
+        public Task<BitFlyerResponse<BfMarket[]>> GetMarketsAsync(CancellationToken ct) => GetAsync<BfMarket[]>(nameof(GetMarkets), string.Empty, ct);
 
-        public Task<BitFlyerResponse<BfMarket[]>> GetMarketsAsync()
-        {
-            return GetAsync<BfMarket[]>(nameof(GetMarkets));
-        }
+        public BitFlyerResponse<BfMarket[]> GetMarkets() => GetMarketsAsync(CancellationToken.None).Result;
 
         /// <summary>
         /// Market List (U.S.)
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetMarkets">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public BitFlyerResponse<BfMarket[]> GetMarketsUsa()
-        {
-            return GetAsync<BfMarket[]>(nameof(GetMarkets) + UsaMarket).Result;
-        }
+        public Task<BitFlyerResponse<BfMarket[]>> GetMarketsUsaAsync(CancellationToken ct) => GetAsync<BfMarket[]>(nameof(GetMarkets) + UsaMarket, string.Empty, ct);
 
-        public Task<BitFlyerResponse<BfMarket[]>> GetMarketsUsaAsync()
-        {
-            return GetAsync<BfMarket[]>(nameof(GetMarkets) + UsaMarket);
-        }
+        public BitFlyerResponse<BfMarket[]> GetMarketsUsa() => GetMarketsUsaAsync(CancellationToken.None).Result;
 
         /// <summary>
         /// Market List (E.U.)
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetMarkets">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public BitFlyerResponse<BfMarket[]> GetMarketsEu()
-        {
-            return GetAsync<BfMarket[]>(nameof(GetMarkets) + EuMarket).Result;
-        }
+        public Task<BitFlyerResponse<BfMarket[]>> GetMarketsEuAsync(CancellationToken ct) => GetAsync<BfMarket[]>(nameof(GetMarkets) + EuMarket, string.Empty, ct);
 
-        public Task<BitFlyerResponse<BfMarket[]>> GetMarketsEuAsync()
-        {
-            return GetAsync<BfMarket[]>(nameof(GetMarkets) + EuMarket);
-        }
+        public BitFlyerResponse<BfMarket[]> GetMarketsEu() => GetMarketsEuAsync(CancellationToken.None).Result;
 
         /// <summary>
         /// Market List (All countries)
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetMarkets">Online help</see>
         /// </summary>
         /// <returns></returns>
+        public Task<BitFlyerResponse<BfMarket[]>>[] GetMarketsAllAsync(CancellationToken ct)
+        {
+            return new Task<BitFlyerResponse<BfMarket[]>>[] { GetMarketsAsync(ct), GetMarketsUsaAsync(ct), GetMarketsEuAsync(ct) };
+        }
+
         public BitFlyerResponse<BfMarket[]>[] GetMarketsAll()
         {
             return new BitFlyerResponse<BfMarket[]>[]
@@ -86,16 +72,6 @@ namespace BitFlyerDotNet.LightningApi
                 GetMarkets(),
                 GetMarketsUsa(),
                 GetMarketsEu()
-            };
-        }
-
-        public Task<BitFlyerResponse<BfMarket[]>>[] GetMarketsAllAsync()
-        {
-            return new Task<BitFlyerResponse<BfMarket[]>>[]
-            {
-                GetMarketsAsync(),
-                GetMarketsUsaAsync(),
-                GetMarketsEuAsync(),
             };
         }
     }

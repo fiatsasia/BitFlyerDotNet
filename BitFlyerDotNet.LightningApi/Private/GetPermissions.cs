@@ -6,6 +6,9 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace BitFlyerDotNet.LightningApi
 {
     public partial class BitFlyerClient
@@ -15,9 +18,9 @@ namespace BitFlyerDotNet.LightningApi
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetPermissions">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public BitFlyerResponse<string[]> GetPermissions()
-        {
-            return GetPrivateAsync<string[]>(nameof(GetPermissions)).Result;
-        }
+        public Task<BitFlyerResponse<string[]>> GetPermissionsAsync(CancellationToken ct)
+            => GetPrivateAsync<string[]>(nameof(GetPermissions), string.Empty, ct);
+
+        public BitFlyerResponse<string[]> GetPermissions() => GetPermissionsAsync(CancellationToken.None).Result;
     }
 }
