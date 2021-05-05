@@ -48,6 +48,8 @@ namespace BitFlyerDotNet.Trading
 
     class BfxPositionsElement
     {
+        public string ChildOrderAcceptanceId { get; }
+        public int ExecutionIndex { get; }
         public DateTime Open { get; private set; }
         public decimal Price { get; private set; }
         public decimal OpenSize { get; private set; }
@@ -61,10 +63,14 @@ namespace BitFlyerDotNet.Trading
         decimal _sfd;
         public decimal SwapForDifference => _sfd * (CurrentSize / OpenSize);
 
-        private BfxPositionsElement() { }
+        private BfxPositionsElement()
+        {
+            ChildOrderAcceptanceId = string.Empty;
+        }
 
         public BfxPositionsElement(BfPosition pos)
         {
+            ChildOrderAcceptanceId = string.Empty;
             Open = pos.OpenDate;
             Price = pos.Price;
             CurrentSize = OpenSize = pos.Side == BfTradeSide.Buy ? pos.Size : -pos.Size;
@@ -75,6 +81,8 @@ namespace BitFlyerDotNet.Trading
 
         public BfxPositionsElement(BfChildOrderEvent ev, decimal size)
         {
+            ChildOrderAcceptanceId = ev.ChildOrderAcceptanceId;
+            ExecutionIndex = ev.ExecutionId;
             Open = ev.EventDate;
             Price = ev.Price;
             CurrentSize = OpenSize = ev.Side == BfTradeSide.Buy ? size : -size;
