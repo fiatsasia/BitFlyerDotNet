@@ -41,7 +41,6 @@ namespace BitFlyerDotNet.Trading
         }
 
         public decimal? Profit => ClosePrice.HasValue ? Math.Floor((ClosePrice.Value - OpenPrice) * (Side == BfTradeSide.Buy ? Size : -Size)) : default;
-        public decimal? NetProfit => Profit - Commission - SwapForDifference - SwapPointAccumulate;
         public bool IsOpened => !Close.HasValue;
         public bool IsClosed => Close.HasValue;
     }
