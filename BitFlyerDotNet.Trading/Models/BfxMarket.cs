@@ -30,9 +30,9 @@ namespace BitFlyerDotNet.Trading
 
         TimeSpan _serverTimeSpan;
         public DateTime ServerTime => DateTime.UtcNow + _serverTimeSpan;
-        public IEnumerable<IBfxOrderTransaction> GetActiveTransactions() =>
-            _parentOrderTransactions.Values.Where(e => e.State != BfxOrderTransactionState.Closed).Concat(
-                _childOrderTransactions.Values.Where(e => !e.HasParent && e.State != BfxOrderTransactionState.Closed)
+        public IEnumerable<IBfxTransaction> GetActiveTransactions() =>
+            _parentOrderTransactions.Values.Where(e => e.State != BfxTransactionState.Closed).Concat(
+                _childOrderTransactions.Values.Where(e => !e.HasParent && e.State != BfxTransactionState.Closed)
             ).ToList(); // ToList() makes thread-safe colleciton
 
         // Events
@@ -43,8 +43,8 @@ namespace BitFlyerDotNet.Trading
         // Private properties
         CompositeDisposable _disposables = new CompositeDisposable();
         BfxAccount _account;
-        ConcurrentDictionary<string, IBfxOrderTransaction> _childOrderTransactions = new ConcurrentDictionary<string, IBfxOrderTransaction>();
-        ConcurrentDictionary<string, IBfxOrderTransaction> _parentOrderTransactions = new ConcurrentDictionary<string, IBfxOrderTransaction>();
+        ConcurrentDictionary<string, IBfxTransaction> _childOrderTransactions = new ConcurrentDictionary<string, IBfxTransaction>();
+        ConcurrentDictionary<string, IBfxTransaction> _parentOrderTransactions = new ConcurrentDictionary<string, IBfxTransaction>();
         IObservable<BfTicker> _ticker;
 
         public BfxMarket(BfxAccount account, BfProductCode productCode, BfxConfiguration config)
@@ -136,10 +136,10 @@ namespace BitFlyerDotNet.Trading
             foreach (var parent in parents)
             {
                 var xParentOrder = new BfxParentOrder(parent);
-                var txParent = new BfxParentOrderTransaction(this, xParentOrder);
+                var txParent = new BfxParentTransaction(this, xParentOrder);
                 foreach (var xChildOrder in xParentOrder.Children.Cast<BfxChildOrder>())
                 {
-                    _childOrderTransactions[xChildOrder.AcceptanceId] = new BfxChildOrderTransaction(this, xChildOrder, txParent);
+                    _childOrderTransactions[xChildOrder.AcceptanceId] = new BfxChildTransaction(this, xChildOrder, txParent);
                 }
                 _parentOrderTransactions.TryAdd(parent.AcceptanceId, txParent);
             };
@@ -149,7 +149,7 @@ namespace BitFlyerDotNet.Trading
             foreach (var child in children)
             {
                 var order = new BfxChildOrder(child);
-                _childOrderTransactions.TryAdd(child.AcceptanceId, new BfxChildOrderTransaction(this, order));
+                _childOrderTransactions.TryAdd(child.AcceptanceId, new BfxChildTransaction(this, order));
             }
         }
 
@@ -165,7 +165,7 @@ namespace BitFlyerDotNet.Trading
                 return;
             }
 
-            if (!(tx is BfxChildOrderTransaction txChild))
+            if (!(tx is BfxChildTransaction txChild))
             {
                 throw new ApplicationException();
             }
@@ -193,7 +193,7 @@ namespace BitFlyerDotNet.Trading
                 return;
             }
 
-            if (!(tx is BfxParentOrderTransaction txParent))
+            if (!(tx is BfxParentTransaction txParent))
             {
                 throw new ApplicationException();
             }
@@ -209,7 +209,7 @@ namespace BitFlyerDotNet.Trading
 
                 if (!string.IsNullOrEmpty(childOrder.AcceptanceId))
                 {
-                    var txChild = new BfxChildOrderTransaction(this, childOrder, txParent);
+                    var txChild = new BfxChildTransaction(this, childOrder, txParent);
                     _childOrderTransactions.AddOrUpdate(childOrder.AcceptanceId, txChild, (key, value) =>
                     {
                         Log.Info($"Child transaction place holder found and merged to parent. {childOrder.AcceptanceId} Parent.{poe.EventType}");
@@ -226,36 +226,36 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        public IBfxOrderTransaction CreateTransaction(IBfxOrder order, BfTimeInForce timeInForce, TimeSpan periodToExpire)
+        public IBfxTransaction CreateTransaction(IBfxOrder order, BfTimeInForce timeInForce, TimeSpan periodToExpire)
         {
             switch (order)
             {
                 case BfxChildOrder child:
                     child.ApplyParameters(ProductCode, Convert.ToInt32(periodToExpire.TotalMinutes), timeInForce);
-                    return new BfxChildOrderTransaction(this, child);
+                    return new BfxChildTransaction(this, child);
 
                 case BfxParentOrder parent:
                     parent.ApplyParameters(ProductCode, Convert.ToInt32(periodToExpire.TotalMinutes), timeInForce);
-                    return new BfxParentOrderTransaction(this, parent);
+                    return new BfxParentTransaction(this, parent);
 
                 default:
                     throw new NotSupportedException();
             }
         }
 
-        public IBfxOrderTransaction CreateTransaction(IBfxOrder order)
+        public IBfxTransaction CreateTransaction(IBfxOrder order)
         {
             return CreateTransaction(order, BfTimeInForce.NotSpecified, TimeSpan.Zero);
         }
 
-        public Task DispatchTransaction(IBfxOrderTransaction tx)
+        public Task DispatchTransaction(IBfxTransaction tx)
         {
             switch (tx)
             {
-                case BfxChildOrderTransaction child:
+                case BfxChildTransaction child:
                     return child.SendOrderRequestAsync();
 
-                case BfxParentOrderTransaction parent:
+                case BfxParentTransaction parent:
                     return parent.SendOrderRequestAsync();
 
                 default:
@@ -263,19 +263,19 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        public IBfxOrderTransaction PlaceOrder(IBfxOrder order, TimeSpan periodToExpire, BfTimeInForce timeInForce)
+        public IBfxTransaction PlaceOrder(IBfxOrder order, TimeSpan periodToExpire, BfTimeInForce timeInForce)
         {
             var tx = CreateTransaction(order, timeInForce, periodToExpire);
             _ = DispatchTransaction(tx);
             return tx;
         }
 
-        public IBfxOrderTransaction PlaceOrder(IBfxOrder order)
+        public IBfxTransaction PlaceOrder(IBfxOrder order)
         {
             return PlaceOrder(order, TimeSpan.Zero, BfTimeInForce.NotSpecified);
         }
 
-        internal void RegisterTransaction(BfxChildOrderTransaction tx)
+        internal void RegisterTransaction(BfxChildTransaction tx)
         {
             _childOrderTransactions.AddOrUpdate(tx.MarketId, tx, (key, value) =>
             {
@@ -291,7 +291,7 @@ namespace BitFlyerDotNet.Trading
             });
         }
 
-        internal void RegisterTransaction(BfxParentOrderTransaction tx)
+        internal void RegisterTransaction(BfxParentTransaction tx)
         {
             _parentOrderTransactions.AddOrUpdate(tx.MarketId, tx, (key, value) =>
             {
@@ -305,7 +305,7 @@ namespace BitFlyerDotNet.Trading
                     tx.OnParentOrderEvent(poe);
                     if (poe.EventType == BfOrderEventType.Trigger)
                     {
-                        RegisterTransaction(new BfxChildOrderTransaction(this, (BfxChildOrder)tx.Order.Children[poe.ChildOrderIndex - 1], tx));
+                        RegisterTransaction(new BfxChildTransaction(this, (BfxChildOrder)tx.Order.Children[poe.ChildOrderIndex - 1], tx));
                     }
                 }
                 return tx;
@@ -316,7 +316,7 @@ namespace BitFlyerDotNet.Trading
         {
             switch (ev.EventType)
             {
-                case BfxOrderTransactionEventType.OrderSent:
+                case BfxTransactionEventType.OrderSent:
                     break;
 
                     // トランザクション削除

@@ -6,19 +6,18 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-
 namespace BitFlyerDotNet.Trading
 {
-    public interface IBfxOrderTransaction
+    public enum BfxTransactionState
     {
-        Guid Id { get; }
-        DateTime OpenTime { get; }
-        BfxOrderTransactionState State { get; }
-        IBfxOrder Order { get; }
+        Idle,
 
-        bool IsCancelable { get; }
-        void Cancel();
-        bool HasParent { get; }
+        SendingOrder,
+        WaitingOrderAccepted,
+
+        SendingCancel,
+        CancelAccepted,
+
+        Closed,
     }
 }

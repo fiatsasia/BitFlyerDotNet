@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.Trading
 {
-    public enum BfxOrderTransactionEventType
+    public enum BfxTransactionEventType
     {
         Unknown,
 

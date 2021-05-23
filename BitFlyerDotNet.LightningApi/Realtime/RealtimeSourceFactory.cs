@@ -64,8 +64,7 @@ namespace BitFlyerDotNet.LightningApi
         void OnMessageReceived(string json, object message) => MessageReceived?.Invoke(json, message);
 
         CompositeDisposable _disposables = new ();
-        BitFlyerClient _client;
-        public static RealtimeSourceFactory Singleton { get; private set; }
+        public static RealtimeSourceFactory Singleton { get; } = new();
 
         /// <summary>
         /// Create public realtime source
@@ -75,10 +74,7 @@ namespace BitFlyerDotNet.LightningApi
             Channels = new WebSocketChannels(EndpointUrl).AddTo(_disposables);
             Channels.MessageSent = OnMessageSent;
             Channels.MessageReceived = OnMessageReceived;
-            _client = new BitFlyerClient().AddTo(_disposables);
         }
-
-        public static RealtimeSourceFactory CreateAsSingleton() => Singleton = new ();
 
         /// <summary>
         /// Create pricate realtime source
@@ -90,10 +86,12 @@ namespace BitFlyerDotNet.LightningApi
             Channels = new WebSocketChannels(EndpointUrl, apiKey, apiSecret).AddTo(_disposables);
             Channels.MessageSent = OnMessageSent;
             Channels.MessageReceived = OnMessageReceived;
-            _client = new BitFlyerClient().AddTo(_disposables);
         }
 
-        public static RealtimeSourceFactory CreateAsSingleton(string apiKey, string apiSecret) => Singleton = new (apiKey, apiSecret);
+        public bool Authenticate(string apiKey, string apiSecret)
+        {
+            return Channels.Authenticate(apiKey, apiSecret);
+        }
 
         public void Dispose()
         {
@@ -106,23 +104,29 @@ namespace BitFlyerDotNet.LightningApi
         Dictionary<BfProductCode, string> _availableMarkets = new ();
         async Task GetAvailableMarkets()
         {
-            _availableMarkets.Clear();
-            foreach (var market in await _client.GetAvailableMarketsAsync(CancellationToken.None))
+            using (var client = new BitFlyerClient())
             {
-                _availableMarkets[market.ProductCode] = market.Symbol;
+                _availableMarkets.Clear();
+                foreach (var market in await client.GetAvailableMarketsAsync(CancellationToken.None))
+                {
+                    _availableMarkets[market.ProductCode] = market.Symbol;
+                }
             }
         }
 
         bool _opened = false;
-        public async Task TryOpenAsync()
+        public async Task<bool> TryOpenAsync()
         {
-            if (!_opened)
+            if (_opened)
             {
-                Channels.Resumed += async () => await GetAvailableMarkets(); // To refresh markets when is resumed
-                await Channels.TryOpenAsync();
-                await GetAvailableMarkets();
-                _opened = true;
+                return false;
             }
+
+            Channels.Resumed += async () => await GetAvailableMarkets(); // To refresh markets when is resumed
+            await Channels.TryOpenAsync();
+            await GetAvailableMarkets();
+            _opened = true;
+            return true;
         }
 
         void OnSourceClosed()

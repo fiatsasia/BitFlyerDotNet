@@ -29,14 +29,14 @@ namespace BitFlyerDotNet.Trading
 
     public class BfxOrderTransactionEventArgs : BfxEventArgs
     {
-        public BfxOrderTransactionEventType EventType { get; internal set; }
-        public BfxOrderTransactionState State { get; internal set; }
+        public BfxTransactionEventType EventType { get; internal set; }
+        public BfxTransactionState State { get; internal set; }
         public BfxOrderState OrderState { get; internal set; }
 
         public IBfxOrder Order { get; }
         public object? Parameter { get; set; }
 
-        public BfxOrderTransactionEventType ChildEventType { get; internal set; }
+        public BfxTransactionEventType ChildEventType { get; internal set; }
         public int ChildOrderIndex { get; internal set; }
         public IBfxOrder ChildOrder => Order.Children[ChildOrderIndex];
 

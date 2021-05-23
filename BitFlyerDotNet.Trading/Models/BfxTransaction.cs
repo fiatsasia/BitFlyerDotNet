@@ -12,13 +12,13 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public abstract class BfxOrderTransaction : IBfxOrderTransaction
+    public abstract class BfxTransaction : IBfxTransaction
     {
         public Guid Id { get; }
         public DateTime OpenTime { get; }
 
         public abstract string MarketId { get; }
-        public BfxOrderTransactionState State { get; protected set; } = BfxOrderTransactionState.Idle;
+        public BfxTransactionState State { get; protected set; } = BfxTransactionState.Idle;
         public abstract BfxOrderState OrderState { get; }
         public abstract IBfxOrder Order { get; }
         public virtual bool HasParent { get; } = false;
@@ -31,12 +31,12 @@ namespace BitFlyerDotNet.Trading
 
         string _derived;
 
-        public BfxOrderTransaction(BfxMarket market)
+        public BfxTransaction(BfxMarket market)
         {
             Market = market;
             Id = Guid.NewGuid();
             OpenTime = market.ServerTime;
-            _derived = GetType().Name == nameof(BfxParentOrderTransaction) ? "Parent" : "Child";
+            _derived = GetType().Name == nameof(BfxParentTransaction) ? "Parent" : "Child";
         }
 
         public bool IsCancelable
@@ -45,20 +45,20 @@ namespace BitFlyerDotNet.Trading
             {
                 switch (State)
                 {
-                    case BfxOrderTransactionState.Idle:
+                    case BfxTransactionState.Idle:
                         if (OrderState == BfxOrderState.Ordered || OrderState == BfxOrderState.PartiallyExecuted)
                         {
                             return true;
                         }
                         break;
 
-                    case BfxOrderTransactionState.SendingOrder:
+                    case BfxTransactionState.SendingOrder:
                         return true;
 
-                    case BfxOrderTransactionState.WaitingOrderAccepted:
+                    case BfxTransactionState.WaitingOrderAccepted:
                         return true;
 
-                    case BfxOrderTransactionState.SendingCancel:
+                    case BfxTransactionState.SendingCancel:
                         return true;
                 }
                 return false;
@@ -69,34 +69,34 @@ namespace BitFlyerDotNet.Trading
         {
             switch (State)
             {
-                case BfxOrderTransactionState.Idle:
+                case BfxTransactionState.Idle:
                     if (OrderState == BfxOrderState.Ordered || OrderState == BfxOrderState.PartiallyExecuted)
                     {
                         SendCancelOrderRequestAsync();
                     }
                     break;
 
-                case BfxOrderTransactionState.SendingOrder:
+                case BfxTransactionState.SendingOrder:
                     CancelTransaction();
                     break;
 
-                case BfxOrderTransactionState.WaitingOrderAccepted:
+                case BfxTransactionState.WaitingOrderAccepted:
                     SendCancelOrderRequestAsync();
                     break;
 
-                case BfxOrderTransactionState.SendingCancel:
+                case BfxTransactionState.SendingCancel:
                     CancelTransaction();
                     break;
             }
         }
 
-        protected virtual void ChangeState(BfxOrderTransactionState state)
+        protected virtual void ChangeState(BfxTransactionState state)
         {
             Log.Trace($"{_derived} transaction state changed: {State} -> {state}");
             State = state;
         }
 
-        protected void NotifyEvent(BfxOrderTransactionEventType oet, DateTime time, object? parameter)
+        protected void NotifyEvent(BfxTransactionEventType oet, DateTime time, object? parameter)
         {
             Market.InvokeOrderTransactionEvent(this, new BfxOrderTransactionEventArgs(Order)
             {
@@ -107,9 +107,9 @@ namespace BitFlyerDotNet.Trading
             });
         }
 
-        protected void NotifyEvent(BfxOrderTransactionEventType oet) => NotifyEvent(oet, Market.ServerTime, null);
+        protected void NotifyEvent(BfxTransactionEventType oet) => NotifyEvent(oet, Market.ServerTime, null);
 
-        protected void NotifyChildOrderEvent(BfxOrderTransactionEventType oet, int childOrderIndex, BfChildOrderEvent coe)
+        protected void NotifyChildOrderEvent(BfxTransactionEventType oet, int childOrderIndex, BfChildOrderEvent coe)
         {
             if (Order.Children.Length == 1)
             {
@@ -125,7 +125,7 @@ namespace BitFlyerDotNet.Trading
             {
                 Market.InvokeOrderTransactionEvent(this, new BfxOrderTransactionEventArgs(Order)
                 {
-                    EventType = BfxOrderTransactionEventType.ChildOrderEvent,
+                    EventType = BfxTransactionEventType.ChildOrderEvent,
                     State = State,
                     Time = coe.EventDate,
                     Parameter = coe,
@@ -135,7 +135,7 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        protected void NotifyEvent(BfxOrderTransactionEventType oet, BfChildOrderEvent coe) => NotifyEvent(oet, coe.EventDate, coe);
-        protected void NotifyEvent(BfxOrderTransactionEventType oet, BfParentOrderEvent poe) => NotifyEvent(oet, poe.EventDate, poe);
+        protected void NotifyEvent(BfxTransactionEventType oet, BfChildOrderEvent coe) => NotifyEvent(oet, coe.EventDate, coe);
+        protected void NotifyEvent(BfxTransactionEventType oet, BfParentOrderEvent poe) => NotifyEvent(oet, poe.EventDate, poe);
     }
 }

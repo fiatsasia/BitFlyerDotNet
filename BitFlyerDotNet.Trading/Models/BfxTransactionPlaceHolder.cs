@@ -12,11 +12,11 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    class BfxTransactionPlaceHolder : IBfxOrderTransaction
+    class BfxTransactionPlaceHolder : IBfxTransaction
     {
         public Guid Id => throw new NotImplementedException();
         public DateTime OpenTime => throw new NotImplementedException();
-        public BfxOrderTransactionState State => throw new NotImplementedException();
+        public BfxTransactionState State => throw new NotImplementedException();
         public bool IsCancelable => throw new NotImplementedException();
         public bool HasParent => throw new NotImplementedException();
         public IBfxOrder Order => throw new NotImplementedException();

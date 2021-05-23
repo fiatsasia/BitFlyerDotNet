@@ -25,6 +25,7 @@ namespace BitFlyerDotNet.LightningApi
         public static int WebSocketReconnectionIntervalMs { get; set; } = 3000;
         public long TotalReceivedMessageChars { get; private set; }
         public bool IsOpened => (_socket?.State ?? WebSocketState.None) == WebSocketState.Open;
+        public bool IsPrivate => _apiKey != default;
 
         public event Action Opened;
         public event Action Suspended;
@@ -44,13 +45,13 @@ namespace BitFlyerDotNet.LightningApi
         CancellationToken _ct;
         string _uri;
         string _apiKey;
-        HMACSHA256 _hash;
+        string _apiSecret;
         bool _isWasm;
 
         public WebSocketChannels(string uri)
         {
             _isWasm = RuntimeInformation.OSArchitecture == /*Architecture.Wasm*/(Architecture)4; // implemented .NET5 or later
-                _uri = uri;
+            _uri = uri;
             CreateWebSocket();
         }
 
@@ -58,7 +59,7 @@ namespace BitFlyerDotNet.LightningApi
             : this(uri)
         {
             _apiKey = apiKey;
-            _hash = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret));
+            _apiSecret = apiSecret;
         }
 
         void CreateWebSocket()
@@ -107,41 +108,45 @@ namespace BitFlyerDotNet.LightningApi
             Log.Trace($"{nameof(WebSocketChannels)} disposed");
         }
 
-        public async Task TryOpenAsync()
+        public async Task<bool> TryOpenAsync()
         {
-            if (_socket.State != WebSocketState.Open)
+            if (_socket.State == WebSocketState.Open)
             {
-                Log.Trace("Opening WebSocket...");
-                try
-                {
-                    await _socket.ConnectAsync(new Uri(_uri), CancellationToken.None);
-                    if (_isWasm)
-                    {
-                        _receiveTask = Task.Run(ReaderThread); // WASM does not support Thread.Start()
-                    }
-                    else
-                    {
-                        _receiver = new Thread(ReaderThread) { IsBackground = true };
-                        _receiver.Start();
-                    }
-
-                    if (!string.IsNullOrEmpty(_apiKey) && _hash != null)
-                    {
-                        Authenticate();
-                    }
-
-                    OnOpened();
-                }
-                catch (AggregateException ex)
-                {
-                    var wsEx = ex.InnerExceptions.FirstOrDefault() as WebSocketException;
-                    if (wsEx != null)
-                    {
-                        Log.Warn($"WebSocket failed to connect to server. {wsEx.Message}");
-                    }
-                    throw;
-                }
+                return false;
             }
+
+            Log.Trace("Opening WebSocket...");
+            try
+            {
+                await _socket.ConnectAsync(new Uri(_uri), CancellationToken.None);
+                if (_isWasm)
+                {
+                    _receiveTask = Task.Run(ReaderThread); // WASM does not support Thread.Start()
+                }
+                else
+                {
+                    _receiver = new Thread(ReaderThread) { IsBackground = true };
+                    _receiver.Start();
+                }
+
+                if (IsPrivate)
+                {
+                    Authenticate(_apiKey, _apiSecret);
+                }
+
+                OnOpened();
+            }
+            catch (AggregateException ex)
+            {
+                var wsEx = ex.InnerExceptions.FirstOrDefault() as WebSocketException;
+                if (wsEx != null)
+                {
+                    Log.Warn($"WebSocket failed to connect to server. {wsEx.Message}");
+                }
+                throw;
+            }
+
+            return true;
         }
 
         // OrderBook message is the largest that around 20K bytes
@@ -194,18 +199,20 @@ namespace BitFlyerDotNet.LightningApi
             MessageSent?.Invoke(json);
         }
 
-        bool Authenticate()
+        public bool Authenticate(string apiKey, string apiSecret)
         {
             Log.Trace("WebSocket start authentication.");
+            _apiKey = apiKey;
             var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var nonce = Guid.NewGuid().ToString("N");
-            var sign = BitConverter.ToString(_hash.ComputeHash(Encoding.UTF8.GetBytes($"{now}{nonce}"))).Replace("-", string.Empty).ToLower();
+            var hash = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret));
+            var sign = BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes($"{now}{nonce}"))).Replace("-", string.Empty).ToLower();
             var authCommand = JsonConvert.SerializeObject(new
             {
                 method = "auth",
                 @params = new
                 {
-                    api_key = _apiKey,
+                    api_key = apiKey,
                     timestamp = now,
                     nonce,
                     signature = sign,
@@ -246,9 +253,9 @@ namespace BitFlyerDotNet.LightningApi
             {
                 if (_webSocketSources.Count > 0)
                 {
-                    if (!string.IsNullOrEmpty(_apiKey) && _hash != null)
+                    if (IsPrivate)
                     {
-                        Authenticate();
+                        Authenticate(_apiKey, _apiSecret);
                     }
 
                     Resumed?.Invoke();

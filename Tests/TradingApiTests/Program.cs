@@ -36,7 +36,7 @@ namespace TradingApiTests
         static BfxMarket _market;
         static OrderSource _orderCache;
         static Dictionary<string, string> Properties;
-        static ConcurrentDictionary<Guid, IBfxOrderTransaction> _transactions = new ConcurrentDictionary<Guid, IBfxOrderTransaction>();
+        static ConcurrentDictionary<Guid, IBfxTransaction> _transactions = new ConcurrentDictionary<Guid, IBfxTransaction>();
         static decimal _orderSize;
 
         static async Task Main(string[] args)

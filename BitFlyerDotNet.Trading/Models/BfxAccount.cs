@@ -34,12 +34,13 @@ namespace BitFlyerDotNet.Trading
             if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiKey))
             {
                 Client = new BitFlyerClient().AddTo(_disposables);
-                RealtimeSource = RealtimeSourceFactory.CreateAsSingleton().AddTo(_disposables);
+                RealtimeSource = RealtimeSourceFactory.Singleton;
             }
             else
             {
                 Client = new BitFlyerClient(apiKey, apiSecret).AddTo(_disposables);
-                RealtimeSource = RealtimeSourceFactory.CreateAsSingleton(apiKey, apiSecret).AddTo(_disposables);
+                RealtimeSource = RealtimeSourceFactory.Singleton;
+                RealtimeSource.Authenticate(apiKey, apiSecret);
             }
             RealtimeSource.ConnectionResumed += OnRealtimeConnectionResumed;
         }
