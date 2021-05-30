@@ -325,11 +325,11 @@ namespace TradingApiTests
             sb.Add(ev.Time.ToString(TimeFormat));
 
             IBfxOrder order;
-            if (ev.EventType != BfxOrderTransactionEventType.ChildOrderEvent)
+            if (ev.EventType != BfxTransactionEventType.ChildOrderEvent)
             {
                 order = ev.Order;
                 sb.Add(ev.EventType.ToString());
-                if (ev.EventType == BfxOrderTransactionEventType.Canceled && _account.Positions.TotalSize > 0m)
+                if (ev.EventType == BfxTransactionEventType.Canceled && _account.Positions.TotalSize > 0m)
                 {
                     Task.Run(() =>
                     {
@@ -381,7 +381,7 @@ namespace TradingApiTests
             }
             else // Closed
             {
-                Console.WriteLine($"{pos.Close.Value.ToString(TimeFormat)} Position closed {pos.Side} P:{pos.ClosePrice} S:{pos.Size} TS:{_account.Positions.TotalSize} PT:{pos.Profit} NP:{pos.NetProfit}");
+                Console.WriteLine($"{pos.Close.Value.ToString(TimeFormat)} Position closed {pos.Side} P:{pos.ClosePrice} S:{pos.Size} TS:{_account.Positions.TotalSize} PT:{pos.Profit}");
             }
         }
 
