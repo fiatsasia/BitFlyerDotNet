@@ -11,9 +11,9 @@ BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/
 - [BitFlyerDotNetサイト](https://scrapbox.io/BitFlyerDotNet/更新履歴)
 
 ### 環境
-- Visual Studio 2019 / for Mac 2019 用ソリューション、プロジェクト
+- Visual Studio 2022 / for Mac 2019 用ソリューション、プロジェクト
 - .NET Standard 2.0 (ライブラリで使用)
-- .NET Core 5.0 (サンプルで使用)
+- .NET 6.0 (サンプルで使用)
 - [Reactive Extensions (Rx.NET)](http://reactivex.io/)
 - [JSON.NET](https://www.newtonsoft.com/json)
 - Entity Framework Core and [SQLite](https://www.sqlite.org/index.html)

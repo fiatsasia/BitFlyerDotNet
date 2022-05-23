@@ -8,9 +8,9 @@ BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https:
 - [BitFlyerDotNet Site](https://scrapbox.io/BitFlyerDotNet/Updates)
 
 ### Environment 
-- Solution and Projects are for Visual Studio 2019 and 2019 for Mac.
+- Solution and Projects are for Visual Studio 2022 and 2019 for Mac.
 - .NET Standard 2.0 for libraries.
-- .NET 5.0 for sample applications.
+- .NET 6.0 for sample applications.
 - [Reactive Extensions (Rx.NET)](http://reactivex.io/)
 - [JSON.NET](https://www.newtonsoft.com/json)
 - Entity Framework Core and [SQLite](https://www.sqlite.org/index.html)
