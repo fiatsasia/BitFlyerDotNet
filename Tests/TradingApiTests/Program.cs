@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -23,7 +23,7 @@ namespace TradingApiTests
 {
     partial class Program
     {
-        const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
+        const string ProductCode = "FX_BTC_JPY";
         const decimal UnexecutableGap = 50000m;
         const string TimeFormat = "yyyy/MM/dd HH:mm:ss.ffff";
         const string OrderCacheFileName = "TradingApiTests.db3";
@@ -52,19 +52,23 @@ namespace TradingApiTests
                 key = secret = string.Empty;
             }
 
+            //_orderSize = ProductCode.GetMinimumOrderSize();
+            _orderSize = 0.01m;
+
             var connStr = "data source=" + Path.Combine(Properties["CacheDirectoryPath"], OrderCacheFileName);
-            using (_account = new BfxAccount(key, secret))
+            using (var app = new BfxApplication(key, secret))
             {
-                _market = await _account.GetMarketAsync(ProductCode);
-                _account.PositionChanged += OnPositionChanged;
-                _orderSize = ProductCode.GetMinimumOrderSize();
-                _market.OrderTransactionChanged += OnOrderTransactionChanged;
+                app.OrderChanged += OnOrderChanged;
+                app.PositionChanged += OnPositionChanged;
+                await app.InitializeProductAsync(ProductCode);
 
+                _market = app.GetMarket(ProductCode);
 
-                await _account.OpenAsync();
-                _orderCache = new OrderSource(_account.Client, connStr, ProductCode);
-                _market.Open(_orderCache);
-                _market.GetActiveTransactions().ForEach(e => _transactions[Guid.NewGuid()] = e);
+                //await _account.OpenAsync();
+                //_orderCache = new OrderSource(_account.Client, connStr, ProductCode);
+                //_market.Open(_orderCache);
+                //_market.GetActiveTransactions().ForEach(e => _transactions[Guid.NewGuid()] = e);
+
                 while (true)
                 {
                     Console.WriteLine("===================================================================");
@@ -85,7 +89,7 @@ namespace TradingApiTests
                         switch (GetCh())
                         {
                             case 'S':
-                                SimpleOrders();
+                                SimpleOrders(app);
                                 break;
 
                             case 'C':
@@ -187,7 +191,7 @@ namespace TradingApiTests
         {
             if (_account.Positions.TotalSize > 0m)
             {
-                var tran = _market.PlaceOrder(BfxOrder.Market(_account.Positions.Side.GetOpposite(), _account.Positions.TotalSize));
+                var tran = _market.PlaceOrder(BfxOrder.Market(ProductCode, _account.Positions.Side.GetOpposite(), _account.Positions.TotalSize));
                 _transactions[tran.Id] = tran;
             }
         }
@@ -314,22 +318,22 @@ namespace TradingApiTests
             DumpResponse(_account.Client.GetChildOrders(ProductCode, parentOrderId: _parentOrderId));
         }
 
-        static void OnPositionChanged(object sender, BfxPositionEventArgs ev)
+        static void OnPositionChanged(object sender, BfxPositionChangedEventArgs ev)
         {
             PrintPosition(ev.Position);
         }
 
-        private static void OnOrderTransactionChanged(object sender, BfxOrderTransactionEventArgs ev)
+        private static void OnOrderChanged(object sender, BfxOrderChangedEventArgs e)
         {
             var sb = new List<string>();
-            sb.Add(ev.Time.ToString(TimeFormat));
+            sb.Add(e.Time.ToString(TimeFormat));
 
             IBfxOrder order;
-            if (ev.EventType != BfxTransactionEventType.ChildOrderEvent)
+            if (e.EventType != BfxOrderEventType.ChildOrderEvent)
             {
-                order = ev.Order;
-                sb.Add(ev.EventType.ToString());
-                if (ev.EventType == BfxTransactionEventType.Canceled && _account.Positions.TotalSize > 0m)
+                order = e.Order;
+                sb.Add(e.EventType.ToString());
+                if (e.EventType == BfxOrderEventType.Canceled && _account.Positions.TotalSize > 0m)
                 {
                     Task.Run(() =>
                     {
@@ -344,8 +348,8 @@ namespace TradingApiTests
             }
             else
             {
-                order = ev.Order.Children[ev.ChildOrderIndex];
-                sb.Add(ev.ChildEventType.ToString());
+                order = e.Order.Children[e.ChildOrderIndex];
+                sb.Add(e.ChildEventType.ToString());
             }
 
             sb.Add($"{order.ProductCode}");

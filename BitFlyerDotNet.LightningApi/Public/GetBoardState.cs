@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -32,10 +32,10 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="productCode"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfBoardStateResult>> GetBoardStateAsync(BfProductCode productCode, CancellationToken ct)
-            => GetAsync<BfBoardStateResult>(nameof(GetBoardState), "product_code=" + productCode.ToEnumString(), ct);
+        public Task<BitFlyerResponse<BfBoardStateResult>> GetBoardStateAsync(string productCode, CancellationToken ct)
+            => GetAsync<BfBoardStateResult>(nameof(GetBoardState), "product_code=" + productCode, ct);
 
-        public BitFlyerResponse<BfBoardStateResult> GetBoardState(BfProductCode productCode)
+        public BitFlyerResponse<BfBoardStateResult> GetBoardState(string productCode)
             => GetBoardStateAsync(productCode, CancellationToken.None).Result;
     }
 }

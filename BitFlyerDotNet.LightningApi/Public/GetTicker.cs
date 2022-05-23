@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -60,11 +60,13 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="productCode"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfTicker>> GetTickerAsync(BfProductCode productCode, CancellationToken ct)
+        public Task<BitFlyerResponse<BfTicker>> GetTickerAsync(string productCode, CancellationToken ct)
         {
-            return GetAsync<BfTicker>(nameof(GetTicker), "product_code=" + productCode.ToEnumString(), ct);
+            return GetAsync<BfTicker>(nameof(GetTicker), "product_code=" + productCode, ct);
         }
 
-        public BitFlyerResponse<BfTicker> GetTicker(BfProductCode productCode) => GetTickerAsync(productCode, CancellationToken.None).Result;
+        public Task<BitFlyerResponse<BfTicker>> GetTickerAsync(string productCode) => GetTickerAsync(productCode, CancellationToken.None);
+
+        public BitFlyerResponse<BfTicker> GetTicker(string productCode) => GetTickerAsync(productCode, CancellationToken.None).Result;
     }
 }

@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -17,8 +17,7 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BfParentOrderRequestParameter
     {
-        [JsonConverter(typeof(StringEnumConverter))]
-        public BfProductCode ProductCode { get; set; }
+        public string ProductCode { get; set; }
 
         [JsonConverter(typeof(StringEnumConverter))]
         public BfOrderType ConditionType { get; set; }
@@ -42,7 +41,7 @@ namespace BitFlyerDotNet.LightningApi
         public bool ShouldSerializeOffset() { return ConditionType == BfOrderType.Trail; }
 
         // Message builders
-        public static BfParentOrderRequestParameter Market(BfProductCode productCode, BfTradeSide side, decimal size)
+        public static BfParentOrderRequestParameter Market(string productCode, BfTradeSide side, decimal size)
         {
             return new ()
             {
@@ -53,7 +52,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfParentOrderRequestParameter Limit(BfProductCode productCode, BfTradeSide side, decimal price, decimal size)
+        public static BfParentOrderRequestParameter Limit(string productCode, BfTradeSide side, decimal price, decimal size)
         {
             return new ()
             {
@@ -65,7 +64,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfParentOrderRequestParameter Stop(BfProductCode productCode, BfTradeSide side, decimal triggerPrice, decimal size)
+        public static BfParentOrderRequestParameter Stop(string productCode, BfTradeSide side, decimal triggerPrice, decimal size)
         {
             if (size > triggerPrice)
             {
@@ -82,7 +81,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfParentOrderRequestParameter StopLimit(BfProductCode productCode, BfTradeSide side, decimal triggerPrice, decimal price, decimal size)
+        public static BfParentOrderRequestParameter StopLimit(string productCode, BfTradeSide side, decimal triggerPrice, decimal price, decimal size)
         {
             if (size > price || size > triggerPrice)
             {
@@ -100,7 +99,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfParentOrderRequestParameter Trail(BfProductCode productCode, BfTradeSide side, decimal offset, decimal size)
+        public static BfParentOrderRequestParameter Trail(string productCode, BfTradeSide side, decimal offset, decimal size)
         {
             if (offset <= 0m)
             {
@@ -133,7 +132,7 @@ namespace BitFlyerDotNet.LightningApi
         public List<BfParentOrderRequestParameter> Parameters { get; set; } = new ();
 
         // Message builders
-        public static BfParentOrderRequest Stop(BfProductCode productCode, BfTradeSide side, decimal triggerPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        public static BfParentOrderRequest Stop(string productCode, BfTradeSide side, decimal triggerPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return new ()
             {
@@ -144,7 +143,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfParentOrderRequest StopLimit(BfProductCode productCode, BfTradeSide side, decimal triggerPrice, decimal orderPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        public static BfParentOrderRequest StopLimit(string productCode, BfTradeSide side, decimal triggerPrice, decimal orderPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return new ()
             {
@@ -155,7 +154,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfParentOrderRequest Trail(BfProductCode productCode, BfTradeSide side, decimal offset, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        public static BfParentOrderRequest Trail(string productCode, BfTradeSide side, decimal offset, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return new ()
             {

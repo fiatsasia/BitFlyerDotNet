@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -20,12 +20,13 @@ namespace BitFlyerDotNet.Trading
     public class BfxMarket : IDisposable
     {
         // Market data sources
-        public BfProductCode ProductCode { get; private set; }
+        public string ProductCode { get; private set; }
         public BfxConfiguration Config { get; private set; }
         public BitFlyerClient Client => _account.Client;
         public RealtimeSourceFactory RealtimeSource => _account.RealtimeSource;
         public decimal BestAskPrice { get; private set; }
         public decimal BestBidPrice { get; private set; }
+        public decimal CurrentPrice => throw new NotImplementedException();
         public decimal LastTradedPrice { get; private set; }
 
         TimeSpan _serverTimeSpan;
@@ -36,7 +37,7 @@ namespace BitFlyerDotNet.Trading
             ).ToList(); // ToList() makes thread-safe colleciton
 
         // Events
-        public event EventHandler<BfxOrderTransactionEventArgs>? OrderTransactionChanged;
+        public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
 
         internal IBfOrderSource OrderCache { get; private set; }
 
@@ -47,7 +48,7 @@ namespace BitFlyerDotNet.Trading
         ConcurrentDictionary<string, IBfxTransaction> _parentOrderTransactions = new ConcurrentDictionary<string, IBfxTransaction>();
         IObservable<BfTicker> _ticker;
 
-        public BfxMarket(BfxAccount account, BfProductCode productCode, BfxConfiguration config)
+        public BfxMarket(BfxAccount account, string productCode, BfxConfiguration config)
         {
             _account = account;
             ProductCode = productCode;
@@ -80,7 +81,7 @@ namespace BitFlyerDotNet.Trading
             });
         }
 
-        public BfxMarket(BfxAccount account, BfProductCode productCode)
+        public BfxMarket(BfxAccount account, string productCode)
             : this(account, productCode, new BfxConfiguration())
         {
             _account = account;
@@ -312,17 +313,17 @@ namespace BitFlyerDotNet.Trading
             });
         }
 
-        internal void InvokeOrderTransactionEvent(object sender, BfxOrderTransactionEventArgs ev)
+        internal void InvokeOrderTransactionEvent(object sender, BfxOrderChangedEventArgs ev)
         {
             switch (ev.EventType)
             {
-                case BfxTransactionEventType.OrderSent:
+                case BfxOrderEventType.OrderSent:
                     break;
 
                     // トランザクション削除
             }
 
-            OrderTransactionChanged?.Invoke(sender, ev);
+            OrderChanged?.Invoke(sender, ev);
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -86,7 +86,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="parentOrderId"></param>
         /// <returns></returns>
         public Task<BitFlyerResponse<BfaChildOrder[]>> GetChildOrdersAsync(
-            BfProductCode productCode,
+            string productCode,
             BfOrderState orderState,
             int count,
             uint before,
@@ -98,7 +98,7 @@ namespace BitFlyerDotNet.LightningApi
         )
         {
             var query = string.Format("product_code={0}{1}{2}{3}{4}{5}{6}{7}",
-                productCode.ToEnumString(),
+                productCode,
                 orderState != BfOrderState.Unknown ? "&child_order_state=" + orderState.ToEnumString() : "",
                 (count > 0)  ? $"&count={count}"   : "",
                 (before > 0) ? $"&before={before}" : "",
@@ -111,8 +111,20 @@ namespace BitFlyerDotNet.LightningApi
             return GetPrivateAsync<BfaChildOrder[]>(nameof(GetChildOrders), query, ct);
         }
 
+        public Task<BitFlyerResponse<BfaChildOrder[]>> GetChildOrdersAsync(
+            string productCode,
+            BfOrderState orderState = BfOrderState.Unknown,
+            int count = 0,
+            uint before = 0,
+            uint after = 0,
+            string childOrderId = null,
+            string childOrderAcceptanceId = null,
+            string parentOrderId = null
+        )
+            => GetChildOrdersAsync(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, CancellationToken.None);
+
         public BitFlyerResponse<BfaChildOrder[]> GetChildOrders(
-            BfProductCode productCode,
+            string productCode,
             BfOrderState orderState = BfOrderState.Unknown,
             int count = 0,
             uint before = 0,
@@ -123,7 +135,7 @@ namespace BitFlyerDotNet.LightningApi
         )
             => GetChildOrdersAsync(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, CancellationToken.None).Result;
 
-        public IEnumerable<BfaChildOrder> GetChildOrders(BfProductCode productCode, BfOrderState orderState, uint before, Func<BfaChildOrder, bool> predicate)
+        public IEnumerable<BfaChildOrder> GetChildOrders(string productCode, BfOrderState orderState, uint before, Func<BfaChildOrder, bool> predicate)
         {
             while (true)
             {
@@ -150,12 +162,31 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        public IEnumerable<BfaChildOrder> GetChildOrders(BfProductCode productCode, DateTime after) =>
+        public IEnumerable<BfaChildOrder> GetChildOrders(string productCode, DateTime after) =>
             GetChildOrders(productCode, BfOrderState.Active, 0, e => e.ChildOrderDate >= after)
             .Concat(GetChildOrders(productCode, BfOrderState.Completed, 0, e => e.ChildOrderDate >= after))
             .Concat(GetChildOrders(productCode, BfOrderState.Canceled, 0, e => e.ChildOrderDate >= after))
             .Concat(GetChildOrders(productCode, BfOrderState.Expired, 0, e => e.ChildOrderDate >= after))
             .Concat(GetChildOrders(productCode, BfOrderState.Rejected, 0, e => e.ChildOrderDate >= after))
             .OrderByDescending(e => e.PagingId);
+
+        public async Task<IBfChildOrder[]> GetActiveIndependentChildOrders(string productCode)
+        {
+            var activeDescendants = (await Task.WhenAll(
+                (await GetParentOrdersAsync(productCode, orderState: BfOrderState.Active)).GetContent().Select(
+                    async parent => (await GetChildOrdersAsync(productCode, parentOrderId: parent.ParentOrderId)).GetContent()
+                )
+            )).SelectMany(e => e);
+            var activeChildren = (await GetChildOrdersAsync(productCode, orderState: BfOrderState.Active)).GetContent();
+
+            return await Task.WhenAll(
+                activeChildren
+                .Where(e => !activeDescendants.Any(f => e.ChildOrderAcceptanceId == f.ChildOrderAcceptanceId))
+                .Select(async e => new BfChildOrder(
+                    e,
+                    (await GetPrivateExecutionsAsync(productCode, childOrderAcceptanceId: e.ChildOrderAcceptanceId)).GetContent()
+                ))
+            );
+        }
     }
 }

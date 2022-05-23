@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -16,8 +16,7 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BfChildOrderRequest
     {
-        [JsonConverter(typeof(StringEnumConverter))]
-        public BfProductCode ProductCode { get; set; }
+        public string ProductCode { get; set; }
 
         [JsonConverter(typeof(StringEnumConverter))]
         public BfOrderType ChildOrderType { get; set; }
@@ -40,7 +39,7 @@ namespace BitFlyerDotNet.LightningApi
         public bool ShouldSerializeTimeInForce() { return TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
 
         // Order builders
-        public static BfChildOrderRequest Market(BfProductCode productCode, BfTradeSide side, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        public static BfChildOrderRequest Market(string productCode, BfTradeSide side, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return new ()
             {
@@ -53,7 +52,7 @@ namespace BitFlyerDotNet.LightningApi
             };
         }
 
-        public static BfChildOrderRequest Limit(BfProductCode productCode, BfTradeSide side, decimal price, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        public static BfChildOrderRequest Limit(string productCode, BfTradeSide side, decimal price, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
         {
             return new ()
             {
@@ -131,7 +130,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="timeInForce"></param>
         /// <returns></returns>
         public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(
-            BfProductCode productCode,
+            string productCode,
             BfOrderType orderType,
             BfTradeSide side,
             decimal price,
@@ -166,7 +165,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="timeInForce"></param>
         /// <returns></returns>
         public Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(
-            BfProductCode productCode,
+            string productCode,
             BfOrderType orderType,
             BfTradeSide side,
             decimal price,

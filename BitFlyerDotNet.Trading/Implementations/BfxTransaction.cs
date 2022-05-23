@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -37,6 +37,11 @@ namespace BitFlyerDotNet.Trading
             Id = Guid.NewGuid();
             OpenTime = market.ServerTime;
             _derived = GetType().Name == nameof(BfxParentTransaction) ? "Parent" : "Child";
+        }
+
+        public BfxTransaction(BfxMarket2 market)
+        {
+            throw new NotImplementedException();
         }
 
         public bool IsCancelable
@@ -96,9 +101,9 @@ namespace BitFlyerDotNet.Trading
             State = state;
         }
 
-        protected void NotifyEvent(BfxTransactionEventType oet, DateTime time, object? parameter)
+        protected void NotifyEvent(BfxOrderEventType oet, DateTime time, object? parameter)
         {
-            Market.InvokeOrderTransactionEvent(this, new BfxOrderTransactionEventArgs(Order)
+            Market.InvokeOrderTransactionEvent(this, new BfxOrderChangedEventArgs(Order)
             {
                 EventType = oet,
                 State = State,
@@ -107,13 +112,13 @@ namespace BitFlyerDotNet.Trading
             });
         }
 
-        protected void NotifyEvent(BfxTransactionEventType oet) => NotifyEvent(oet, Market.ServerTime, null);
+        protected void NotifyEvent(BfxOrderEventType oet) => NotifyEvent(oet, Market.ServerTime, null);
 
-        protected void NotifyChildOrderEvent(BfxTransactionEventType oet, int childOrderIndex, BfChildOrderEvent coe)
+        protected void NotifyChildOrderEvent(BfxOrderEventType oet, int childOrderIndex, BfChildOrderEvent coe)
         {
             if (Order.Children.Length == 1)
             {
-                Market.InvokeOrderTransactionEvent(this, new BfxOrderTransactionEventArgs(Order.Children[0])
+                Market.InvokeOrderTransactionEvent(this, new BfxOrderChangedEventArgs(Order.Children[0])
                 {
                     EventType = oet,
                     State = State,
@@ -123,9 +128,9 @@ namespace BitFlyerDotNet.Trading
             }
             else
             {
-                Market.InvokeOrderTransactionEvent(this, new BfxOrderTransactionEventArgs(Order)
+                Market.InvokeOrderTransactionEvent(this, new BfxOrderChangedEventArgs(Order)
                 {
-                    EventType = BfxTransactionEventType.ChildOrderEvent,
+                    EventType = BfxOrderEventType.ChildOrderEvent,
                     State = State,
                     Time = coe.EventDate,
                     Parameter = coe,
@@ -135,7 +140,7 @@ namespace BitFlyerDotNet.Trading
             }
         }
 
-        protected void NotifyEvent(BfxTransactionEventType oet, BfChildOrderEvent coe) => NotifyEvent(oet, coe.EventDate, coe);
-        protected void NotifyEvent(BfxTransactionEventType oet, BfParentOrderEvent poe) => NotifyEvent(oet, poe.EventDate, poe);
+        protected void NotifyEvent(BfxOrderEventType oet, BfChildOrderEvent coe) => NotifyEvent(oet, coe.EventDate, coe);
+        protected void NotifyEvent(BfxOrderEventType oet, BfParentOrderEvent poe) => NotifyEvent(oet, poe.EventDate, poe);
     }
 }

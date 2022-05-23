@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -9,15 +9,12 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
     public class BfCancelChildOrderRequest
     {
-        [JsonConverter(typeof(StringEnumConverter))]
-        public BfProductCode ProductCode { get; set; }
+        public string ProductCode { get; set; }
 
         public string ChildOrderId { get; set; }
         public bool ShouldSerializeChildOrderId() { return !string.IsNullOrEmpty(ChildOrderId); }
@@ -62,7 +59,7 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<string>> CancelChildOrderAsync(BfProductCode productCode, string childOrderId, string childOrderAcceptanceId, CancellationToken ct)
+        public Task<BitFlyerResponse<string>> CancelChildOrderAsync(string productCode, string childOrderId, string childOrderAcceptanceId, CancellationToken ct)
         {
             var request = new BfCancelChildOrderRequest
             {
@@ -82,7 +79,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="childOrderId"></param>
         /// <param name="childOrderAcceptanceId"></param>
         /// <returns></returns>
-        public BitFlyerResponse<string> CancelChildOrder(BfProductCode productCode, string childOrderId = null, string childOrderAcceptanceId = null)
+        public BitFlyerResponse<string> CancelChildOrder(string productCode, string childOrderId = null, string childOrderAcceptanceId = null)
             => CancelChildOrderAsync(productCode, childOrderId, childOrderAcceptanceId, CancellationToken.None).Result;
     }
 }

@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -14,7 +14,7 @@ namespace BitFlyerDotNet
 {
     public class BfChildOrder : IBfChildOrder
     {
-        public BfProductCode ProductCode { get; }
+        public string ProductCode { get; }
         public BfOrderType OrderType { get; }
         public BfTradeSide Side { get; }
         public decimal? OrderPrice { get; }
@@ -29,7 +29,7 @@ namespace BitFlyerDotNet
 
         public BfChildOrder(BfaChildOrder order, BfaPrivateExecution[] execs)
         {
-            ProductCode = BfProductCodeEx.Parse(order.ProductCode);
+            ProductCode = order.ProductCode;
             OrderType = order.ChildOrderType;
             Side = order.Side;
             if (OrderType == BfOrderType.Limit)

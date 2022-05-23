@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -16,8 +16,7 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BfCancelParentOrderRequest
     {
-        [JsonConverter(typeof(StringEnumConverter))]
-        public BfProductCode ProductCode { get; set; }
+        public string ProductCode { get; set; }
 
         public string ParentOrderId { get; set; }
         public bool ShouldSerializeParentOrderId() { return !string.IsNullOrEmpty(ParentOrderId); }
@@ -65,7 +64,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="parentOrderId"></param>
         /// <param name="parentOrderAcceptanceId"></param>
         /// <returns></returns>
-        public async Task<BitFlyerResponse<string>> CancelParentOrderAsync(BfProductCode productCode, string parentOrderId, string parentOrderAcceptanceId, CancellationToken ct)
+        public async Task<BitFlyerResponse<string>> CancelParentOrderAsync(string productCode, string parentOrderId, string parentOrderAcceptanceId, CancellationToken ct)
         {
             var request = new BfCancelParentOrderRequest
             {
@@ -85,7 +84,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="parentOrderId"></param>
         /// <param name="parentOrderAcceptanceId"></param>
         /// <returns></returns>
-        public BitFlyerResponse<string> CancelParentOrder(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
+        public BitFlyerResponse<string> CancelParentOrder(string productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
             => CancelParentOrderAsync(productCode, parentOrderId, parentOrderAcceptanceId, CancellationToken.None).Result;
     }
 }

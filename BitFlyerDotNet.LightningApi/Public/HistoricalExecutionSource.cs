@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -24,7 +24,7 @@ namespace BitFlyerDotNet.LightningApi
         CompositeDisposable _disposables = new CompositeDisposable();
         IObservable<IBfExecution> _source;
 
-        public HistoricalExecutionSource(BitFlyerClient client, BfProductCode productCode, long before, long after, long readCount=ReadCountMax)
+        public HistoricalExecutionSource(BitFlyerClient client, string productCode, long before, long after, long readCount=ReadCountMax)
         {
             readCount = Math.Min(readCount, ReadCountMax);
             _source = Observable.Create<IBfExecution>(observer => {

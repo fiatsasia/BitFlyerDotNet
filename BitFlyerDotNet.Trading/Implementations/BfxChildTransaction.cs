@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -35,7 +35,20 @@ namespace BitFlyerDotNet.Trading
             Parent = parent;
         }
 
+        public BfxChildTransaction(BfxMarket2 market, BfxChildOrder order, BfxParentTransaction parent)
+            : base(market)
+        {
+            _order = order;
+            Parent = parent;
+        }
+
         public BfxChildTransaction(BfxMarket market, BfxChildOrder order)
+            : base(market)
+        {
+            _order = order;
+        }
+
+        public BfxChildTransaction(BfxMarket2 market, BfxChildOrder order)
             : base(market)
         {
             _order = order;
@@ -52,7 +65,7 @@ namespace BitFlyerDotNet.Trading
             try
             {
                 ChangeState(BfxTransactionState.SendingOrder);
-                NotifyEvent(BfxTransactionEventType.OrderSending);
+                NotifyEvent(BfxOrderEventType.OrderSending);
                 for (var retry = 0; retry <= Market.Config.OrderRetryMax; retry++)
                 {
                     _cts.Token.ThrowIfCancellationRequested();
@@ -62,7 +75,7 @@ namespace BitFlyerDotNet.Trading
                         Market.OrderCache?.OpenChildOrder(_order.Request, resp.GetContent());
                         _order.Update(resp.GetContent());
                         ChangeState(BfxTransactionState.WaitingOrderAccepted);
-                        NotifyEvent(BfxTransactionEventType.OrderSent, Market.ServerTime, resp);
+                        NotifyEvent(BfxOrderEventType.OrderSent, Market.ServerTime, resp);
                         Market.RegisterTransaction(this);
                         return;
                     }
@@ -75,14 +88,14 @@ namespace BitFlyerDotNet.Trading
 
                 Log.Error("SendOrderRequest - Retried out");
                 ChangeState(BfxTransactionState.Idle);
-                NotifyEvent(BfxTransactionEventType.OrderSendFailed);
+                NotifyEvent(BfxOrderEventType.OrderSendFailed);
                 throw new BitFlyerDotNetException();
             }
             catch (OperationCanceledException ex)
             {
                 Log.Trace("SendChildOrderRequestAsync is canceled");
                 ChangeState(BfxTransactionState.Idle);
-                NotifyEvent(BfxTransactionEventType.OrderSendCanceled, Market.ServerTime, ex);
+                NotifyEvent(BfxOrderEventType.OrderSendCanceled, Market.ServerTime, ex);
             }
         }
 
@@ -92,7 +105,7 @@ namespace BitFlyerDotNet.Trading
         protected override async Task SendCancelOrderRequestAsync()
         {
             ChangeState(BfxTransactionState.SendingCancel);
-            NotifyEvent(BfxTransactionEventType.CancelSending);
+            NotifyEvent(BfxOrderEventType.CancelSending);
             try
             {
                 _cts.Token.ThrowIfCancellationRequested();
@@ -100,18 +113,18 @@ namespace BitFlyerDotNet.Trading
                 if (!resp.IsError)
                 {
                     ChangeState(BfxTransactionState.CancelAccepted);
-                    NotifyEvent(BfxTransactionEventType.CancelSent, Market.ServerTime, resp);
+                    NotifyEvent(BfxOrderEventType.CancelSent, Market.ServerTime, resp);
                 }
                 else
                 {
                     ChangeState(BfxTransactionState.Idle);
-                    NotifyEvent(BfxTransactionEventType.CancelSendFailed, Market.ServerTime, resp);
+                    NotifyEvent(BfxOrderEventType.CancelSendFailed, Market.ServerTime, resp);
                 }
             }
             catch (OperationCanceledException ex)
             {
                 ChangeState(BfxTransactionState.Idle);
-                NotifyEvent(BfxTransactionEventType.CancelSendCanceled, Market.ServerTime, ex);
+                NotifyEvent(BfxOrderEventType.CancelSendCanceled, Market.ServerTime, ex);
             }
         }
 
@@ -129,30 +142,30 @@ namespace BitFlyerDotNet.Trading
             {
                 case BfOrderEventType.Order: // Order registered
                     ChangeState(BfxTransactionState.Idle);
-                    NotifyEvent(BfxTransactionEventType.Ordered, coe);
+                    NotifyEvent(BfxOrderEventType.Ordered, coe);
                     break;
 
                 case BfOrderEventType.OrderFailed:
                     ChangeState(BfxTransactionState.Idle);
-                    NotifyEvent(BfxTransactionEventType.OrderFailed, coe);
+                    NotifyEvent(BfxOrderEventType.OrderFailed, coe);
                     break;
 
                 case BfOrderEventType.Cancel:
                     ChangeState(BfxTransactionState.Idle);
-                    NotifyEvent(BfxTransactionEventType.Canceled, coe);
+                    NotifyEvent(BfxOrderEventType.Canceled, coe);
                     break;
 
                 case BfOrderEventType.CancelFailed:
                     ChangeState(BfxTransactionState.Idle);
-                    NotifyEvent(BfxTransactionEventType.CancelFailed, coe);
+                    NotifyEvent(BfxOrderEventType.CancelFailed, coe);
                     break;
 
                 case BfOrderEventType.Execution:
-                    NotifyEvent(Order.State == BfxOrderState.PartiallyExecuted ? BfxTransactionEventType.PartiallyExecuted : BfxTransactionEventType.Executed, coe);
+                    NotifyEvent(Order.State == BfxOrderState.PartiallyExecuted ? BfxOrderEventType.PartiallyExecuted : BfxOrderEventType.Executed, coe);
                     break;
 
                 case BfOrderEventType.Expire:
-                    NotifyEvent(BfxTransactionEventType.Expired, coe);
+                    NotifyEvent(BfxOrderEventType.Expired, coe);
                     break;
 
                 case BfOrderEventType.Unknown:

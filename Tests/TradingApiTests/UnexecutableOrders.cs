@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -32,35 +32,35 @@ namespace TradingApiTests
                 switch (GetCh())
                 {
                     case 'L':
-                        PlaceOrder(BfxOrder.Limit(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize));
+                        PlaceOrder(BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize));
                         break;
 
                     case 'S': // Stop sell
-                        PlaceOrder(BfxOrder.Stop(BfTradeSide.Sell, _market.BestAskPrice - UnexecutableGap, _orderSize));
+                        PlaceOrder(BfxOrder.Stop(ProductCode, BfTradeSide.Sell, _market.BestAskPrice - UnexecutableGap, _orderSize));
                         break;
 
                     case 'I':
                         PlaceOrder(BfxOrder.IFD(
-                            BfxOrder.Limit(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize),
-                            BfxOrder.Limit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize)
+                            BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize),
+                            BfxOrder.Limit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize)
                         ));
                         break;
 
                     case 'O':
                         PlaceOrder(BfxOrder.OCO(
-                            BfxOrder.StopLimit(BfTradeSide.Sell, _market.LastTradedPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize),
-                            BfxOrder.StopLimit(BfTradeSide.Buy, _market.LastTradedPrice - UnexecutableGap, _market.BestBidPrice -UnexecutableGap, _orderSize)
+                            BfxOrder.StopLimit(ProductCode, BfTradeSide.Sell, _market.LastTradedPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize),
+                            BfxOrder.StopLimit(ProductCode, BfTradeSide.Buy, _market.LastTradedPrice - UnexecutableGap, _market.BestBidPrice -UnexecutableGap, _orderSize)
                         ));
                         break;
 
                     case '3':
                         PlaceOrder(BfxOrder.OCO(
-                            BfxOrder.Limit(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize),
-                            BfxOrder.Limit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize)));
+                            BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize),
+                            BfxOrder.Limit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize)));
                         break;
 
                     case '1':
-                        PlaceOrder(BfxOrder.StopLimit(BfTradeSide.Sell, _market.BestAskPrice - UnexecutableGap, _market.BestAskPrice - UnexecutableGap, _orderSize));
+                        PlaceOrder(BfxOrder.StopLimit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice - UnexecutableGap, _market.BestAskPrice - UnexecutableGap, _orderSize));
                         break;
 
                     case 'C': CancelOrder(); break;

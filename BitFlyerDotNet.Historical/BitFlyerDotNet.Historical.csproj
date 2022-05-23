@@ -16,7 +16,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Version>4.1.8</Version>
     <Description>BitFlyerDotNet is a bitFlyer Lightning API wrapper and libraries.</Description>
-    <Copyright>Copyright (c) 2017-2021 Fiats Inc. All rights reserved.</Copyright>
+    <Copyright>Copyright (c) 2017-2022 Fiats Inc. All rights reserved.</Copyright>
     <PackageProjectUrl>https://github.com/fiatsasia/BitFlyerDotNet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/fiatsasia/BitFlyerDotNet</RepositoryUrl>
     <PackageTags>bitflyer bitflyer-lightning-apis realtime-apis</PackageTags>

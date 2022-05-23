@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -20,7 +20,7 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 1)]
-        public BfProductCode ProductCode { get; set; }
+        public string ProductCode { get; set; }
 
         [Required]
         [Column(Order = 2)]
@@ -55,7 +55,7 @@ namespace BitFlyerDotNet.Historical
         {
         }
 
-        public DbParentOrder(BfProductCode productCode, BfParentOrderRequest req, BfParentOrderResponse resp)
+        public DbParentOrder(string productCode, BfParentOrderRequest req, BfParentOrderResponse resp)
         {
             ProductCode = productCode;
             OrderType = req.OrderMethod;
@@ -67,7 +67,7 @@ namespace BitFlyerDotNet.Historical
             AcceptanceId = resp.ParentOrderAcceptanceId;
         }
 
-        public DbParentOrder(BfProductCode productCode, BfaParentOrderDetail order)
+        public DbParentOrder(string productCode, BfaParentOrderDetail order)
         {
             ProductCode = productCode;
 
@@ -79,7 +79,7 @@ namespace BitFlyerDotNet.Historical
             AcceptanceId = order.ParentOrderAcceptanceId;
         }
 
-        public DbParentOrder(BfProductCode productCode, BfaParentOrder order, BfaParentOrderDetail detail)
+        public DbParentOrder(string productCode, BfaParentOrder order, BfaParentOrderDetail detail)
         {
             ProductCode = productCode;
 
@@ -101,7 +101,7 @@ namespace BitFlyerDotNet.Historical
             TimeInForce = detail.TimeInForce;
         }
 
-        public DbParentOrder(BfProductCode productCode, BfParentOrderEvent poe)
+        public DbParentOrder(string productCode, BfParentOrderEvent poe)
         {
             ProductCode = productCode;
             OrderType = poe.ParentOrderType;

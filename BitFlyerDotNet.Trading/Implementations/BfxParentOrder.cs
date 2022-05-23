@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -257,7 +257,7 @@ namespace BitFlyerDotNet.Trading
             State = state;
         }
 
-        internal override void ApplyParameters(BfProductCode productCode, int minutesToExpire, BfTimeInForce timeInForce)
+        internal override void ApplyParameters(string productCode, int minutesToExpire, BfTimeInForce timeInForce)
         {
             if (Request == null)
             {

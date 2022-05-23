@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -112,7 +112,7 @@ namespace BitFlyerDotNet.Historical
         }
 
         // Parameters
-        public BfProductCode _productCode { get; }
+        public string _productCode { get; }
         readonly string _cacheFolderBasePath;
 
         // Privates
@@ -120,7 +120,7 @@ namespace BitFlyerDotNet.Historical
         ExecutionsDbSqliteContext _ctxExec;
         OhlcSqliteDbContext _ctxOhlc;
 
-        public SqliteDbContext(string cacheFolderBasePath, BfProductCode productCode)
+        public SqliteDbContext(string cacheFolderBasePath, string productCode)
         {
             _cacheFolderBasePath = cacheFolderBasePath;
             _productCode = productCode;

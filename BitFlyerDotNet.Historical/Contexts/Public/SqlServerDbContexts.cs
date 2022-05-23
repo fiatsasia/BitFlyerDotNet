@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -19,13 +19,13 @@ namespace BitFlyerDotNet.Historical
     {
         static readonly TimeSpan CommandTimeout = TimeSpan.FromHours(1);
         public readonly string ConnStr;
-        public readonly BfProductCode ProductCode;
+        public readonly string ProductCode;
 
         public DbSet<DbManageRecord> ManageTable { get; set; }
         public DbSet<DbExecution> Executions { get; set; }
         public DbSet<DbOhlc> Ohlc { get; set; }
 
-        public BfDbContextSqlServer(string connStr, BfProductCode productCode)
+        public BfDbContextSqlServer(string connStr, string productCode)
             : base(new DbContextOptionsBuilder<BfDbContextSqlServer>().Options)
         {
             ConnStr = connStr;
@@ -82,11 +82,11 @@ namespace BitFlyerDotNet.Historical
         }
 
         readonly string _connStr;
-        readonly BfProductCode _productCode;
+        readonly string _productCode;
 
         BfDbContextSqlServer _ctx;
 
-        public SqlServerDbContext(string connStr, BfProductCode productCode)
+        public SqlServerDbContext(string connStr, string productCode)
         {
             _connStr = connStr;
             _productCode = productCode;

@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -30,7 +30,7 @@ namespace BitFlyerDotNet.Trading
 
     public interface IBfxOrder
     {
-        BfProductCode ProductCode { get; }      // 1-3- 56-8
+        string ProductCode { get; }      // 1-3- 56-8
         BfOrderType OrderType { get; }          // 1-3- 56-8   1,5,8:ChildOrderType 3,6:ConditionType
         BfTradeSide? Side { get; }              // 1-3- 56-8
         decimal? OrderPrice { get; }            // 1-3- 56-8   Price

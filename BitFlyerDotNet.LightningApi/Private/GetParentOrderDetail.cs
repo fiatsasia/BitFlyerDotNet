@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -76,7 +76,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="parentOrderId"></param>
         /// <param name="parentOrderAcceptanceId"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfaParentOrderDetail>> GetParentOrderDetailAsync(BfProductCode productCode, string parentOrderId, string parentOrderAcceptanceId, CancellationToken ct)
+        public Task<BitFlyerResponse<BfaParentOrderDetail>> GetParentOrderDetailAsync(string productCode, string parentOrderId, string parentOrderAcceptanceId, CancellationToken ct)
         {
             if (string.IsNullOrEmpty(parentOrderId) && string.IsNullOrEmpty(parentOrderAcceptanceId))
             {
@@ -84,7 +84,7 @@ namespace BitFlyerDotNet.LightningApi
             }
 
             var query = string.Format("product_code={0}{1}{2}",
-                productCode.ToEnumString(),
+                productCode,
                 !string.IsNullOrEmpty(parentOrderId) ? "&parent_order_id=" + parentOrderId : "",
                 !string.IsNullOrEmpty(parentOrderAcceptanceId) ? "&parent_order_acceptance_id=" + parentOrderAcceptanceId : ""
             );
@@ -92,7 +92,10 @@ namespace BitFlyerDotNet.LightningApi
             return GetPrivateAsync<BfaParentOrderDetail>("getparentorder", query, ct);
         }
 
-        public BitFlyerResponse<BfaParentOrderDetail> GetParentOrderDetail(BfProductCode productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
+        public Task<BitFlyerResponse<BfaParentOrderDetail>> GetParentOrderDetailAsync(string productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
+            => GetParentOrderDetailAsync(productCode, parentOrderId, parentOrderAcceptanceId, CancellationToken.None);
+
+        public BitFlyerResponse<BfaParentOrderDetail> GetParentOrderDetail(string productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
             => GetParentOrderDetailAsync(productCode, parentOrderId, parentOrderAcceptanceId, CancellationToken.None).Result;
     }
 }

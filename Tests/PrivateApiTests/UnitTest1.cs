@@ -1,5 +1,5 @@
 //==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -17,7 +17,7 @@ namespace PrivateApiTests
     [TestClass]
     public class UnitTest1
     {
-        static BfProductCode _productCode;
+        static string _productCode;
         static string _key;
         static string _secret;
         BitFlyerClient _client;
@@ -32,7 +32,7 @@ namespace PrivateApiTests
         [ClassInitialize]
         public static void Classinitialize(TestContext context)
         {
-            _productCode = Enum.Parse<BfProductCode>(context.Properties["ProductCode"].ToString());
+            _productCode = context.Properties["ProductCode"].ToString();
 
             // ApiKey and ApiSecret are defined in PrivateTest.runsettings
             // Should copy that file to any other directory such as desktop and fill them. 

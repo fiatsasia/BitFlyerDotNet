@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -68,5 +68,8 @@ namespace BitFlyerDotNet.LightningApi
 
         [JsonProperty(PropertyName = "sfd")]
         public decimal SwapForDifference { get; private set; }      // EventType = Execution
+
+        [JsonProperty(PropertyName = "outstanding_size")]
+        public decimal OutstandingSize { get; private set; }        // EventType = Execution
     }
 }

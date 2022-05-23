@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -7,10 +7,8 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Reactive.Subjects;
@@ -100,20 +98,6 @@ namespace BitFlyerDotNet.LightningApi
             Log.Trace($"{nameof(RealtimeSourceFactory)} diposed");
         }
 
-        // Convert BfProdcutCode (inc. futures) to native product codes
-        Dictionary<BfProductCode, string> _availableMarkets = new ();
-        async Task GetAvailableMarkets()
-        {
-            using (var client = new BitFlyerClient())
-            {
-                _availableMarkets.Clear();
-                foreach (var market in await client.GetAvailableMarketsAsync(CancellationToken.None))
-                {
-                    _availableMarkets[market.ProductCode] = market.Symbol;
-                }
-            }
-        }
-
         bool _opened = false;
         public async Task<bool> TryOpenAsync()
         {
@@ -122,9 +106,7 @@ namespace BitFlyerDotNet.LightningApi
                 return false;
             }
 
-            Channels.Resumed += async () => await GetAvailableMarkets(); // To refresh markets when is resumed
             await Channels.TryOpenAsync();
-            await GetAvailableMarkets();
             _opened = true;
             return true;
         }
@@ -154,12 +136,11 @@ namespace BitFlyerDotNet.LightningApi
         }
 
         ConcurrentDictionary<string, IObservable<BfaExecution>> _executionSources = new ();
-        public IObservable<BfaExecution> GetExecutionSource(BfProductCode productCode, bool startPending = false)
+        public IObservable<BfaExecution> GetExecutionSource(string productCode, bool startPending = false)
         {
-            var symbol = _availableMarkets[productCode];
-            var result = _executionSources.GetOrAdd(symbol, _ =>
+            var result = _executionSources.GetOrAdd(productCode, _ =>
             {
-                var source = new RealtimeExecutionSource(Channels, symbol, s =>
+                var source = new RealtimeExecutionSource(Channels, productCode, s =>
                 {
                     _executionSources.TryRemove(s.ProductCode, out var _);
                     OnSourceClosed();
@@ -178,9 +159,9 @@ namespace BitFlyerDotNet.LightningApi
             return result;
         }
 
-        public void StartExecutionSource(BfProductCode productCode)
+        public void StartExecutionSource(string productCode)
         {
-            if (_executionSources.TryGetValue(_availableMarkets[productCode], out var source))
+            if (_executionSources.TryGetValue(productCode, out var source))
             {
                 if (source is IConnectableObservable<BfaExecution> publishSource)
                 {
@@ -201,12 +182,11 @@ namespace BitFlyerDotNet.LightningApi
         }
 
         ConcurrentDictionary<string, IObservable<BfTicker>> _tickSources = new ();
-        public IObservable<BfTicker> GetTickerSource(BfProductCode productCode)
+        public IObservable<BfTicker> GetTickerSource(string productCode)
         {
-            var symbol = _availableMarkets[productCode];
-            return _tickSources.GetOrAdd(symbol, _ => // Cause ArgumentException if key not found.
+            return _tickSources.GetOrAdd(productCode, _ => // Cause ArgumentException if key not found.
             {
-                var source = new RealtimeTickerSource(Channels, symbol, s =>
+                var source = new RealtimeTickerSource(Channels, productCode, s =>
                 {
                     _tickSources.TryRemove(s.ProductCode, out var _);
                     OnSourceClosed();
@@ -217,16 +197,15 @@ namespace BitFlyerDotNet.LightningApi
         }
 
         ConcurrentDictionary<string, IObservable<BfOrderBook>> _orderBookSnapshotSources = new ();
-        public IObservable<BfOrderBook> GetOrderBookSource(BfProductCode productCode)
+        public IObservable<BfOrderBook> GetOrderBookSource(string productCode)
         {
-            var symbol = _availableMarkets[productCode];
-            return _orderBookSnapshotSources.GetOrAdd(symbol, _ => // Cause ArgumentException if key not found.
+            return _orderBookSnapshotSources.GetOrAdd(productCode, _ => // Cause ArgumentException if key not found.
             {
-                var snapshot = new RealtimeBoardSnapshotSource(Channels, symbol);
-                var update = new RealtimeBoardSource(Channels, symbol);
+                var snapshot = new RealtimeBoardSnapshotSource(Channels, productCode);
+                var update = new RealtimeBoardSource(Channels, productCode);
                 Channels.RegisterSource(snapshot);
                 Channels.RegisterSource(update);
-                var source = new BfOrderBookStream(symbol, snapshot, update, s =>
+                var source = new BfOrderBookStream(productCode, snapshot, update, s =>
                 {
                     _orderBookSnapshotSources.TryRemove(s.ProductCode, out var _);
                     OnSourceClosed();

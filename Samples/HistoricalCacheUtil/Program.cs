@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -25,7 +25,7 @@ namespace HistoricalCacheUtil
 
         static void Main(string[] args)
         {
-            var productCode = BfProductCode.FXBTCJPY;
+            var productCode = "FX_BTC_JPY";
             var client = new BitFlyerClient();
             var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
@@ -36,7 +36,7 @@ namespace HistoricalCacheUtil
 
             if (args.Length > 0)
             {
-                productCode = Enum.Parse<BfProductCode>(args[0]);
+                productCode = args[0];
                 UpdateRecent(client, cacheFactory, productCode);
                 FillGaps(client, cacheFactory, productCode);
                 GenerateOhlc(cacheFactory, productCode);
@@ -44,7 +44,7 @@ namespace HistoricalCacheUtil
             }
 
             Console.WriteLine("BitFlyerDotNet cache management utilities");
-            Console.WriteLine("Copyright (C) 2017-2021 Fiats Inc.");
+            Console.WriteLine("Copyright (C) 2017-2022 Fiats Inc.");
 
             try
             {
@@ -99,28 +99,28 @@ namespace HistoricalCacheUtil
             }
         }
 
-        static BfProductCode SelectProduct()
+        static string SelectProduct()
         {
             while (true)
             {
                 Console.WriteLine("1)FXBTCJPY 2)BTCJPY 3)ETHJPY 4)BCHBTC 5)ETHBTC");
                 switch (GetCh())
                 {
-                    case '1': return BfProductCode.FXBTCJPY;
-                    case '2': return BfProductCode.BTCJPY;
-                    case '3': return BfProductCode.ETHJPY;
-                    case '4': return BfProductCode.BCHBTC;
-                    case '5': return BfProductCode.ETHBTC;
+                    case '1': return "FX_BTC_JPY";
+                    case '2': return "BTC_JPY";
+                    case '3': return "ETH_JPY";
+                    case '4': return "BCH_BTC";
+                    case '5': return "ETH_BTC";
                 }
             }
         }
 
-        static void OptimizaManageTable(ICacheFactory factory, BfProductCode productCode)
+        static void OptimizaManageTable(ICacheFactory factory, string productCode)
         {
             using (var cache = factory.CreateExecutionCache(productCode)) { }
         }
 
-        static void UpdateRecent(BitFlyerClient client, ICacheFactory factory, BfProductCode productCode)
+        static void UpdateRecent(BitFlyerClient client, ICacheFactory factory, string productCode)
         {
             using (var cache = factory.CreateExecutionCache(productCode))
             {
@@ -156,7 +156,7 @@ namespace HistoricalCacheUtil
             }
         }
 
-        static void FillGaps(BitFlyerClient client, ICacheFactory factory, BfProductCode productCode)
+        static void FillGaps(BitFlyerClient client, ICacheFactory factory, string productCode)
         {
             using (var cache = factory.CreateExecutionCache(productCode))
             {
@@ -188,7 +188,7 @@ namespace HistoricalCacheUtil
             }
         }
 
-        static void GenerateOhlc(ICacheFactory factory, BfProductCode productCode)
+        static void GenerateOhlc(ICacheFactory factory, string productCode)
         {
             var frameSpan = TimeSpan.FromMinutes(1);
             using (var ctx = factory.CreateDbContext(productCode))

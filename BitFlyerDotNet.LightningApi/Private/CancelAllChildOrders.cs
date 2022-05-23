@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -15,8 +15,7 @@ namespace BitFlyerDotNet.LightningApi
 {
     public class BfCancelAllChildOrdersRequest
     {
-        [JsonConverter(typeof(StringEnumConverter))]
-        public BfProductCode ProductCode { get; set; }
+        public string ProductCode { get; set; }
     }
 
     public partial class BitFlyerClient
@@ -41,10 +40,10 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="productCode"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<string>> CancelAllChildOrdersAsync(BfProductCode productCode, CancellationToken ct)
+        public Task<BitFlyerResponse<string>> CancelAllChildOrdersAsync(string productCode, CancellationToken ct)
             => CancelAllChildOrdersAsync(new BfCancelAllChildOrdersRequest { ProductCode = productCode }, ct);
 
-        public BitFlyerResponse<string> CancelAllChildOrders(BfProductCode productCode)
+        public BitFlyerResponse<string> CancelAllChildOrders(string productCode)
             => CancelAllChildOrdersAsync(productCode, CancellationToken.None).Result;
     }
 }

@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -87,14 +87,14 @@ namespace BitFlyerDotNet.Trading
         }
 
         // Market/Limit/Stop/StopLimit/Trail of parent order from market
-        public BfxChildOrder(BfProductCode productCode, BfaParentOrderParameter order)
+        public BfxChildOrder(string productCode, BfaParentOrderParameter order)
         {
             ProductCode = productCode;
             Update(order);
         }
         #endregion Constructors
 
-        internal override void ApplyParameters(BfProductCode productCode, int minutesToExpire, BfTimeInForce timeInForce)
+        internal override void ApplyParameters(string productCode, int minutesToExpire, BfTimeInForce timeInForce)
         {
             if (Request != null)
             {
@@ -215,7 +215,7 @@ namespace BitFlyerDotNet.Trading
                 case BfOrderEventType.Execution:
                     _executions.Add(new BfxExecution(coe));
                     ExecutedSize = _executions.Sum(e => e.Size);
-                    ExecutedPrice = Math.Round(_executions.Sum(e => e.Price * e.Size) / ExecutedSize.Value, ProductCode.GetPriceDecimals(), MidpointRounding.ToEven);
+                    ExecutedPrice = Math.Round(_executions.Sum(e => e.Price * e.Size) / ExecutedSize.Value, BfProductCodeEx.GetPriceDecimals(ProductCode), MidpointRounding.ToEven);
                     ChangeState(OrderSize > ExecutedSize ? BfxOrderState.PartiallyExecuted : BfxOrderState.Executed);
                     break;
 

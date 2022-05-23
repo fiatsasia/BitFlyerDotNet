@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -13,7 +13,7 @@ namespace BitFlyerDotNet
 {
     public interface IBfChildOrder
     {
-        BfProductCode ProductCode { get; }
+        string ProductCode { get; }
         BfOrderType OrderType { get; }
         BfTradeSide Side { get; }
         decimal? OrderPrice { get; }

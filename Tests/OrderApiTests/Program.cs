@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -22,8 +22,8 @@ namespace OrderApiTests
         static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
         static CompositeDisposable _disposables = new CompositeDisposable();
 
-        const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
-        static readonly decimal OrderSize = ProductCode.GetMinimumOrderSize();
+        const string ProductCode = "FX_BTC_JPY";
+        static readonly decimal OrderSize = 0.01m; // ProductCode.GetMinimumOrderSize();
         const decimal UnexecuteGap = 50000m;
         static BitFlyerClient _client;
         static RealtimeSourceFactory _factory;

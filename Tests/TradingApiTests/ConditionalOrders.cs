@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -38,17 +38,17 @@ namespace TradingApiTests
                         {
                             case BfTradeSide.Buy:
                                 PlaceOrder(BfxOrder.IFDOCO(
-                                    BfxOrder.Limit(BfTradeSide.Buy, _market.BestBidPrice, _orderSize),
-                                    BfxOrder.Trailing(BfTradeSide.Sell, TrailingOffset, _orderSize),
-                                    BfxOrder.Stop(BfTradeSide.Sell, _market.BestAskPrice - PnLGap, _orderSize)
+                                    BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice, _orderSize),
+                                    BfxOrder.Trailing(ProductCode, BfTradeSide.Sell, TrailingOffset, _orderSize),
+                                    BfxOrder.Stop(ProductCode, BfTradeSide.Sell, _market.BestAskPrice - PnLGap, _orderSize)
                                 ));
                                 break;
 
                             case BfTradeSide.Sell:
                                 PlaceOrder(BfxOrder.IFDOCO(
-                                    BfxOrder.Limit(BfTradeSide.Sell, _market.BestAskPrice, _orderSize),
-                                    BfxOrder.Trailing(BfTradeSide.Buy, TrailingOffset, _orderSize),
-                                    BfxOrder.Stop(BfTradeSide.Buy, _market.BestBidPrice + PnLGap, _orderSize)
+                                    BfxOrder.Limit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice, _orderSize),
+                                    BfxOrder.Trailing(ProductCode, BfTradeSide.Buy, TrailingOffset, _orderSize),
+                                    BfxOrder.Stop(ProductCode, BfTradeSide.Buy, _market.BestBidPrice + PnLGap, _orderSize)
                                 ));
                                 break;
                         }
@@ -61,9 +61,9 @@ namespace TradingApiTests
                                 {
                                     var buyPrice = _market.BestBidPrice;
                                     PlaceOrder(BfxOrder.IFDOCO(
-                                        BfxOrder.Limit(BfTradeSide.Buy, buyPrice, _orderSize),
-                                        BfxOrder.StopLimit(BfTradeSide.Sell, buyPrice - PnLGap, buyPrice - PnLGap, _orderSize),
-                                        BfxOrder.Limit(BfTradeSide.Sell, buyPrice + PnLGap * 2m, _orderSize)
+                                        BfxOrder.Limit(ProductCode, BfTradeSide.Buy, buyPrice, _orderSize),
+                                        BfxOrder.StopLimit(ProductCode, BfTradeSide.Sell, buyPrice - PnLGap, buyPrice - PnLGap, _orderSize),
+                                        BfxOrder.Limit(ProductCode, BfTradeSide.Sell, buyPrice + PnLGap * 2m, _orderSize)
                                     ));
                                 }
                                 break;
@@ -72,9 +72,9 @@ namespace TradingApiTests
                                 {
                                     var sellPrice = _market.BestAskPrice;
                                     PlaceOrder(BfxOrder.IFDOCO(
-                                        BfxOrder.Limit(BfTradeSide.Sell, sellPrice, _orderSize),
-                                        BfxOrder.StopLimit(BfTradeSide.Buy, sellPrice + PnLGap, sellPrice + PnLGap, _orderSize),
-                                        BfxOrder.Limit(BfTradeSide.Buy, sellPrice - PnLGap * 2m, _orderSize)
+                                        BfxOrder.Limit(ProductCode, BfTradeSide.Sell, sellPrice, _orderSize),
+                                        BfxOrder.StopLimit(ProductCode, BfTradeSide.Buy, sellPrice + PnLGap, sellPrice + PnLGap, _orderSize),
+                                        BfxOrder.Limit(ProductCode, BfTradeSide.Buy, sellPrice - PnLGap * 2m, _orderSize)
                                     ));
                                 }
                                 break;
@@ -88,9 +88,9 @@ namespace TradingApiTests
                                 {
                                     var buyPrice = _market.BestBidPrice;
                                     PlaceOrder(BfxOrder.IFDOCO(
-                                        BfxOrder.Limit(BfTradeSide.Buy, buyPrice, _orderSize),
-                                        BfxOrder.Trailing(BfTradeSide.Sell, PnLGap, _orderSize),
-                                        BfxOrder.Limit(BfTradeSide.Sell, buyPrice + PnLGap * 2, _orderSize)
+                                        BfxOrder.Limit(ProductCode, BfTradeSide.Buy, buyPrice, _orderSize),
+                                        BfxOrder.Trailing(ProductCode, BfTradeSide.Sell, PnLGap, _orderSize),
+                                        BfxOrder.Limit(ProductCode, BfTradeSide.Sell, buyPrice + PnLGap * 2, _orderSize)
                                     ));
                                 }
                                 break;
@@ -99,9 +99,9 @@ namespace TradingApiTests
                                 {
                                     var sellPrice = _market.BestAskPrice;
                                     PlaceOrder(BfxOrder.IFDOCO(
-                                        BfxOrder.Limit(BfTradeSide.Sell, sellPrice, _orderSize),
-                                        BfxOrder.Trailing(BfTradeSide.Buy, PnLGap, _orderSize),
-                                        BfxOrder.Limit(BfTradeSide.Buy, sellPrice - PnLGap * 2, _orderSize)
+                                        BfxOrder.Limit(ProductCode, BfTradeSide.Sell, sellPrice, _orderSize),
+                                        BfxOrder.Trailing(ProductCode, BfTradeSide.Buy, PnLGap, _orderSize),
+                                        BfxOrder.Limit(ProductCode, BfTradeSide.Buy, sellPrice - PnLGap * 2, _orderSize)
                                     ));
                                 }
                                 break;
@@ -110,8 +110,8 @@ namespace TradingApiTests
 
                     case 'E':
                         PlaceOrder(BfxOrder.OCO(
-                            BfxOrder.Limit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
-                            BfxOrder.Limit(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize)),
+                            BfxOrder.Limit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
+                            BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize)),
                             TimeSpan.FromMinutes(1),
                             BfTimeInForce.NotSpecified
                         );
@@ -119,8 +119,8 @@ namespace TradingApiTests
 
                     case 'F':
                         PlaceOrder(BfxOrder.OCO(
-                            BfxOrder.Limit(BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
-                            BfxOrder.Limit(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize)),
+                            BfxOrder.Limit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
+                            BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize)),
                             TimeSpan.Zero,
                             BfTimeInForce.FOK
                         );

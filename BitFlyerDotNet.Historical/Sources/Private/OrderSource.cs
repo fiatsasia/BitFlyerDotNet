@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -18,7 +18,7 @@ namespace BitFlyerDotNet.Historical
     public class OrderSource : IBfOrderSource, IDisposable
     {
         BitFlyerClient _client;
-        BfProductCode _productCode;
+        string _productCode;
         AccountDbContext _ctx;
         BlockingCollection<Func<bool>> _procQ = new ();
         ConcurrentQueue<Func<bool>> _pendQ = new ();
@@ -26,7 +26,7 @@ namespace BitFlyerDotNet.Historical
         bool _exitTask;
         object _txLock = new object();
 
-        public OrderSource(BitFlyerClient client, string connStr, BfProductCode productCode)
+        public OrderSource(BitFlyerClient client, string connStr, string productCode)
         {
             _client = client;
             _productCode = productCode;
@@ -482,7 +482,7 @@ namespace BitFlyerDotNet.Historical
         // WIPs
         //======================================================================
         // Private executions
-        public IEnumerable<DbPrivateExecution> GetExecutions(BfProductCode productCode, DateTime start, DateTime end)
+        public IEnumerable<DbPrivateExecution> GetExecutions(string productCode, DateTime start, DateTime end)
         {
             var latestQuery = _ctx.GetExecutions().OrderByDescending(e => e.ExecutionId).Take(1);
             if (latestQuery.Count() == 0)

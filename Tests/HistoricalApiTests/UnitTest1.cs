@@ -1,5 +1,5 @@
 //==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -19,7 +19,7 @@ namespace HistoricalApiTests
     [TestClass]
     public class UnitTest1
     {
-        static BfProductCode _productCode;
+        static string _productCode;
         static string _key;
         static string _secret;
         static string _cacheDirectoryPath;
@@ -34,7 +34,7 @@ namespace HistoricalApiTests
         [ClassInitialize]
         public static void Classinitialize(TestContext context)
         {
-            _productCode = Enum.Parse<BfProductCode>(context.Properties["ProductCode"].ToString());
+            _productCode = context.Properties["ProductCode"].ToString();
             _key = context.Properties["ApiKey"].ToString();
             _secret = context.Properties["ApiSecret"].ToString();
             _client = new BitFlyerClient(_key, _secret);
@@ -131,7 +131,7 @@ namespace HistoricalApiTests
         {
             var client = new BitFlyerClient();
             var cacheFactory = new SqlServerCacheFactory(@"server=(local);Initial Catalog=bitflyer;Integrated Security=True");
-            var cache = cacheFactory.CreateExecutionCache(BfProductCode.FXBTCJPY);
+            var cache = cacheFactory.CreateExecutionCache("FX_BTC_JPY");
             var completed = new ManualResetEvent(false);
             var recentTime = DateTime.UtcNow;
             cache.UpdateRecents(client).Subscribe(exec =>
@@ -154,7 +154,7 @@ namespace HistoricalApiTests
         {
             var client = new BitFlyerClient();
             var cacheFactory = new SqlServerCacheFactory(@"server=(local);Initial Catalog=bitflyer;Integrated Security=True");
-            var cache = cacheFactory.CreateExecutionCache(BfProductCode.FXBTCJPY);
+            var cache = cacheFactory.CreateExecutionCache("FX_BTC_JPY");
             var completed = new ManualResetEvent(false);
             var recentTime = DateTime.UtcNow;
             cache.FillGaps(client).Subscribe(exec =>

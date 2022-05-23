@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -74,7 +74,7 @@ namespace BitFlyerDotNet.LightningApi
 
                 //==================================================
                 // Below option must be needed. If omit, serever will disconnect connection but not supported Blazer WebAssembly. 
-                // Feb/2021
+                // Feb/2022
                 if (!_isWasm) // implemented .NET5 or later
                 {
                     _socket.Options.KeepAliveInterval = TimeSpan.Zero;

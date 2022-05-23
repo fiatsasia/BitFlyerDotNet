@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -24,7 +24,7 @@ namespace RealtimeApiTests
         static Queue<IDisposable> _disposeQ = new();
         static Dictionary<string, string> Properties;
 
-        const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
+        const string ProductCode = "FX_BTC_JPY";
         static RealtimeSourceFactory _factory;
         static bool _detail;
 
@@ -177,7 +177,7 @@ namespace RealtimeApiTests
             var left = Console.CursorLeft;
             var top = Console.CursorTop;
 
-            _factory.GetOrderBookSource(BfProductCode.FXBTCJPY)
+            _factory.GetOrderBookSource("FX_BTC_JPY")
             .Select(orderBook => orderBook.GetSnapshot(15)) // Take 15 orders from 300 orders
             .Subscribe(obs =>
             {

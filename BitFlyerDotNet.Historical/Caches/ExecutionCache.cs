@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -17,9 +17,9 @@ namespace BitFlyerDotNet.Historical
     {
         public long CommitCount { get; set; } = 10000;
         readonly ICacheDbContext _dbctx;
-        readonly BfProductCode _productCode;
+        readonly string _productCode;
 
-        public ExecutionCache(ICacheDbContext dbctx, BfProductCode productCode)
+        public ExecutionCache(ICacheDbContext dbctx, string productCode)
         {
             _dbctx = dbctx;
             _productCode = productCode;

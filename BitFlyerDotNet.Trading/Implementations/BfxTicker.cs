@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -90,15 +90,15 @@ namespace BitFlyerDotNet.Trading
         public BfxTickerSource(BfxMarket market)
         {
             // If market is FX_BTC_JPY, get BTC_JPT ticker to calculate realtime SFD rate.
-            if (market.ProductCode == BfProductCode.FXBTCJPY)
+            if (market.ProductCode == "FX_BTC_JPY")
             {
                 _source = Observable.Create<BfxTicker>(observer =>
                 {
                     // Merge order book, native ticker and market health(REST)
                     market.RealtimeSource.GetOrderBookSource(market.ProductCode).CombineLatest
                     (
-                        market.RealtimeSource.GetTickerSource(BfProductCode.FXBTCJPY),
-                        market.RealtimeSource.GetTickerSource(BfProductCode.BTCJPY),
+                        market.RealtimeSource.GetTickerSource("FX_BTC_JPY"),
+                        market.RealtimeSource.GetTickerSource("BTC_JPY"),
                         (ob, fxbtcjpy, btcjpy) =>
                         {
                             if (fxbtcjpy.Timestamp > _lastServerTime)

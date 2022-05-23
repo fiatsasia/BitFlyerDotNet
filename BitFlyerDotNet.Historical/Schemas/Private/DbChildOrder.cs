@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -24,7 +24,7 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 2)]
-        public BfProductCode ProductCode { get; set; }
+        public string ProductCode { get; set; }
 
         [Required]
         [Column(Order = 3)]
@@ -116,7 +116,7 @@ namespace BitFlyerDotNet.Historical
             ChildOrderIndex = -1;
         }
 
-        public DbChildOrder(BfProductCode productCode, BfaChildOrder order)
+        public DbChildOrder(string productCode, BfaChildOrder order)
         {
             ProductCode = productCode;
             Side = order.Side;
@@ -234,7 +234,7 @@ namespace BitFlyerDotNet.Historical
             ChildOrderIndex = childOrderIndex;
         }
 
-        public DbChildOrder(BfProductCode productCode, BfaParentOrderDetail detail, int childOrderIndex)
+        public DbChildOrder(string productCode, BfaParentOrderDetail detail, int childOrderIndex)
         {
             ProductCode = productCode;
             Update(detail, childOrderIndex);

@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -14,7 +14,7 @@ namespace TradingApiTests
 {
     partial class Program
     {
-        static void SimpleOrders()
+        static async void SimpleOrders(BfxApplication app)
         {
             while (true)
             {
@@ -31,15 +31,10 @@ namespace TradingApiTests
                 switch (GetCh())
                 {
                     case 'L':
-                        switch(SelectSide())
+                        var side = SelectSide();
+                        if (side != BfTradeSide.Unknown)
                         {
-                            case BfTradeSide.Buy:
-                                PlaceOrder(BfxOrder.Limit(BfTradeSide.Buy, _market.BestBidPrice, _orderSize));
-                                break;
-
-                            case BfTradeSide.Sell:
-                                PlaceOrder(BfxOrder.Limit(BfTradeSide.Sell, _market.BestAskPrice, _orderSize));
-                                break;
+                            await app.PlaceOrderAsync(BfxOrder.Limit(ProductCode, side, _market.CurrentPrice, _orderSize));
                         }
                         break;
 
@@ -47,11 +42,11 @@ namespace TradingApiTests
                         switch (SelectSide())
                         {
                             case BfTradeSide.Buy:
-                                PlaceOrder(BfxOrder.Market(BfTradeSide.Buy, _orderSize));
+                                PlaceOrder(BfxOrder.Market(ProductCode, BfTradeSide.Buy, _orderSize));
                                 break;
 
                             case BfTradeSide.Sell:
-                                PlaceOrder(BfxOrder.Market(BfTradeSide.Sell, _orderSize));
+                                PlaceOrder(BfxOrder.Market(ProductCode, BfTradeSide.Sell, _orderSize));
                                 break;
                         }
                         break;
@@ -60,21 +55,21 @@ namespace TradingApiTests
                         switch (SelectSide())
                         {
                             case BfTradeSide.Buy:
-                                PlaceOrder(BfxOrder.Trailing(BfTradeSide.Buy, PnLGap * 2, _orderSize));
+                                PlaceOrder(BfxOrder.Trailing(ProductCode, BfTradeSide.Buy, PnLGap * 2, _orderSize));
                                 break;
 
                             case BfTradeSide.Sell:
-                                PlaceOrder(BfxOrder.Trailing(BfTradeSide.Sell, PnLGap * 2, _orderSize));
+                                PlaceOrder(BfxOrder.Trailing(ProductCode, BfTradeSide.Sell, PnLGap * 2, _orderSize));
                                 break;
                         }
                         break;
 
                     case 'E':
-                        PlaceOrder(BfxOrder.Limit(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.FromMinutes(1), BfTimeInForce.NotSpecified);
+                        PlaceOrder(BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.FromMinutes(1), BfTimeInForce.NotSpecified);
                         break;
 
                     case 'F':
-                        PlaceOrder(BfxOrder.Limit(BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.Zero, BfTimeInForce.FOK);
+                        PlaceOrder(BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.Zero, BfTimeInForce.FOK);
                         break;
 
                     case 'C':

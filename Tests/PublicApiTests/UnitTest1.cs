@@ -1,5 +1,5 @@
 //==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -16,7 +16,7 @@ namespace PublicApiTests
     [TestClass]
     public class UnitTest1
     {
-        const BfProductCode ProductCode = BfProductCode.FXBTCJPY;
+        const string ProductCode = "FX_BTC_JPY";
         BitFlyerClient _client;
 
         [TestInitialize]
@@ -115,7 +115,7 @@ namespace PublicApiTests
         [TestMethod]
         public void GetTicker()
         {
-            var resp = _client.GetTicker(BfProductCode.BTCJPYMAT3M);
+            var resp = _client.GetTicker("FX_BTC_JPY");
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var jobject = JsonConvert.DeserializeObject(resp.Json);

@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -17,7 +17,7 @@ namespace BitFlyerDotNet.Historical
     {
         [Required]
         [Column(Order = 0)]
-        public BfProductCode ProductCode { get; set; }
+        public string ProductCode { get; set; }
 
         [Required]
         [Column(Order = 1)]
@@ -62,7 +62,7 @@ namespace BitFlyerDotNet.Historical
         {
         }
 
-        public DbPrivateExecution(BfProductCode productCode, BfaPrivateExecution exec)
+        public DbPrivateExecution(string productCode, BfaPrivateExecution exec)
         {
             ProductCode = productCode;
             ExecutionId = exec.ExecutionId;
@@ -71,11 +71,11 @@ namespace BitFlyerDotNet.Historical
             Size = exec.Size;
             if (exec.Side == BfTradeSide.Sell)
             {
-                Amount = (exec.Price * exec.Size).Truncate(productCode.GetPriceDecimals());
+                Amount = (exec.Price * exec.Size).Truncate(BfProductCodeEx.GetPriceDecimals(productCode));
             }
             else
             {
-                Amount = (exec.Price * exec.Size).Ceiling(productCode.GetPriceDecimals());
+                Amount = (exec.Price * exec.Size).Ceiling(BfProductCodeEx.GetPriceDecimals(productCode));
             }
 
             ChildOrderId = exec.ChildOrderId;
@@ -85,7 +85,7 @@ namespace BitFlyerDotNet.Historical
             ExecutedTime = exec.ExecutedTime;
         }
 
-        public DbPrivateExecution(BfProductCode productCode, BfChildOrderEvent coe)
+        public DbPrivateExecution(string productCode, BfChildOrderEvent coe)
         {
             ProductCode = productCode;
             ExecutionId = coe.ExecutionId;
@@ -94,11 +94,11 @@ namespace BitFlyerDotNet.Historical
             Size = coe.Size;
             if (coe.Side == BfTradeSide.Sell)
             {
-                Amount = (coe.Price * coe.Size).Truncate(productCode.GetPriceDecimals());
+                Amount = (coe.Price * coe.Size).Truncate(BfProductCodeEx.GetPriceDecimals(productCode));
             }
             else
             {
-                Amount = (coe.Price * coe.Size).Ceiling(productCode.GetPriceDecimals());
+                Amount = (coe.Price * coe.Size).Ceiling(BfProductCodeEx.GetPriceDecimals(productCode));
             }
 
             ChildOrderId = coe.ChildOrderId;

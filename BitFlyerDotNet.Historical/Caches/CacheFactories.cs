@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -13,8 +13,8 @@ namespace BitFlyerDotNet.Historical
 {
     public interface ICacheFactory
     {
-        IExecutionCache CreateExecutionCache(BfProductCode productCode);
-        ICacheDbContext CreateDbContext(BfProductCode productCode);
+        IExecutionCache CreateExecutionCache(string productCode);
+        ICacheDbContext CreateDbContext(string productCode);
     }
 
     public class SqliteCacheFactory : ICacheFactory
@@ -26,12 +26,12 @@ namespace BitFlyerDotNet.Historical
             _cacheFolderPath = cacheFolderPath;
         }
 
-        public IExecutionCache CreateExecutionCache(BfProductCode productCode)
+        public IExecutionCache CreateExecutionCache(string productCode)
         {
             return new ExecutionCache(new SqliteDbContext(_cacheFolderPath, productCode), productCode);
         }
 
-        public ICacheDbContext CreateDbContext(BfProductCode productCode)
+        public ICacheDbContext CreateDbContext(string productCode)
         {
             return new SqliteDbContext(_cacheFolderPath, productCode);
         }
@@ -46,12 +46,12 @@ namespace BitFlyerDotNet.Historical
             _connStr = connStr;
         }
 
-        public IExecutionCache CreateExecutionCache(BfProductCode productCode)
+        public IExecutionCache CreateExecutionCache(string productCode)
         {
             return new ExecutionCache(new SqlServerDbContext(_connStr, productCode), productCode);
         }
 
-        public ICacheDbContext CreateDbContext(BfProductCode productCode)
+        public ICacheDbContext CreateDbContext(string productCode)
         {
             return new SqlServerDbContext(_connStr, productCode);
         }

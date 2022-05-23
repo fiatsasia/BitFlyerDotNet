@@ -1,5 +1,5 @@
 ﻿//==============================================================================
-// Copyright (c) 2017-2021 Fiats Inc. All rights reserved.
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
 // Licensed under the MIT license. See LICENSE.txt in the solution folder for
 // full license information.
 // https://www.fiats.asia/
@@ -28,74 +28,38 @@ namespace BitFlyerDotNet.LightningApi
         XEM,
     }
 
-    public enum BfProductCode
-    {
-        [EnumMember(Value = "")]
-        Unknown,
-        [EnumMember(Value = "BTC_JPY")]
-        BTCJPY,
-        [EnumMember(Value = "XRP_JPY")]
-        XRPJPY,
-        [EnumMember(Value = "ETH_JPY")]
-        ETHJPY,
-        [EnumMember(Value = "XLM_JPY")]
-        XLMJPY,
-        [EnumMember(Value = "MONA_JPY")]
-        MONAJPY,
-        [EnumMember(Value = "ETH_BTC")]
-        ETHBTC,
-        [EnumMember(Value = "BCH_BTC")]
-        BCHBTC,
-        [EnumMember(Value = "FX_BTC_JPY")]
-        FXBTCJPY,
-        [EnumMember(Value = "BTCJPY_MAT1WK")]
-        BTCJPYMAT1WK,
-        [EnumMember(Value = "BTCJPY_MAT2WK")]
-        BTCJPYMAT2WK,
-        [EnumMember(Value = "BTCJPY_MAT3M")]
-        BTCJPYMAT3M,
-        [EnumMember(Value = "BTC_USD")]
-        BTCUSD,
-        [EnumMember(Value = "BTC_EUR")]
-        BTCEUR,
-    }
-
     public static class BfProductCodeEx
     {
-        static Dictionary<BfProductCode, int> _priceDecimals = new ()
-        {
-            { BfProductCode.BTCJPY, 0 },
-            { BfProductCode.XRPJPY, 0 },
-            { BfProductCode.ETHJPY, 0 },
-            { BfProductCode.XLMJPY, 0 },
-            { BfProductCode.MONAJPY, 0 },
-            { BfProductCode.ETHBTC, 5 },
-            { BfProductCode.BCHBTC, 5 },
-            { BfProductCode.FXBTCJPY, 0 },
-            { BfProductCode.BTCJPYMAT1WK, 0 },
-            { BfProductCode.BTCJPYMAT2WK, 0 },
-            { BfProductCode.BTCJPYMAT3M, 0 },
-            { BfProductCode.BTCUSD, 2 },
-            { BfProductCode.BTCEUR, 2 },
-        };
+        public const string FX_BTC_JPY = "FX_BTC_JPY";
 
-        static Dictionary<string, BfProductCode> _originalTable = new ();
+        static Dictionary<string, int> _priceDecimals = new()
+        {
+            { "BTC_JPY", 0 },
+            { "XRP_JPY", 0 },
+            { "ETH_JPY", 0 },
+            { "XLM_JPY", 0 },
+            { "MONA_JPY", 0 },
+            { "ETH_BTC", 5 },
+            { "BCH_BTC", 5 },
+            { "FX_BTC_JPY", 0 },
+            { "BTCJPY_MAT1WK", 0 },
+            { "BTCJPY_MAT2WK", 0 },
+            { "BTCJPY_MAT3M", 0 },
+            { "BTC_USD", 2 },
+            { "BTC_EUR", 2 },
+        };
 
         static BfProductCodeEx()
         {
-            foreach (BfProductCode e in Enum.GetValues(typeof(BfProductCode)))
-            {
-                _originalTable.Add(e.ToEnumString(), e);
-            }
         }
 
-        public static decimal GetMinimumOrderSize(this BfProductCode productCode)
+        public static decimal GetMinimumOrderSize(string productCode)
         {
             switch (productCode)
             {
-                case BfProductCode.FXBTCJPY:
-                case BfProductCode.ETHBTC:
-                case BfProductCode.BCHBTC:
+                case "FX_BTC_JPY":
+                case "ETH_BTC":
+                case "BCH_BTC":
                     return 0.01m;
 
                 default:
@@ -103,9 +67,7 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        public static BfProductCode Parse(string s) => _originalTable[s];
-
-        public static int GetPriceDecimals(this BfProductCode productCode) => _priceDecimals[productCode];
+        public static int GetPriceDecimals(string productCode) => _priceDecimals[productCode];
     }
 
     public enum BfMarketType
