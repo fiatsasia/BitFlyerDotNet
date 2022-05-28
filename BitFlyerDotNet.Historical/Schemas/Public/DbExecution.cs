@@ -64,7 +64,7 @@ namespace BitFlyerDotNet.Historical
         {
         }
 
-        public DbExecution(IBfExecution exec)
+        public DbExecution(BfExecution exec)
         {
             ExecutionId = exec.ExecutionId;
             ExecutedTime = exec.ExecutedTime;

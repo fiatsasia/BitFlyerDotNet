@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    class RealtimeExecutionSource : RealtimeSourceBase<BfaExecution>
+    class RealtimeExecutionSource : RealtimeSourceBase<BfExecution>
     {
         public readonly string ProductCode;
         Action<RealtimeExecutionSource> _dispose;

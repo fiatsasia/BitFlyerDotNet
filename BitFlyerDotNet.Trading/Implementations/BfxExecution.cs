@@ -11,7 +11,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    class BfxExecution : IBfxExecution
+    class BfxExecution
     {
         public long Id { get; }
         public DateTime Time { get; }
@@ -32,17 +32,7 @@ namespace BitFlyerDotNet.Trading
             OrderId = coe.ChildOrderId;
         }
 
-        public BfxExecution(BfaPrivateExecution exec)
-        {
-            Id = exec.ExecutionId;
-            Time = exec.ExecutedTime;
-            Price = exec.Price;
-            Size = exec.Size;
-            Commission = exec.Commission;
-            OrderId = exec.ChildOrderId;
-        }
-
-        public BfxExecution(IBfPrivateExecution exec)
+        public BfxExecution(BfPrivateExecution exec)
         {
             Id = exec.ExecutionId;
             Time = exec.ExecutedTime;

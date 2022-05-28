@@ -17,8 +17,10 @@ namespace TradingApiTests
         const decimal PnLGap = 1000m;
         const decimal TrailingOffset = 3000m;
 
-        static void ConditionalOrders()
+        static async void ConditionalOrders(BfxApplication app)
         {
+            var mds = await app.GetMarketDataSourceAsync(ProductCode);
+
             while (true)
             {
                 Console.WriteLine("I)FDOCO trailing");
@@ -37,18 +39,18 @@ namespace TradingApiTests
                         switch (SelectSide())
                         {
                             case BfTradeSide.Buy:
-                                PlaceOrder(BfxOrder.IFDOCO(
-                                    BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice, _orderSize),
-                                    BfxOrder.Trailing(ProductCode, BfTradeSide.Sell, TrailingOffset, _orderSize),
-                                    BfxOrder.Stop(ProductCode, BfTradeSide.Sell, _market.BestAskPrice - PnLGap, _orderSize)
+                                await app.PlaceOrderAsync(BfOrderFactory.IFDOCO(
+                                    BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid, _orderSize),
+                                    BfOrderFactory.Trail(ProductCode, BfTradeSide.Sell, TrailingOffset, _orderSize),
+                                    BfOrderFactory.Stop(ProductCode, BfTradeSide.Sell, mds.BestAsk - PnLGap, _orderSize)
                                 ));
                                 break;
 
                             case BfTradeSide.Sell:
-                                PlaceOrder(BfxOrder.IFDOCO(
-                                    BfxOrder.Limit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice, _orderSize),
-                                    BfxOrder.Trailing(ProductCode, BfTradeSide.Buy, TrailingOffset, _orderSize),
-                                    BfxOrder.Stop(ProductCode, BfTradeSide.Buy, _market.BestBidPrice + PnLGap, _orderSize)
+                                await app.PlaceOrderAsync(BfOrderFactory.IFDOCO(
+                                    BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, mds.BestAsk, _orderSize),
+                                    BfOrderFactory.Trail(ProductCode, BfTradeSide.Buy, TrailingOffset, _orderSize),
+                                    BfOrderFactory.Stop(ProductCode, BfTradeSide.Buy, mds.BestBid + PnLGap, _orderSize)
                                 ));
                                 break;
                         }
@@ -59,22 +61,22 @@ namespace TradingApiTests
                         {
                             case BfTradeSide.Buy:
                                 {
-                                    var buyPrice = _market.BestBidPrice;
-                                    PlaceOrder(BfxOrder.IFDOCO(
-                                        BfxOrder.Limit(ProductCode, BfTradeSide.Buy, buyPrice, _orderSize),
-                                        BfxOrder.StopLimit(ProductCode, BfTradeSide.Sell, buyPrice - PnLGap, buyPrice - PnLGap, _orderSize),
-                                        BfxOrder.Limit(ProductCode, BfTradeSide.Sell, buyPrice + PnLGap * 2m, _orderSize)
+                                    var buyPrice = mds.BestBid; // to prevent get difference price
+                                    await app.PlaceOrderAsync(BfOrderFactory.IFDOCO(
+                                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, buyPrice, _orderSize),
+                                        BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Sell, buyPrice - PnLGap, buyPrice - PnLGap, _orderSize),
+                                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, buyPrice + PnLGap * 2m, _orderSize)
                                     ));
                                 }
                                 break;
 
                             case BfTradeSide.Sell:
                                 {
-                                    var sellPrice = _market.BestAskPrice;
-                                    PlaceOrder(BfxOrder.IFDOCO(
-                                        BfxOrder.Limit(ProductCode, BfTradeSide.Sell, sellPrice, _orderSize),
-                                        BfxOrder.StopLimit(ProductCode, BfTradeSide.Buy, sellPrice + PnLGap, sellPrice + PnLGap, _orderSize),
-                                        BfxOrder.Limit(ProductCode, BfTradeSide.Buy, sellPrice - PnLGap * 2m, _orderSize)
+                                    var sellPrice = mds.BestAsk;
+                                    await app.PlaceOrderAsync(BfOrderFactory.IFDOCO(
+                                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, sellPrice, _orderSize),
+                                        BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Buy, sellPrice + PnLGap, sellPrice + PnLGap, _orderSize),
+                                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, sellPrice - PnLGap * 2m, _orderSize)
                                     ));
                                 }
                                 break;
@@ -86,22 +88,22 @@ namespace TradingApiTests
                         {
                             case BfTradeSide.Buy:
                                 {
-                                    var buyPrice = _market.BestBidPrice;
-                                    PlaceOrder(BfxOrder.IFDOCO(
-                                        BfxOrder.Limit(ProductCode, BfTradeSide.Buy, buyPrice, _orderSize),
-                                        BfxOrder.Trailing(ProductCode, BfTradeSide.Sell, PnLGap, _orderSize),
-                                        BfxOrder.Limit(ProductCode, BfTradeSide.Sell, buyPrice + PnLGap * 2, _orderSize)
+                                    var buyPrice = mds.BestBid;
+                                    await app.PlaceOrderAsync(BfOrderFactory.IFDOCO(
+                                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, buyPrice, _orderSize),
+                                        BfOrderFactory.Trail(ProductCode, BfTradeSide.Sell, PnLGap, _orderSize),
+                                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, buyPrice + PnLGap * 2, _orderSize)
                                     ));
                                 }
                                 break;
 
                             case BfTradeSide.Sell:
                                 {
-                                    var sellPrice = _market.BestAskPrice;
-                                    PlaceOrder(BfxOrder.IFDOCO(
-                                        BfxOrder.Limit(ProductCode, BfTradeSide.Sell, sellPrice, _orderSize),
-                                        BfxOrder.Trailing(ProductCode, BfTradeSide.Buy, PnLGap, _orderSize),
-                                        BfxOrder.Limit(ProductCode, BfTradeSide.Buy, sellPrice - PnLGap * 2, _orderSize)
+                                    var sellPrice = mds.BestAsk;
+                                    await app.PlaceOrderAsync(BfOrderFactory.IFDOCO(
+                                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, sellPrice, _orderSize),
+                                        BfOrderFactory.Trail(ProductCode, BfTradeSide.Buy, PnLGap, _orderSize),
+                                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, sellPrice - PnLGap * 2, _orderSize)
                                     ));
                                 }
                                 break;
@@ -109,21 +111,25 @@ namespace TradingApiTests
                         break;
 
                     case 'E':
-                        PlaceOrder(BfxOrder.OCO(
-                            BfxOrder.Limit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
-                            BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize)),
-                            TimeSpan.FromMinutes(1),
-                            BfTimeInForce.NotSpecified
-                        );
+                        {
+                            var order = BfOrderFactory.OCO(
+                                BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, mds.BestAsk + UnexecutableGap, _orderSize),
+                                BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize)
+                            );
+                            order.MinuteToExpire = 1;
+                            await app.PlaceOrderAsync(order);
+                        }
                         break;
 
                     case 'F':
-                        PlaceOrder(BfxOrder.OCO(
-                            BfxOrder.Limit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize),
-                            BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize)),
-                            TimeSpan.Zero,
-                            BfTimeInForce.FOK
-                        );
+                        {
+                            var order = BfOrderFactory.OCO(
+                                BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, mds.BestAsk + UnexecutableGap, _orderSize),
+                                BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize)
+                            );
+                            order.TimeInForce = BfTimeInForce.FOK;
+                            await app.PlaceOrderAsync(order);
+                        }
                         break;
 
                     case 'C':
@@ -131,7 +137,7 @@ namespace TradingApiTests
                         break;
 
                     case 'X':
-                        ClosePositions();
+                        ClosePositions(app);
                         break;
 
                     case ESCAPE:

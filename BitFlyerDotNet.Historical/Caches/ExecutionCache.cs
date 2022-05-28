@@ -87,7 +87,7 @@ namespace BitFlyerDotNet.Historical
             _dbctx.SaveChanges();
         }
 
-        public IObservable<IBfExecution> FillGaps(BitFlyerClient client)
+        public IObservable<BfExecution> FillGaps(BitFlyerClient client)
         {
             return _dbctx.ManageTable.Buffer(2, 1).SkipLast(1).Select(rec =>
             {
@@ -112,7 +112,7 @@ namespace BitFlyerDotNet.Historical
             });
         }
 
-        public IObservable<IBfExecution> UpdateRecents(BitFlyerClient client)
+        public IObservable<BfExecution> UpdateRecents(BitFlyerClient client)
         {
             var after = 0L;
             var manageRec = _dbctx.ManageTable.ToList();
@@ -135,7 +135,7 @@ namespace BitFlyerDotNet.Historical
 
         DbManageRecord _manageRec;
 
-        public void Add(IBfExecution exec)
+        public void Add(BfExecution exec)
         {
             if (_manageRec == null)
             {

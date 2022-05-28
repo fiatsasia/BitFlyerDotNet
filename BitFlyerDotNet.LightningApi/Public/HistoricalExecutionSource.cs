@@ -16,18 +16,18 @@ using System.Reactive.Disposables;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class HistoricalExecutionSource : IObservable<IBfExecution>
+    public class HistoricalExecutionSource : IObservable<BfExecution>
     {
         const long ReadCountMax = 500;
 
         CancellationTokenSource _cancel = new CancellationTokenSource();
         CompositeDisposable _disposables = new CompositeDisposable();
-        IObservable<IBfExecution> _source;
+        IObservable<BfExecution> _source;
 
         public HistoricalExecutionSource(BitFlyerClient client, string productCode, long before, long after, long readCount=ReadCountMax)
         {
             readCount = Math.Min(readCount, ReadCountMax);
-            _source = Observable.Create<IBfExecution>(observer => {
+            _source = Observable.Create<BfExecution>(observer => {
                 return Task.Run(async () =>
                 {
                     while (true)
@@ -69,7 +69,7 @@ namespace BitFlyerDotNet.LightningApi
             });
         }
 
-        public IDisposable Subscribe(IObserver<IBfExecution> observer)
+        public IDisposable Subscribe(IObserver<BfExecution> observer)
         {
             _source.Subscribe(observer).AddTo(_disposables);
             return Disposable.Create(() => _cancel.Cancel());

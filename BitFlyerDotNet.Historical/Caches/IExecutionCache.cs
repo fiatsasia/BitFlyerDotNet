@@ -15,9 +15,9 @@ namespace BitFlyerDotNet.Historical
     {
         long CommitCount { get; set; }
         void OptimizeManageTable();
-        IObservable<IBfExecution> FillGaps(BitFlyerClient client);
-        IObservable<IBfExecution> UpdateRecents(BitFlyerClient client);
-        void Add(IBfExecution exec);
+        IObservable<BfExecution> FillGaps(BitFlyerClient client);
+        IObservable<BfExecution> UpdateRecents(BitFlyerClient client);
+        void Add(BfExecution exec);
         void SaveChanges();
         void InsertGap(long before, long after);
     }

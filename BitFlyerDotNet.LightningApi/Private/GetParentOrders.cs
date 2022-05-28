@@ -16,7 +16,7 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfaParentOrder
+    public class BfParentOrderStatus
     {
         [JsonProperty(PropertyName = "id")]
         public uint PagingId { get; private set; }
@@ -36,13 +36,13 @@ namespace BitFlyerDotNet.LightningApi
         public BfOrderType ParentOrderType { get; private set; } // if request is simple, this contains children[0]
 
         [JsonProperty(PropertyName = "price")]
-        public decimal Price { get; private set; } // value is 0 when executed by market price
+        public decimal? Price { get; private set; }
 
         [JsonProperty(PropertyName = "average_price")]
-        public decimal AveragePrice { get; private set; }
+        public decimal? AveragePrice { get; private set; }
 
         [JsonProperty(PropertyName = "size")]
-        public decimal Size { get; private set; }
+        public decimal? Size { get; private set; }
 
         [JsonProperty(PropertyName = "parent_order_state")]
         [JsonConverter(typeof(StringEnumConverter))]
@@ -82,7 +82,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfaParentOrder[]>> GetParentOrdersAsync(string productCode, BfOrderState orderState, int count, uint before, uint after, CancellationToken ct)
+        public Task<BitFlyerResponse<BfParentOrderStatus[]>> GetParentOrdersAsync(string productCode, BfOrderState orderState, int count, uint before, uint after, CancellationToken ct)
         {
             var query = string.Format("product_code={0}{1}{2}{3}",
                 productCode,
@@ -92,10 +92,10 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             );
 
-            return GetPrivateAsync<BfaParentOrder[]>(nameof(GetParentOrders), query, ct);
+            return GetPrivateAsync<BfParentOrderStatus[]>(nameof(GetParentOrders), query, ct);
         }
 
-        public Task<BitFlyerResponse<BfaParentOrder[]>> GetParentOrdersAsync(
+        public Task<BitFlyerResponse<BfParentOrderStatus[]>> GetParentOrdersAsync(
             string productCode,
             BfOrderState orderState = BfOrderState.Unknown,
             int count = 0,
@@ -104,10 +104,10 @@ namespace BitFlyerDotNet.LightningApi
         )
             => GetParentOrdersAsync(productCode, orderState, count, before, after, CancellationToken.None);
 
-        public BitFlyerResponse<BfaParentOrder[]> GetParentOrders(string productCode, BfOrderState orderState = BfOrderState.Unknown, int count = 0, uint before = 0, uint after = 0)
+        public BitFlyerResponse<BfParentOrderStatus[]> GetParentOrders(string productCode, BfOrderState orderState = BfOrderState.Unknown, int count = 0, uint before = 0, uint after = 0)
             => GetParentOrdersAsync(productCode, orderState, count, before, after).Result;
 
-        public IEnumerable<BfaParentOrder> GetParentOrders(string productCode, BfOrderState orderState, uint before, Func<BfaParentOrder, bool> predicate)
+        public IEnumerable<BfParentOrderStatus> GetParentOrders(string productCode, BfOrderState orderState, uint before, Func<BfParentOrderStatus, bool> predicate)
         {
             while (true)
             {
@@ -134,10 +134,10 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        public IEnumerable<BfaParentOrder> GetParentOrders(string productCode, DateTime after)
+        public IEnumerable<BfParentOrderStatus> GetParentOrders(string productCode, DateTime after)
             => GetParentOrders(productCode, BfOrderState.Unknown, 0, e => e.ParentOrderDate >= after);
 
-        public BfaParentOrder GetParentOrder(string productCode, BfaParentOrderDetail detail)
+        public BfParentOrderStatus GetParentOrder(string productCode, BfParentOrderDetailStatus detail)
         {
             var result = GetParentOrders(productCode, count: 1, before: detail.PagingId + 1).GetContent();
             if (result.Length == 0)
@@ -147,7 +147,7 @@ namespace BitFlyerDotNet.LightningApi
             return result[0];
         }
 
-        public BfaParentOrder GetParentOrder(string productCode, string parentOrderAcceptanceId = null, string parentOrderId = null)
+        public BfParentOrderStatus GetParentOrder(string productCode, string parentOrderAcceptanceId = null, string parentOrderId = null)
         {
             if (string.IsNullOrEmpty(parentOrderAcceptanceId) && string.IsNullOrEmpty(parentOrderId))
             {
@@ -159,22 +159,6 @@ namespace BitFlyerDotNet.LightningApi
                 : GetParentOrderDetail(productCode, parentOrderId: parentOrderId)).GetContent();
 
             return GetParentOrder(productCode, detail);
-        }
-
-        public async Task<IBfParentOrder[]> GetActiveParentOrders(string productCode)
-        {
-            return await Task.WhenAll((await GetParentOrdersAsync(productCode, orderState: BfOrderState.Active)).GetContent().Select(async parent =>
-                new BfParentOrder(
-                    parent,
-                    (await GetParentOrderDetailAsync(productCode, parentOrderAcceptanceId: parent.ParentOrderAcceptanceId)).GetContent(),
-                    await Task.WhenAll((await GetChildOrdersAsync(productCode, parentOrderId: parent.ParentOrderId)).GetContent().Select(async child =>
-                        new BfChildOrder(
-                            child,
-                            (await GetPrivateExecutionsAsync(productCode, childOrderAcceptanceId: child.ChildOrderAcceptanceId)).GetContent()
-                        )
-                    ))
-                )
-            ));
         }
     }
 }

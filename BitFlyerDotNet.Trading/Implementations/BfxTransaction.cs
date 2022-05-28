@@ -7,140 +7,231 @@
 //
 
 using System;
+using System.Linq;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public abstract class BfxTransaction : IBfxTransaction
+    public class BfxTransaction : BfxOrderStatus
     {
-        public Guid Id { get; }
-        public DateTime OpenTime { get; }
+        public BfxTransactionState State { get; private set; }
+        public event EventHandler<BfxTransactionChangedEventArgs> TransactionChanged;
 
-        public abstract string MarketId { get; }
-        public BfxTransactionState State { get; protected set; } = BfxTransactionState.Idle;
-        public abstract BfxOrderState OrderState { get; }
-        public abstract IBfxOrder Order { get; }
-        public virtual bool HasParent { get; } = false;
+        protected void CancelTransaction() => _cts.Cancel();
 
-        public abstract void OnChildOrderEvent(BfChildOrderEvent coe);
+        BitFlyerClient _client;
+        CancellationTokenSource _cts = new CancellationTokenSource();
+        ConcurrentDictionary<long, BfxExecution> _execs = new();
 
-        protected BfxMarket Market { get; private set; }
-        protected abstract Task SendCancelOrderRequestAsync();
-        protected abstract void CancelTransaction();
-
-        string _derived;
-
-        public BfxTransaction(BfxMarket market)
+        internal BfxTransaction(BitFlyerClient client)
         {
-            Market = market;
-            Id = Guid.NewGuid();
-            OpenTime = market.ServerTime;
-            _derived = GetType().Name == nameof(BfxParentTransaction) ? "Parent" : "Child";
+            _client = client;
         }
 
-        public BfxTransaction(BfxMarket2 market)
+        #region Update parent order
+        internal BfxTransaction Update(BfParentOrder order, string parentOrderAcceptanceId)
         {
+            OrderAcceptanceId = parentOrderAcceptanceId;
+            ProductCode = order.Parameters[0].ProductCode;
+            OrderType = order.OrderMethod;
+
+            for (int index = 0; index < order.Parameters.Count; index++)
+            {
+                Children[index].Update(order.Parameters[index]);
+            }
+
             throw new NotImplementedException();
         }
 
-        public bool IsCancelable
+        internal BfxTransaction Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
         {
-            get
+            OrderAcceptanceId = status.ParentOrderAcceptanceId;
+            PagingId = status.PagingId;
+            OrderId = status.ParentOrderId;
+            ProductCode = status.ProductCode;
+            OrderType = status.ParentOrderType;
+            OrderPrice = status.Price;
+            AveragePrice = status.AveragePrice;
+            OrderSize = status.Size;
+            OrderState = status.ParentOrderState;
+            ExpireDate = status.ExpireDate;
+            OrderDate = status.ParentOrderDate;
+            OutstandingSize = status.OutstandingSize;
+            CancelSize = status.CancelSize;
+            ExecutedSize = status.ExecutedSize;
+            TotalCommission = status.TotalCommission;
+
+            TimeInForce = detail.TimeInForce == BfTimeInForce.NotSpecified ? null : detail.TimeInForce;
+            for (int index = 0; index < detail.Parameters.Length; index++)
             {
-                switch (State)
+                Children[index].Update(detail.Parameters[index]);
+            }
+
+            throw new NotImplementedException();
+        }
+
+        internal BfxTransaction OnParentOrderEvent(BfParentOrderEvent e)
+        {
+            switch (e.EventType)
+            {
+                case BfOrderEventType.Order:
+                    OrderAcceptanceId = e.ParentOrderAcceptanceId;
+                    OrderId = e.ParentOrderId;
+                    ProductCode = e.ProductCode;
+                    OrderType = e.ParentOrderType;
+                    OrderState = BfOrderState.Active;
+                    break;
+
+                case BfOrderEventType.Trigger:
+                    Children[e.ChildOrderIndex].UpdateParentTriggerEvent(e);
+                    break;
+
+                case BfOrderEventType.Complete:
+                    break;
+            }
+
+            throw new NotImplementedException();
+        }
+        #endregion Update parent order
+
+        #region Update child order
+        internal BfxTransaction Update(BfChildOrder order, string childOrderAcceptanceId)
+        {
+            OrderAcceptanceId = childOrderAcceptanceId;
+
+            ProductCode = order.ProductCode;
+            OrderType = order.ChildOrderType;
+            Side = order.Side;
+            OrderPrice = order.Price;
+            OrderSize = order.Size;
+            MinuteToExpire = order.MinuteToExpire;
+            TimeInForce = order.TimeInForce;
+
+            return this;
+        }
+
+        public BfxTransaction Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+        {
+            // Set order
+            OrderAcceptanceId = status.ChildOrderAcceptanceId;
+            PagingId = status.PagingId;
+            OrderId = status.ChildOrderId;
+            ProductCode = status.ProductCode;
+            Side = status.Side;
+            OrderType = status.ChildOrderType;
+            OrderPrice = status.Price;
+            AveragePrice = status.AveragePrice;
+            OrderSize = status.Size;
+            OrderState = status.ChildOrderState;
+            ExpireDate = status.ExpireDate;
+            OrderDate = status.ChildOrderDate;
+            OutstandingSize = status.OutstandingSize;
+            CancelSize = status.CancelSize;
+            ExecutedSize = status.ExecutedSize;
+            TotalCommission = status.TotalCommission;
+
+            // Set executions
+            foreach (var exec in execs)
+            {
+                _execs.GetOrAdd(exec.ExecutionId, _ => new BfxExecution(exec));
+            }
+
+            return this;
+        }
+
+        internal BfxTransaction OnParentTriggerEvent(BfParentOrderEvent e)
+        {
+            UpdateParentTriggerEvent(e);
+            return this;
+        }
+
+        internal BfxTransaction OnChildOrderEvent(BfChildOrderEvent e)
+        {
+            switch (e.EventType)
+            {
+                case BfOrderEventType.Order:
+                    OrderAcceptanceId = e.ChildOrderAcceptanceId;
+                    OrderId = e.ChildOrderId;
+                    ProductCode = e.ProductCode;
+                    OrderType = e.ChildOrderType;
+                    OrderState = BfOrderState.Active;
+                    break;
+
+                case BfOrderEventType.Execution:
+                    _execs.GetOrAdd(e.ExecutionId, _ => new BfxExecution(e));
+                    break;
+            }
+
+            throw new NotImplementedException();
+        }
+        #endregion Update child order
+
+        // - 経過時間でリトライ終了のオプション
+        public async Task<string> PlaceOrdertAsync(BfParentOrder order)
+        {
+            for (var retry = 0; retry <= 3; retry++)
+            {
+                _cts.Token.ThrowIfCancellationRequested();
+                var resp = await _client.SendParentOrderAsync(order, _cts.Token);
+                if (!resp.IsError)
                 {
-                    case BfxTransactionState.Idle:
-                        if (OrderState == BfxOrderState.Ordered || OrderState == BfxOrderState.PartiallyExecuted)
-                        {
-                            return true;
-                        }
-                        break;
-
-                    case BfxTransactionState.SendingOrder:
-                        return true;
-
-                    case BfxTransactionState.WaitingOrderAccepted:
-                        return true;
-
-                    case BfxTransactionState.SendingCancel:
-                        return true;
+                    return resp.GetContent().ParentOrderAcceptanceId;
                 }
-                return false;
+
+                _cts.Token.ThrowIfCancellationRequested();
+                Log.Info("Trying retry...");
+                await Task.Delay(5000);
             }
+
+            Log.Error("SendOrderRequest - Retried out");
+            throw new BitFlyerDotNetException();
         }
 
-        public virtual void Cancel()
+        public async Task<string> PlaceOrderAsync(BfChildOrder order)
         {
-            switch (State)
+            for (var retry = 0; retry <= 3; retry++)
             {
-                case BfxTransactionState.Idle:
-                    if (OrderState == BfxOrderState.Ordered || OrderState == BfxOrderState.PartiallyExecuted)
-                    {
-                        SendCancelOrderRequestAsync();
-                    }
-                    break;
-
-                case BfxTransactionState.SendingOrder:
-                    CancelTransaction();
-                    break;
-
-                case BfxTransactionState.WaitingOrderAccepted:
-                    SendCancelOrderRequestAsync();
-                    break;
-
-                case BfxTransactionState.SendingCancel:
-                    CancelTransaction();
-                    break;
-            }
-        }
-
-        protected virtual void ChangeState(BfxTransactionState state)
-        {
-            Log.Trace($"{_derived} transaction state changed: {State} -> {state}");
-            State = state;
-        }
-
-        protected void NotifyEvent(BfxOrderEventType oet, DateTime time, object? parameter)
-        {
-            Market.InvokeOrderTransactionEvent(this, new BfxOrderChangedEventArgs(Order)
-            {
-                EventType = oet,
-                State = State,
-                Time = time,
-                Parameter = parameter,
-            });
-        }
-
-        protected void NotifyEvent(BfxOrderEventType oet) => NotifyEvent(oet, Market.ServerTime, null);
-
-        protected void NotifyChildOrderEvent(BfxOrderEventType oet, int childOrderIndex, BfChildOrderEvent coe)
-        {
-            if (Order.Children.Length == 1)
-            {
-                Market.InvokeOrderTransactionEvent(this, new BfxOrderChangedEventArgs(Order.Children[0])
+                _cts.Token.ThrowIfCancellationRequested();
+                var resp = await _client.SendChildOrderAsync(order, _cts.Token);
+                if (!resp.IsError)
                 {
-                    EventType = oet,
-                    State = State,
-                    Time = coe.EventDate,
-                    Parameter = coe,
-                });
+                    return resp.GetContent().ChildOrderAcceptanceId;
+                }
+
+                Log.Warn($"SendChildOrder failed: {resp.StatusCode} {resp.ErrorMessage}");
+                _cts.Token.ThrowIfCancellationRequested();
+                Log.Info("Trying retry...");
+                await Task.Delay(3000);
             }
-            else
-            {
-                Market.InvokeOrderTransactionEvent(this, new BfxOrderChangedEventArgs(Order)
-                {
-                    EventType = BfxOrderEventType.ChildOrderEvent,
-                    State = State,
-                    Time = coe.EventDate,
-                    Parameter = coe,
-                    ChildEventType = oet,
-                    ChildOrderIndex = childOrderIndex,
-                });
-            }
+
+            Log.Error("SendOrderRequest - Retried out");
+            throw new BitFlyerDotNetException();
         }
 
-        protected void NotifyEvent(BfxOrderEventType oet, BfChildOrderEvent coe) => NotifyEvent(oet, coe.EventDate, coe);
-        protected void NotifyEvent(BfxOrderEventType oet, BfParentOrderEvent poe) => NotifyEvent(oet, poe.EventDate, poe);
+        protected async Task CancelOrderAsync()
+        {
+            if (State == BfxTransactionState.SendingOrder)
+            {
+                _cts.Token.ThrowIfCancellationRequested();
+            }
+
+            try
+            {
+                var resp = await _client.CancelParentOrderAsync(ProductCode, OrderId, string.Empty, _cts.Token);
+                if (!resp.IsError)
+                {
+                }
+                else
+                {
+                }
+            }
+            catch (OperationCanceledException ex)
+            {
+            }
+        }
     }
 }

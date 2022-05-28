@@ -58,7 +58,7 @@ namespace BitFlyerDotNet.Historical
             EndExecutedTime = DateTime.MinValue;
         }
 
-        public void Update(IBfExecution exec)
+        public void Update(BfExecution exec)
         {
             StartExecutionId = Math.Min(exec.ExecutionId, StartExecutionId);
             StartExecutedTime = (exec.ExecutedTime < StartExecutedTime) ? exec.ExecutedTime : StartExecutedTime;

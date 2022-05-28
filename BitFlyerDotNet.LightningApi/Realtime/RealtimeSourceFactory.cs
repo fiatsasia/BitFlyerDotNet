@@ -135,8 +135,8 @@ namespace BitFlyerDotNet.LightningApi
 #endif
         }
 
-        ConcurrentDictionary<string, IObservable<BfaExecution>> _executionSources = new ();
-        public IObservable<BfaExecution> GetExecutionSource(string productCode, bool startPending = false)
+        ConcurrentDictionary<string, IObservable<BfExecution>> _executionSources = new ();
+        public IObservable<BfExecution> GetExecutionSource(string productCode, bool startPending = false)
         {
             var result = _executionSources.GetOrAdd(productCode, _ =>
             {
@@ -163,7 +163,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             if (_executionSources.TryGetValue(productCode, out var source))
             {
-                if (source is IConnectableObservable<BfaExecution> publishSource)
+                if (source is IConnectableObservable<BfExecution> publishSource)
                 {
                     publishSource.Connect().AddTo(_disposables);
                 }
@@ -174,7 +174,7 @@ namespace BitFlyerDotNet.LightningApi
         {
             foreach (var source in _executionSources.Values)
             {
-                if (source is IConnectableObservable<BfaExecution> publishSource)
+                if (source is IConnectableObservable<BfExecution> publishSource)
                 {
                     publishSource.Connect().AddTo(_disposables);
                 }

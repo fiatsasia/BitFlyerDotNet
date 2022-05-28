@@ -29,9 +29,9 @@ namespace BitFlyerDotNet.Trading
 
     internal static class BfOrderConvertExtension
     {
-        public static BfParentOrderRequestParameter ToParameter(this BfChildOrderRequest child)
+        public static BfParentOrderParameter ToParameter(this BfChildOrder child)
         {
-            return new BfParentOrderRequestParameter
+            return new BfParentOrderParameter
             {
                 ProductCode = child.ProductCode,
                 ConditionType = child.ChildOrderType,

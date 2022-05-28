@@ -14,10 +14,9 @@ using System.IO;
 using System.Xml.Linq;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
+using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
-using BitFlyerDotNet.Historical;
-using Newtonsoft.Json;
 
 namespace TradingApiTests
 {
@@ -32,11 +31,7 @@ namespace TradingApiTests
         static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
         const char ESCAPE = (char)0x1b;
 
-        static BfxAccount _account;
-        static BfxMarket _market;
-        static OrderSource _orderCache;
         static Dictionary<string, string> Properties;
-        static ConcurrentDictionary<Guid, IBfxTransaction> _transactions = new ConcurrentDictionary<Guid, IBfxTransaction>();
         static decimal _orderSize;
 
         static async Task Main(string[] args)
@@ -60,14 +55,6 @@ namespace TradingApiTests
             {
                 app.OrderChanged += OnOrderChanged;
                 app.PositionChanged += OnPositionChanged;
-                await app.InitializeProductAsync(ProductCode);
-
-                _market = app.GetMarket(ProductCode);
-
-                //await _account.OpenAsync();
-                //_orderCache = new OrderSource(_account.Client, connStr, ProductCode);
-                //_market.Open(_orderCache);
-                //_market.GetActiveTransactions().ForEach(e => _transactions[Guid.NewGuid()] = e);
 
                 while (true)
                 {
@@ -78,9 +65,7 @@ namespace TradingApiTests
                     Console.WriteLine("");
                     Console.WriteLine("Active O)rders");
                     Console.WriteLine("T)oday's Profit");
-                    Console.WriteLine("F)ind child orders");
                     Console.WriteLine("Active P)ositions");
-                    Console.WriteLine("R)etrieve child orders");
                     Console.WriteLine("");
                     Console.Write("Main>");
 
@@ -93,15 +78,11 @@ namespace TradingApiTests
                                 break;
 
                             case 'C':
-                                ConditionalOrders();
+                                ConditionalOrders(app);
                                 break;
 
                             case 'U':
-                                UnexecutableOrders();
-                                break;
-
-                            case 'F':
-                                FindOrders();
+                                UnexecutableOrders(app);
                                 break;
 
                             case 'P':
@@ -109,15 +90,15 @@ namespace TradingApiTests
                                 break;
 
                             case 'O':
-                                GetActiveOrders();
-                                break;
-
-                            case 'R':
-                                RetrieveChildOrders();
+                                var orders = await app.GetActiveOrdersAsync(ProductCode);
+                                foreach (var order in orders)
+                                {
+                                    PrintOrder(order);
+                                }
                                 break;
 
                             case 'T':
-                                Console.WriteLine($"Profit {_orderCache.CalculateProfit(TimeSpan.FromDays(1))} JPY");
+                                //Console.WriteLine($"Profit {_orderCache.CalculateProfit(TimeSpan.FromDays(1))} JPY");
                                 break;
 
                             case ESCAPE:
@@ -166,156 +147,27 @@ namespace TradingApiTests
             }
         }
 
-        static void PlaceOrder(IBfxOrder order)
-        {
-            var tran = _market.PlaceOrder(order);
-            _transactions[tran.Id] = tran;
-        }
-
-        static void PlaceOrder(IBfxOrder order, TimeSpan timeToExpore, BfTimeInForce timeInForce)
-        {
-            var tran = _market.PlaceOrder(order, timeToExpore, timeInForce);
-            _transactions[tran.Id] = tran;
-        }
-
         static void CancelOrder()
         {
-            var tran = _transactions.Values.Where(e => e.IsCancelable).OrderBy(e => e.OpenTime).FirstOrDefault();
+            /*var tran = _transactions.Values.Where(e => e.IsCancelable).OrderBy(e => e.OpenTime).FirstOrDefault();
             if (tran != null)
             {
                 tran.Cancel();
-            }
+            }*/
         }
 
-        static void ClosePositions()
+        static async void ClosePositions(BfxApplication app)
         {
-            if (_account.Positions.TotalSize > 0m)
+            /*if (_account.Positions.TotalSize > 0m)
             {
-                var tran = _market.PlaceOrder(BfxOrder.Market(ProductCode, _account.Positions.Side.GetOpposite(), _account.Positions.TotalSize));
-                _transactions[tran.Id] = tran;
-            }
-        }
-
-        static void GetActiveOrders()
-        {
-            Console.Write("C)hild P)arent I)nternal : ");
-            while (true)
-            {
-                switch (GetCh())
-                {
-                    case 'I':
-                        GetInternalActiveOrders();
-                        return;
-
-                    case 'C':
-                        GetActiveChildOrders();
-                        return;
-
-                    case 'P':
-                        GetActiveParentOrders();
-                        return;
-
-                    case ESCAPE:
-                        return;
-                }
-            }
-        }
-
-        static void GetInternalActiveOrders()
-        {
-            foreach (var order in _market.GetActiveTransactions().Select(e => e.Order))
-            {
-                Console.WriteLine($"{order.OrderDate} {order.OrderType} {order.State}");
-            }
-        }
-
-        static void GetActiveParentOrders()
-        {
-            var parents = _orderCache.GetActiveParentOrders();
-            foreach (var parent in parents)
-            {
-                Console.WriteLine($"{parent.OrderDate} {parent.OrderType}");
-                foreach (var child in parent.Children)
-                {
-                    Console.WriteLine(TabString + $"{child.OrderDate} {child.OrderType} {child.Side}");
-                    foreach (var exec in child.Executions)
-                    {
-                        Console.WriteLine(TabString + TabString + $"{exec.ExecutedTime} P:{exec.Price} S:{exec.Size}");
-                    }
-                }
-            }
-        }
-
-        static void GetActiveChildOrders()
-        {
-            var children = _orderCache.GetActiveIndependentChildOrders();
-            foreach (var child in children)
-            {
-                Console.WriteLine($"{child.OrderDate} {child.OrderType} {child.Side}");
-                foreach (var exec in child.Executions)
-                {
-                    Console.WriteLine(TabString + $"{exec.ExecutedTime} P:{exec.Price} S:{exec.Size}");
-                }
-            }
+                await app.PlaceOrderAsync(BfChildOrderRequest.Market(ProductCode, _account.Positions.Side.GetOpposite(), _account.Positions.TotalSize));
+            }*/
         }
 
         static void GetActivePositions()
         {
-            _account.Positions.GetActivePositions().ForEach(e => PrintPosition(e));
-            DumpResponse(_account.Client.GetPositions(ProductCode));
-        }
-
-        static void FindOrders()
-        {
-            Console.Write("Child order acceptance ID : ");
-            var coai = Console.ReadLine();
-            Console.Write("A)ctive Comp)leted C)anceled E)xpired R)ejected");
-            BfOrderState state;
-            switch (GetCh())
-            {
-                case 'A':
-                    state = BfOrderState.Active;
-                    break;
-
-                case 'P':
-                    state = BfOrderState.Completed;
-                    break;
-
-                case 'C':
-                    state = BfOrderState.Canceled;
-                    break;
-
-                case 'E':
-                    state = BfOrderState.Expired;
-                    break;
-
-                case 'R':
-                    state = BfOrderState.Rejected;
-                    break;
-
-                default:
-                    state = BfOrderState.Unknown;
-                    break;
-            }
-
-            var resp = _account.Client.GetChildOrders(ProductCode, orderState: state, childOrderAcceptanceId: coai);
-            var jObj = JsonConvert.DeserializeObject(resp.Json);
-            Console.WriteLine(JsonConvert.SerializeObject(jObj, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
-        }
-
-        static string _parentOrderId;
-        static void RetrieveChildOrders()
-        {
-            if (string.IsNullOrEmpty(_parentOrderId))
-            {
-                var parentOrder = _account.Client.GetParentOrders(ProductCode, BfOrderState.Active).GetContent().FirstOrDefault();
-                if (parentOrder == null)
-                {
-                    return;
-                }
-                _parentOrderId = parentOrder.ParentOrderId;
-            }
-            DumpResponse(_account.Client.GetChildOrders(ProductCode, parentOrderId: _parentOrderId));
+            /*_account.Positions.GetActivePositions().ForEach(e => PrintPosition(e));
+            DumpResponse(_account.Client.GetPositions(ProductCode));*/
         }
 
         static void OnPositionChanged(object sender, BfxPositionChangedEventArgs ev)
@@ -328,73 +180,58 @@ namespace TradingApiTests
             var sb = new List<string>();
             sb.Add(e.Time.ToString(TimeFormat));
 
-            IBfxOrder order;
             if (e.EventType != BfxOrderEventType.ChildOrderEvent)
             {
-                order = e.Order;
                 sb.Add(e.EventType.ToString());
-                if (e.EventType == BfxOrderEventType.Canceled && _account.Positions.TotalSize > 0m)
-                {
-                    Task.Run(() =>
-                    {
-                        Console.WriteLine($"Position is alive. size:{_account.Positions.TotalSize}");
-                        Console.Write("Close positions ? (y/n)");
-                        if (GetCh() == 'Y')
-                        {
-                            ClosePositions();
-                        }
-                    });
-                }
             }
             else
             {
-                order = e.Order.Children[e.ChildOrderIndex];
                 sb.Add(e.ChildEventType.ToString());
             }
 
-            sb.Add($"{order.ProductCode}");
-            sb.Add($"{order.OrderType}");
-            if (order.Side.HasValue)
+            sb.Add($"{e.Order.ProductCode}");
+            sb.Add($"{e.Order.OrderType}");
+            if (e.Order.Side.HasValue)
             {
-                sb.Add($"{order.Side}");
+                sb.Add($"{e.Order.Side}");
             }
-            if (order.OrderPrice.HasValue)
+            if (e.Order.OrderPrice.HasValue)
             {
-                sb.Add($"P:{order.OrderPrice}");
+                sb.Add($"P:{e.Order.OrderPrice}");
             }
-            if (order.OrderSize.HasValue)
+            if (e.Order.OrderSize.HasValue)
             {
-                sb.Add($"S:{order.OrderSize}");
+                sb.Add($"S:{e.Order.OrderSize}");
             }
-            if (order.ExecutedPrice.HasValue)
+            if (e.Order.ExecutedPrice.HasValue)
             {
-                sb.Add($"EP:{order.ExecutedPrice}");
+                sb.Add($"EP:{e.Order.ExecutedPrice}");
             }
-            if (order.ExecutedSize.HasValue)
+            if (e.Order.ExecutedSize.HasValue)
             {
-                sb.Add($"ES:{order.ExecutedSize}");
+                sb.Add($"ES:{e.Order.ExecutedSize}");
             }
             Console.WriteLine(string.Join(' ', sb));
         }
 
         static void PrintPosition(BfxPosition pos)
         {
-            if (pos.IsOpened)
+            /*if (pos.IsOpened)
             {
                 Console.WriteLine($"{pos.Open.ToString(TimeFormat)} Position opened {pos.Side} P:{pos.OpenPrice} S:{pos.Size} TS:{_account.Positions.TotalSize}");
             }
             else // Closed
             {
                 Console.WriteLine($"{pos.Close.Value.ToString(TimeFormat)} Position closed {pos.Side} P:{pos.ClosePrice} S:{pos.Size} TS:{_account.Positions.TotalSize} PT:{pos.Profit}");
-            }
+            }*/
         }
 
-        static void PrintOrder(IBfxOrder order)
+        static void PrintOrder(BfxOrderStatus order)
         {
 
         }
 
-        static void DumpResponse(IBitFlyerResponse resp)
+        static void DumpResponse(BitFlyerResponse resp)
         {
             var jObj = JsonConvert.DeserializeObject(resp.Json);
             Console.WriteLine(JsonConvert.SerializeObject(jObj, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));

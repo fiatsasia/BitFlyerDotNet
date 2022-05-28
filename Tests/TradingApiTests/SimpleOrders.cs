@@ -16,6 +16,8 @@ namespace TradingApiTests
     {
         static async void SimpleOrders(BfxApplication app)
         {
+            var mds = await app.GetMarketDataSourceAsync(ProductCode);
+
             while (true)
             {
                 Console.WriteLine("L)imit price order best ask/bid price");
@@ -31,45 +33,41 @@ namespace TradingApiTests
                 switch (GetCh())
                 {
                     case 'L':
-                        var side = SelectSide();
-                        if (side != BfTradeSide.Unknown)
                         {
-                            await app.PlaceOrderAsync(BfxOrder.Limit(ProductCode, side, _market.CurrentPrice, _orderSize));
+                            var side = SelectSide();
+                            if (side != BfTradeSide.Unknown)
+                            {
+                                await app.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, side, mds.LastTradedPrice, _orderSize));
+                            }
                         }
                         break;
 
                     case 'M':
-                        switch (SelectSide())
                         {
-                            case BfTradeSide.Buy:
-                                PlaceOrder(BfxOrder.Market(ProductCode, BfTradeSide.Buy, _orderSize));
-                                break;
-
-                            case BfTradeSide.Sell:
-                                PlaceOrder(BfxOrder.Market(ProductCode, BfTradeSide.Sell, _orderSize));
-                                break;
+                            var side = SelectSide();
+                            if (side != BfTradeSide.Unknown)
+                            {
+                                await app.PlaceOrderAsync(BfOrderFactory.Market(ProductCode, side, mds.LastTradedPrice));
+                            }
                         }
                         break;
 
                     case 'T':
-                        switch (SelectSide())
                         {
-                            case BfTradeSide.Buy:
-                                PlaceOrder(BfxOrder.Trailing(ProductCode, BfTradeSide.Buy, PnLGap * 2, _orderSize));
-                                break;
-
-                            case BfTradeSide.Sell:
-                                PlaceOrder(BfxOrder.Trailing(ProductCode, BfTradeSide.Sell, PnLGap * 2, _orderSize));
-                                break;
+                            var side = SelectSide();
+                            if (side != BfTradeSide.Unknown)
+                            {
+                                await app.PlaceOrderAsync(BfOrderFactory.Trail(ProductCode, side, PnLGap * 2, _orderSize));
+                            }
                         }
                         break;
 
                     case 'E':
-                        PlaceOrder(BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.FromMinutes(1), BfTimeInForce.NotSpecified);
+                        await app.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize, minuteToExpire: 1));
                         break;
 
                     case 'F':
-                        PlaceOrder(BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize), TimeSpan.Zero, BfTimeInForce.FOK);
+                        await app.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize, timeInForce: BfTimeInForce.FOK));
                         break;
 
                     case 'C':
@@ -77,7 +75,7 @@ namespace TradingApiTests
                         break;
 
                     case 'X':
-                        ClosePositions();
+                        ClosePositions(app);
                         break;
 
                     case ESCAPE:

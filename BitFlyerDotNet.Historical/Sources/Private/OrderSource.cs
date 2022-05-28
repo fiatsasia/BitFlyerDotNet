@@ -15,7 +15,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    public class OrderSource : IBfOrderSource, IDisposable
+    public class OrderSource : IDisposable
     {
         BitFlyerClient _client;
         string _productCode;
@@ -97,7 +97,7 @@ namespace BitFlyerDotNet.Historical
                     _ctx.ParentOrders.Add(new DbParentOrder(_productCode, parent, detail));
                 }
 
-                var children = new Queue<BfaChildOrder>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
+                var children = new Queue<BfChildOrderStatus>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
                 var baseIndex = -1;
                 if (children.Count > 0)
                 {
@@ -249,7 +249,7 @@ namespace BitFlyerDotNet.Historical
 
                 // Matches child orders and parent orders with generating child index.
                 // - OCO and only single active child, 
-                var children = new Queue<BfaChildOrder>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
+                var children = new Queue<BfChildOrderStatus>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
                 int baseIndex = -1;
                 if (children.Count > 0)
                 {
@@ -288,7 +288,7 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         // Update parent orders cache
         //======================================================================
-        public void OpenParentOrder(BfParentOrderRequest req, BfParentOrderResponse resp) => _procQ.Add(() =>
+        public void OpenParentOrder(BfParentOrder req, BfParentOrderResponse resp) => _procQ.Add(() =>
         {
             Log.Trace("OpenParentOrder");
             _ctx.Insert(_productCode, req, resp);
@@ -335,7 +335,7 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         // Update child orders cache
         //======================================================================
-        public void OpenChildOrder(BfChildOrderRequest req, BfChildOrderResponse resp) => _procQ.Add(() =>
+        public void OpenChildOrder(BfChildOrder req, BfChildOrderResponse resp) => _procQ.Add(() =>
         {
             Log.Trace("OpenChildOrder");
             _ctx.Insert(req, resp);
@@ -404,7 +404,7 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         // Query cache
         //======================================================================
-        public IEnumerable<IBfParentOrder> GetActiveParentOrders()
+        public IEnumerable<DbParentOrder> GetActiveParentOrders()
         {
             lock (_txLock)
             {
@@ -421,7 +421,7 @@ namespace BitFlyerDotNet.Historical
             }
         }
 
-        public IEnumerable<IBfChildOrder> GetActiveIndependentChildOrders()
+        public IEnumerable<DbChildOrder> GetActiveIndependentChildOrders()
         {
             lock (_txLock)
             {
@@ -434,7 +434,7 @@ namespace BitFlyerDotNet.Historical
             }
         }
 
-        public IBfParentOrder GetParentOrder(string parentOrderAcceptanceId)
+        public DbParentOrder GetParentOrder(string parentOrderAcceptanceId)
         {
             lock (_txLock)
             {
@@ -453,7 +453,7 @@ namespace BitFlyerDotNet.Historical
             }
         }
 
-        public IBfChildOrder GetChildOrder(string childOrderAcceptanceId)
+        public DbChildOrder GetChildOrder(string childOrderAcceptanceId)
         {
             lock (_txLock)
             {

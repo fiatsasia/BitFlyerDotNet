@@ -15,7 +15,7 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfParentOrderRequestParameter
+    public class BfParentOrderParameter
     {
         public string ProductCode { get; set; }
 
@@ -26,184 +26,45 @@ namespace BitFlyerDotNet.LightningApi
         public BfTradeSide Side { get; set; }
 
         [JsonConverter(typeof(DecimalJsonConverter))]
-        public decimal Price { get; set; }
+        public decimal? Price { get; set; }
         public bool ShouldSerializePrice() { return ConditionType == BfOrderType.Limit || ConditionType == BfOrderType.StopLimit; }
 
         [JsonConverter(typeof(DecimalJsonConverter))]
         public decimal Size { get; set; }
 
         [JsonConverter(typeof(DecimalJsonConverter))]
-        public decimal TriggerPrice { get; set; }
+        public decimal? TriggerPrice { get; set; }
         public bool ShouldSerializeTriggerPrice() { return ConditionType == BfOrderType.Stop || ConditionType == BfOrderType.StopLimit; }
 
         [JsonConverter(typeof(DecimalJsonConverter))]
-        public decimal Offset { get; set; }
+        public decimal? Offset { get; set; }
         public bool ShouldSerializeOffset() { return ConditionType == BfOrderType.Trail; }
-
-        // Message builders
-        public static BfParentOrderRequestParameter Market(string productCode, BfTradeSide side, decimal size)
-        {
-            return new ()
-            {
-                ProductCode = productCode,
-                ConditionType = BfOrderType.Market,
-                Side = side,
-                Size = size,
-            };
-        }
-
-        public static BfParentOrderRequestParameter Limit(string productCode, BfTradeSide side, decimal price, decimal size)
-        {
-            return new ()
-            {
-                ProductCode = productCode,
-                ConditionType = BfOrderType.Limit,
-                Side = side,
-                Size = size,
-                Price = price,
-            };
-        }
-
-        public static BfParentOrderRequestParameter Stop(string productCode, BfTradeSide side, decimal triggerPrice, decimal size)
-        {
-            if (size > triggerPrice)
-            {
-                throw new ArgumentException();
-            }
-
-            return new ()
-            {
-                ProductCode = productCode,
-                ConditionType = BfOrderType.Stop,
-                Side = side,
-                TriggerPrice = triggerPrice,
-                Size = size,
-            };
-        }
-
-        public static BfParentOrderRequestParameter StopLimit(string productCode, BfTradeSide side, decimal triggerPrice, decimal price, decimal size)
-        {
-            if (size > price || size > triggerPrice)
-            {
-                throw new ArgumentException();
-            }
-
-            return new ()
-            {
-                ProductCode = productCode,
-                ConditionType = BfOrderType.StopLimit,
-                Side = side,
-                Price = price,
-                Size = size,
-                TriggerPrice = triggerPrice
-            };
-        }
-
-        public static BfParentOrderRequestParameter Trail(string productCode, BfTradeSide side, decimal offset, decimal size)
-        {
-            if (offset <= 0m)
-            {
-                throw new ArgumentException();
-            }
-
-            return new ()
-            {
-                ProductCode = productCode,
-                ConditionType = BfOrderType.Trail,
-                Side = side,
-                Offset = offset,
-                Size = size,
-            };
-        }
     }
 
-    public class BfParentOrderRequest
+    public class BfParentOrder
     {
         [JsonConverter(typeof(StringEnumConverter))]
         public BfOrderType OrderMethod { get; set; }
 
-        public int MinuteToExpire { get; set; }
-        public bool ShouldSerializeMinuteToExpire() { return MinuteToExpire > 0; } // default = 43200 (30 days)
+        public int? MinuteToExpire { get; set; }
+        public bool ShouldSerializeMinuteToExpire() => (MinuteToExpire.HasValue && MinuteToExpire.Value > 0); // default = 43200 (30 days)
 
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfTimeInForce TimeInForce { get; set; }
-        public bool ShouldSerializeTimeInForce() { return TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
+        public BfTimeInForce? TimeInForce { get; set; }
+        public bool ShouldSerializeTimeInForce() => (TimeInForce.HasValue && TimeInForce.Value != BfTimeInForce.NotSpecified); // default = GTC
 
-        public List<BfParentOrderRequestParameter> Parameters { get; set; } = new ();
+        public List<BfParentOrderParameter> Parameters { get; set; } = new ();
 
-        // Message builders
-        public static BfParentOrderRequest Stop(string productCode, BfTradeSide side, decimal triggerPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+
+        // This will be used order factory
+        public static implicit operator BfParentOrderParameter(BfParentOrder order)
         {
-            return new ()
+            if (order.OrderMethod != BfOrderType.Simple)
             {
-                OrderMethod = BfOrderType.Simple,
-                MinuteToExpire = minuteToExpire,
-                TimeInForce = timeInForce,
-                Parameters = new () { BfParentOrderRequestParameter.Stop(productCode, side, triggerPrice, size) }
-            };
-        }
-
-        public static BfParentOrderRequest StopLimit(string productCode, BfTradeSide side, decimal triggerPrice, decimal orderPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
-        {
-            return new ()
-            {
-                OrderMethod = BfOrderType.Simple,
-                MinuteToExpire = minuteToExpire,
-                TimeInForce = timeInForce,
-                Parameters = new () { BfParentOrderRequestParameter.StopLimit(productCode, side, triggerPrice, orderPrice, size) }
-            };
-        }
-
-        public static BfParentOrderRequest Trail(string productCode, BfTradeSide side, decimal offset, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
-        {
-            return new ()
-            {
-                OrderMethod = BfOrderType.Simple,
-                MinuteToExpire = minuteToExpire,
-                TimeInForce = timeInForce,
-                Parameters = new () { BfParentOrderRequestParameter.Trail(productCode, side, offset, size) }
-            };
-        }
-
-        public static BfParentOrderRequest IFD(BfParentOrderRequestParameter first, BfParentOrderRequestParameter second, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
-        {
-            return new ()
-            {
-                OrderMethod = BfOrderType.IFD,
-                MinuteToExpire = minuteToExpire,
-                TimeInForce = timeInForce,
-                Parameters = new () { first, second }
-            };
-        }
-
-        public static BfParentOrderRequest OCO(BfParentOrderRequestParameter first, BfParentOrderRequestParameter second, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
-        {
-            if (first.ConditionType == second.ConditionType && first.Side == second.Side)
-            {
-                throw new ArgumentException("OCO child orders should not be same."); // Ordering limitations will start at Dec/2/2020
+                throw new ArgumentException($"{order.OrderMethod} can not be parameter of parent.");
             }
-            return new ()
-            {
-                OrderMethod = BfOrderType.OCO,
-                MinuteToExpire = minuteToExpire,
-                TimeInForce = timeInForce,
-                Parameters = new () { first, second }
-            };
-        }
 
-        public static BfParentOrderRequest IFDOCO(BfParentOrderRequestParameter ifdone, BfParentOrderRequestParameter ocoFirst, BfParentOrderRequestParameter ocoSecond, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
-        {
-            if (ocoFirst.ConditionType == ocoSecond.ConditionType && ocoFirst.Side == ocoSecond.Side)
-            {
-                throw new ArgumentException("OCO child orders should not be same."); // Ordering limitations will start at Dec/2/2020
-            }
-            return new ()
-            {
-                OrderMethod = BfOrderType.IFDOCO,
-                MinuteToExpire = minuteToExpire,
-                TimeInForce = timeInForce,
-                Parameters = new () { ifdone, ocoFirst, ocoSecond }
-            };
+            return order.Parameters[0];
         }
     }
 
@@ -215,7 +76,7 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        void Validate(ref BfParentOrderRequest request)
+        void Validate(ref BfParentOrder request)
         {
             if (!request.OrderMethod.IsOrderMethod())
             {
@@ -246,10 +107,10 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfParentOrderResponse>> SendParentOrderAsync(BfParentOrderRequest request, CancellationToken ct)
+        public Task<BitFlyerResponse<BfParentOrderResponse>> SendParentOrderAsync(BfParentOrder request, CancellationToken ct)
         {
             Validate(ref request);
-            return PostPrivateAsync<BfParentOrderResponse>(nameof(SendParentOrder), request, ct);
+            return PostPrivateAsync<BfParentOrderResponse>(nameof(SendParentOrderAsync), request, ct);
         }
 
         /// <summary>
@@ -258,7 +119,7 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfParentOrderResponse> SendParentOrder(BfParentOrderRequest request)
-            => SendParentOrderAsync(request, CancellationToken.None).Result;
+        public async Task<BfParentOrderResponse> SendParentOrderAsync(BfParentOrder request)
+            => (await SendParentOrderAsync(request, CancellationToken.None)).GetContent();
     }
 }

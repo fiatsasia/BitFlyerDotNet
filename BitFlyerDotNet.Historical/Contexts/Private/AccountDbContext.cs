@@ -81,7 +81,7 @@ namespace BitFlyerDotNet.Historical
             => GetChildOrders().Where(e => e.ProductCode == productCode && e.ParentOrderAcceptanceId == parentOrderAcceptanceId && e.ChildOrderIndex == childOrderIndex).FirstOrDefault();
 
         // Parent orders
-        public void Insert(string productCode, BfParentOrderRequest req, BfParentOrderResponse resp)
+        public void Insert(string productCode, BfParentOrder req, BfParentOrderResponse resp)
         {
             ParentOrders.Add(new DbParentOrder(productCode, req, resp));
             for (int childOrderIndex = 0; childOrderIndex < req.Parameters.Count; childOrderIndex++)
@@ -91,26 +91,26 @@ namespace BitFlyerDotNet.Historical
         }
 
         // Child orders
-        public void Insert(BfChildOrderRequest req, BfChildOrderResponse resp)
+        public void Insert(BfChildOrder req, BfChildOrderResponse resp)
         {
             ChildOrders.Add(new DbChildOrder(req, resp.ChildOrderAcceptanceId));
         }
 
-        public void Update(string productCode, BfaChildOrder order)
+        public void Update(string productCode, BfChildOrderStatus order)
         {
             GetChildOrders().Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).First().Update(order);
         }
 
-        public void Upsert(string productCode, BfaChildOrder order)
+        public void Upsert(string productCode, BfChildOrderStatus order)
         {
             var rec = GetChildOrders().Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
             if (rec == default) { ChildOrders.Add(new DbChildOrder(productCode, order)); }
             else { rec.Update(order); }
         }
 
-        public void Upsert(string productCode, IEnumerable<BfaChildOrder> orders) => orders.ForEach(e => Upsert(productCode, e));
+        public void Upsert(string productCode, IEnumerable<BfChildOrderStatus> orders) => orders.ForEach(e => Upsert(productCode, e));
 
-        public void Upsert(string productCode, BfaChildOrder order, string parentOrderAcceptanceId, string parentOrderId, int childOrderIndex)
+        public void Upsert(string productCode, BfChildOrderStatus order, string parentOrderAcceptanceId, string parentOrderId, int childOrderIndex)
         {
             var rec = GetChildOrders().Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
             if (rec == default)
@@ -130,7 +130,7 @@ namespace BitFlyerDotNet.Historical
             }
         }
 
-        public void Upsert(string productCode, BfaChildOrder order, BfaParentOrderDetail detail, int childOrderIndex)
+        public void Upsert(string productCode, BfChildOrderStatus order, BfParentOrderDetailStatus detail, int childOrderIndex)
         {
             var rec = GetChildOrders().Where(e => e.ProductCode == productCode && e.AcceptanceId == order.ChildOrderAcceptanceId).FirstOrDefault();
             if (rec == default)
@@ -146,7 +146,7 @@ namespace BitFlyerDotNet.Historical
             }
         }
 
-        public void InsertIfNotExits(string productCode, BfaPrivateExecution exec)
+        public void InsertIfNotExits(string productCode, BfPrivateExecution exec)
         {
             var rec = GetExecutions().Where(e => e.ExecutionId == exec.ExecutionId).FirstOrDefault();
             if (rec == default)
@@ -155,6 +155,6 @@ namespace BitFlyerDotNet.Historical
             }
         }
 
-        public void InsertIfNotExits(string productCode, IEnumerable<BfaPrivateExecution> execs) => execs.ForEach(e => InsertIfNotExits(productCode, e));
+        public void InsertIfNotExits(string productCode, IEnumerable<BfPrivateExecution> execs) => execs.ForEach(e => InsertIfNotExits(productCode, e));
     }
 }

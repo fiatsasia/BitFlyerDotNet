@@ -13,7 +13,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    public class DbPrivateExecution : IBfPrivateExecution
+    public class DbPrivateExecution
     {
         [Required]
         [Column(Order = 0)]
@@ -62,7 +62,7 @@ namespace BitFlyerDotNet.Historical
         {
         }
 
-        public DbPrivateExecution(string productCode, BfaPrivateExecution exec)
+        public DbPrivateExecution(string productCode, BfPrivateExecution exec)
         {
             ProductCode = productCode;
             ExecutionId = exec.ExecutionId;

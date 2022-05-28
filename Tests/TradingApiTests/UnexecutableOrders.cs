@@ -14,8 +14,10 @@ namespace TradingApiTests
 {
     partial class Program
     {
-        static void UnexecutableOrders()
+        static async void UnexecutableOrders(BfxApplication app)
         {
+            var mds = await app.GetMarketDataSourceAsync(ProductCode);
+
             while (true)
             {
                 Console.WriteLine("===================================================================");
@@ -32,39 +34,39 @@ namespace TradingApiTests
                 switch (GetCh())
                 {
                     case 'L':
-                        PlaceOrder(BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize));
+                        await app.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize));
                         break;
 
                     case 'S': // Stop sell
-                        PlaceOrder(BfxOrder.Stop(ProductCode, BfTradeSide.Sell, _market.BestAskPrice - UnexecutableGap, _orderSize));
+                        await app.PlaceOrderAsync(BfOrderFactory.Stop(ProductCode, BfTradeSide.Sell, mds.BestAsk - UnexecutableGap, _orderSize));
                         break;
 
                     case 'I':
-                        PlaceOrder(BfxOrder.IFD(
-                            BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize),
-                            BfxOrder.Limit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize)
+                        await app.PlaceOrderAsync(BfOrderFactory.IFD(
+                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize),
+                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, mds.BestAsk + UnexecutableGap, _orderSize)
                         ));
                         break;
 
                     case 'O':
-                        PlaceOrder(BfxOrder.OCO(
-                            BfxOrder.StopLimit(ProductCode, BfTradeSide.Sell, _market.LastTradedPrice + UnexecutableGap, _market.BestAskPrice + UnexecutableGap, _orderSize),
-                            BfxOrder.StopLimit(ProductCode, BfTradeSide.Buy, _market.LastTradedPrice - UnexecutableGap, _market.BestBidPrice -UnexecutableGap, _orderSize)
+                        await app.PlaceOrderAsync(BfOrderFactory.OCO(
+                            BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Sell, mds.LastTradedPrice + UnexecutableGap, mds.BestAsk + UnexecutableGap, _orderSize),
+                            BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Buy, mds.LastTradedPrice - UnexecutableGap, mds.BestBid -UnexecutableGap, _orderSize)
                         ));
                         break;
 
                     case '3':
-                        PlaceOrder(BfxOrder.OCO(
-                            BfxOrder.Limit(ProductCode, BfTradeSide.Buy, _market.BestBidPrice - UnexecutableGap, _orderSize),
-                            BfxOrder.Limit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice + UnexecutableGap, _orderSize)));
+                        await app.PlaceOrderAsync(BfOrderFactory.OCO(
+                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize),
+                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, mds.BestAsk + UnexecutableGap, _orderSize)));
                         break;
 
                     case '1':
-                        PlaceOrder(BfxOrder.StopLimit(ProductCode, BfTradeSide.Sell, _market.BestAskPrice - UnexecutableGap, _market.BestAskPrice - UnexecutableGap, _orderSize));
+                        await app.PlaceOrderAsync(BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Sell, mds.BestAsk - UnexecutableGap, mds.BestAsk - UnexecutableGap, _orderSize));
                         break;
 
                     case 'C': CancelOrder(); break;
-                    case 'X': ClosePositions(); break;
+                    case 'X': ClosePositions(app); break;
                     case ESCAPE: return;
                 }
             }

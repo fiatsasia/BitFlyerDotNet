@@ -13,7 +13,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    public class DbChildOrder : IBfChildOrder
+    public class DbChildOrder
     {
         [Key]
         [Column(Order = 0)]
@@ -88,13 +88,13 @@ namespace BitFlyerDotNet.Historical
         public int ChildOrderIndex { get; set; }
 
         [NotMapped]
-        public IBfPrivateExecution[] Executions { get; set; }
+        public DbPrivateExecution[] Executions { get; set; }
 
         public DbChildOrder()
         {
         }
 
-        public DbChildOrder(BfChildOrderRequest request, string childOrderAcceptanceId)
+        public DbChildOrder(BfChildOrder request, string childOrderAcceptanceId)
         {
             AcceptanceId = childOrderAcceptanceId;
 
@@ -116,7 +116,7 @@ namespace BitFlyerDotNet.Historical
             ChildOrderIndex = -1;
         }
 
-        public DbChildOrder(string productCode, BfaChildOrder order)
+        public DbChildOrder(string productCode, BfChildOrderStatus order)
         {
             ProductCode = productCode;
             Side = order.Side;
@@ -128,15 +128,12 @@ namespace BitFlyerDotNet.Historical
             Update(order);
         }
 
-        public void Update(BfaChildOrder order)
+        public void Update(BfChildOrderStatus order)
         {
             PagingId = order.PagingId;
             AcceptanceId = order.ChildOrderAcceptanceId;
             OrderId = order.ChildOrderId;
-            if (order.ChildOrderType != BfOrderType.Market)
-            {
-                OrderPrice = order.Price;
-            }
+            OrderPrice = order.Price;
             State = order.ChildOrderState;
             ExpireDate = order.ExpireDate;
             OrderDate = order.ChildOrderDate;
@@ -208,7 +205,7 @@ namespace BitFlyerDotNet.Historical
         // From element of parent order
         //
 
-        public DbChildOrder(BfParentOrderRequest req, BfParentOrderResponse resp, int childOrderIndex)
+        public DbChildOrder(BfParentOrder req, BfParentOrderResponse resp, int childOrderIndex)
         {
             ProductCode = req.Parameters[childOrderIndex].ProductCode;
             Side = req.Parameters[childOrderIndex].Side;
@@ -234,13 +231,13 @@ namespace BitFlyerDotNet.Historical
             ChildOrderIndex = childOrderIndex;
         }
 
-        public DbChildOrder(string productCode, BfaParentOrderDetail detail, int childOrderIndex)
+        public DbChildOrder(string productCode, BfParentOrderDetailStatus detail, int childOrderIndex)
         {
             ProductCode = productCode;
             Update(detail, childOrderIndex);
         }
 
-        public void Update(BfaParentOrderDetail detail, int childOrderIndex)
+        public void Update(BfParentOrderDetailStatus detail, int childOrderIndex)
         {
             OrderType = detail.Parameters[childOrderIndex].ConditionType; // To overwrite limit/market to stop/stop limit/trail
             Side = detail.Parameters[childOrderIndex].Side;
@@ -248,18 +245,9 @@ namespace BitFlyerDotNet.Historical
             ExpireDate = detail.ExpireDate;
             TimeInForce = detail.TimeInForce;
 
-            if (OrderType is BfOrderType.Limit or BfOrderType.StopLimit)
-            {
-                OrderPrice = detail.Parameters[childOrderIndex].Price;
-            }
-            if (OrderType is BfOrderType.Stop or BfOrderType.StopLimit)
-            {
-                TriggerPrice = detail.Parameters[childOrderIndex].TriggerPrice;
-            }
-            if (OrderType == BfOrderType.Trail)
-            {
-                Offset = detail.Parameters[childOrderIndex].Offset;
-            }
+            OrderPrice = detail.Parameters[childOrderIndex].Price;
+            TriggerPrice = detail.Parameters[childOrderIndex].TriggerPrice;
+            Offset = detail.Parameters[childOrderIndex].Offset;
 
             ParentOrderAcceptanceId = detail.ParentOrderAcceptanceId;
             ParentOrderId = detail.ParentOrderId;

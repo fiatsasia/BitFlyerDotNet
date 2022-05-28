@@ -14,7 +14,7 @@ using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
-    public class BfChildOrderRequest
+    public class BfChildOrder
     {
         public string ProductCode { get; set; }
 
@@ -25,44 +25,29 @@ namespace BitFlyerDotNet.LightningApi
         public BfTradeSide Side { get; set; }
 
         [JsonConverter(typeof(DecimalJsonConverter))]
-        public decimal Price { get; set; }
-        public bool ShouldSerializePrice() { return ChildOrderType == BfOrderType.Limit; }
+        public decimal? Price { get; set; }
+        public bool ShouldSerializePrice() => Price.HasValue;
 
         [JsonConverter(typeof(DecimalJsonConverter))]
         public decimal Size { get; set; }
 
-        public int MinuteToExpire { get; set; }
-        public bool ShouldSerializeMinuteToExpire() { return MinuteToExpire > 0; } // default = 43200 (30 days)
+        public int? MinuteToExpire { get; set; }
+        public bool ShouldSerializeMinuteToExpire() => (MinuteToExpire.HasValue && MinuteToExpire.Value > 0); // default = 43200 (30 days)
 
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfTimeInForce TimeInForce { get; set; }
-        public bool ShouldSerializeTimeInForce() { return TimeInForce != BfTimeInForce.NotSpecified; } // default = GTC
+        public BfTimeInForce? TimeInForce { get; set; }
+        public bool ShouldSerializeTimeInForce() => (TimeInForce.HasValue && TimeInForce.Value != BfTimeInForce.NotSpecified); // default = GTC
 
-        // Order builders
-        public static BfChildOrderRequest Market(string productCode, BfTradeSide side, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+        // This will be used order factory
+        public static implicit operator BfParentOrderParameter(BfChildOrder order)
         {
-            return new ()
+            return new()
             {
-                ProductCode = productCode,
-                ChildOrderType = BfOrderType.Market,
-                Side = side,
-                Size = size,
-                MinuteToExpire = minuteToExpire,
-                TimeInForce = timeInForce,
-            };
-        }
-
-        public static BfChildOrderRequest Limit(string productCode, BfTradeSide side, decimal price, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
-        {
-            return new ()
-            {
-                ProductCode = productCode,
-                ChildOrderType = BfOrderType.Limit,
-                Side = side,
-                Size = size,
-                Price = price,
-                MinuteToExpire = minuteToExpire,
-                TimeInForce = timeInForce,
+                ProductCode = order.ProductCode,
+                ConditionType = order.ChildOrderType,
+                Side = order.Side,
+                Price = order.Price,
+                Size = order.Size
             };
         }
     }
@@ -75,11 +60,11 @@ namespace BitFlyerDotNet.LightningApi
 
     public partial class BitFlyerClient
     {
-        void Validate(ref BfChildOrderRequest request)
+        void Validate(ref BfChildOrder request)
         {
             if (!request.ChildOrderType.IsChildOrderType())
             {
-                throw new ArgumentException($"Invalid {nameof(BfChildOrderRequest.ChildOrderType)} is {request.ChildOrderType}");
+                throw new ArgumentException($"Invalid {nameof(BfChildOrder.ChildOrderType)} is {request.ChildOrderType}");
             }
 
             if (request.MinuteToExpire == 0 && Config.MinuteToExpire != 0)
@@ -97,96 +82,23 @@ namespace BitFlyerDotNet.LightningApi
         /// Send a New Order
         /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
         /// </summary>
-        /// <param name="request"></param>
+        /// <param name="order"></param>
         /// <returns></returns>
-        public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(BfChildOrderRequest request)
+        public Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(BfChildOrder order, CancellationToken ct)
         {
-            Validate(ref request);
-            return PostPrivateAsync<BfChildOrderResponse>(nameof(SendChildOrder), request, CancellationToken.None).Result;
+            Validate(ref order);
+            return PostPrivateAsync<BfChildOrderResponse>(nameof(SendChildOrderAsync), order, ct);
         }
 
         /// <summary>
         /// Send a New Order
         /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
         /// </summary>
-        /// <param name="request"></param>
+        /// <param name="order"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(BfChildOrderRequest request, CancellationToken ct)
+        public async Task<BfChildOrderResponse> SendChildOrderAsync(BfChildOrder order)
         {
-            Validate(ref request);
-            return PostPrivateAsync<BfChildOrderResponse>(nameof(SendChildOrder), request, ct);
-        }
-
-        /// <summary>
-        /// Send a New Order
-        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
-        /// </summary>
-        /// <param name="productCode"></param>
-        /// <param name="orderType"></param>
-        /// <param name="side"></param>
-        /// <param name="price"></param>
-        /// <param name="size"></param>
-        /// <param name="minuteToExpire"></param>
-        /// <param name="timeInForce"></param>
-        /// <returns></returns>
-        public BitFlyerResponse<BfChildOrderResponse> SendChildOrder(
-            string productCode,
-            BfOrderType orderType,
-            BfTradeSide side,
-            decimal price,
-            decimal size,
-            int minuteToExpire = 0,
-            BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
-        {
-            var request = new BfChildOrderRequest
-            {
-                ProductCode = productCode,
-                ChildOrderType = orderType,
-                Side = side,
-                Price = price,
-                Size = size,
-                MinuteToExpire = minuteToExpire,
-                TimeInForce = timeInForce,
-            };
-            Validate(ref request);
-            return SendChildOrder(request);
-        }
-
-        /// <summary>
-        /// Send a New Order
-        /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
-        /// </summary>
-        /// <param name="productCode"></param>
-        /// <param name="orderType"></param>
-        /// <param name="side"></param>
-        /// <param name="price"></param>
-        /// <param name="size"></param>
-        /// <param name="minuteToExpire"></param>
-        /// <param name="timeInForce"></param>
-        /// <returns></returns>
-        public Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(
-            string productCode,
-            BfOrderType orderType,
-            BfTradeSide side,
-            decimal price,
-            decimal size,
-            int minuteToExpire,
-            BfTimeInForce timeInForce,
-            CancellationToken ct
-        )
-        {
-            var request = new BfChildOrderRequest
-            {
-                ProductCode = productCode,
-                ChildOrderType = orderType,
-                Side = side,
-                Price = price,
-                Size = size,
-                MinuteToExpire = minuteToExpire,
-                TimeInForce = timeInForce,
-            };
-            Validate(ref request);
-            return SendChildOrderAsync(request, ct);
+            return (await SendChildOrderAsync(order, CancellationToken.None)).GetContent();
         }
     }
 }

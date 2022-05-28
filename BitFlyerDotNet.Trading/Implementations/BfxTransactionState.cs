@@ -20,4 +20,9 @@ namespace BitFlyerDotNet.Trading
 
         Closed,
     }
+
+    public enum BfxTransactionEventType
+    {
+
+    }
 }

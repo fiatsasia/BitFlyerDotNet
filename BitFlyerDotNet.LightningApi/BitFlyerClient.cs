@@ -33,26 +33,17 @@ namespace BitFlyerDotNet.LightningApi
         public static readonly BfErrorResponse Default = default(BfErrorResponse);
     }
 
-    public class BitFlyerResponse : IBitFlyerResponse
+    public abstract class BitFlyerResponse
     {
-        public static readonly IBitFlyerResponse Success = new BitFlyerResponse(false, false, "Success");
-
-        public string Json { get; }
-        public bool IsError { get { return IsNetworkError || IsApplicationError; } }
-        public bool IsNetworkError { get; private set; }
-        public bool IsApplicationError { get; private set; }
-        public bool IsUnauthorized { get { return false; } }
-        public string ErrorMessage { get; private set; }
-
-        public BitFlyerResponse(bool isNetworkError, bool isApplicationError, string errorMessage)
-        {
-            IsNetworkError = isNetworkError;
-            IsApplicationError = isApplicationError;
-            ErrorMessage = errorMessage;
-        }
+        public abstract string Json { get; set; }
+        public abstract bool IsError { get; }
+        public abstract bool IsNetworkError { get; }
+        public abstract bool IsApplicationError { get; }
+        public abstract bool IsUnauthorized { get; }
+        public abstract string ErrorMessage { get; set; }
     }
 
-    public class BitFlyerResponse<T> : IBitFlyerResponse
+    public class BitFlyerResponse<T> : BitFlyerResponse
     {
         static readonly JsonSerializerSettings _jsonDeserializeSettings = new ()
         {
@@ -66,10 +57,10 @@ namespace BitFlyerDotNet.LightningApi
 
         public HttpStatusCode StatusCode { get; internal set; } = HttpStatusCode.OK;
         public BfErrorResponse ErrorResponse { get; internal set; } = BfErrorResponse.Default;
-        public bool IsUnauthorized => StatusCode == HttpStatusCode.Unauthorized;
+        public override bool IsUnauthorized => StatusCode == HttpStatusCode.Unauthorized;
 
         string _errorMessage;
-        public string ErrorMessage
+        public override string ErrorMessage
         {
             get
             {
@@ -89,9 +80,9 @@ namespace BitFlyerDotNet.LightningApi
             set { _errorMessage = value; }
         }
 
-        public bool IsNetworkError => StatusCode != HttpStatusCode.OK;
-        public bool IsApplicationError => ErrorResponse != BfErrorResponse.Default;
-        public bool IsError => StatusCode != HttpStatusCode.OK || ErrorResponse != BfErrorResponse.Default;
+        public override bool IsNetworkError => StatusCode != HttpStatusCode.OK;
+        public override bool IsApplicationError => ErrorResponse != BfErrorResponse.Default;
+        public override bool IsError => StatusCode != HttpStatusCode.OK || ErrorResponse != BfErrorResponse.Default;
         public bool IsEmpty => string.IsNullOrEmpty(_json) || _json == JsonEmpty;
         public bool IsErrorOrEmpty => IsError || IsEmpty;
         public bool IsOk => StatusCode == HttpStatusCode.OK;
@@ -142,7 +133,7 @@ namespace BitFlyerDotNet.LightningApi
         }
 
         string _json;
-        public string Json
+        public override string Json
         {
             get { return _json; }
             set
@@ -229,6 +220,12 @@ namespace BitFlyerDotNet.LightningApi
             _client?.Dispose();
             _hash?.Dispose();
             Log.Trace($"{nameof(BitFlyerClient)} disposed.");
+        }
+
+        public void Authenticate(string apiKey, string apiSecret)
+        {
+            _apiKey = apiKey;
+            _hash = new(Encoding.UTF8.GetBytes(apiSecret));
         }
 
         internal async Task<BitFlyerResponse<T>> GetAsync<T>(string apiName, string queryParameters, CancellationToken ct)
@@ -401,13 +398,14 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        internal async Task<BitFlyerResponse<T>> PostPrivateAsync<T>(string apiName, object requestObject, CancellationToken ct)
+        internal async Task<BitFlyerResponse<T>> PostPrivateAsync<T>(string callerName, object requestObject, CancellationToken ct)
         {
             if (!IsAuthenticated)
             {
                 throw new NotSupportedException("Access key and secret required.");
             }
 
+            var apiName = callerName.Replace("Async", "").ToLower();
             var body = JsonConvert.SerializeObject(requestObject, JsonSerializeSettings);
             if (!ConfirmCallback(apiName, body))
             {
@@ -415,7 +413,7 @@ namespace BitFlyerDotNet.LightningApi
             }
 
             var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ff");
-            var path = PrivateBasePath + apiName.ToLower();
+            var path = PrivateBasePath + apiName;
 
             var text = timestamp + "POST" + path + body;
             var sign = BitConverter.ToString(_hash.ComputeHash(Encoding.UTF8.GetBytes(text))).Replace("-", string.Empty).ToLower();
@@ -435,10 +433,10 @@ namespace BitFlyerDotNet.LightningApi
                     var response = await _client.SendAsync(request, ct);
                     responseObject.Set(response.StatusCode, await response.Content.ReadAsStringAsync());
                     TotalReceivedMessageChars += responseObject.Json.Length;
-                    switch (apiName)
+                    switch (callerName)
                     {
-                        case nameof(SendChildOrder):
-                        case nameof(SendParentOrder):
+                        case nameof(SendChildOrderAsync):
+                        case nameof(SendParentOrderAsync):
                         case nameof(CancelAllChildOrders):
                             if (_orderApiLimitter.CheckLimitReached())
                             {

@@ -13,7 +13,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
 {
-    public class DbParentOrder : IBfParentOrder
+    public class DbParentOrder
     {
         [Column(Order = 0)]
         public uint PagingId { get; set; }
@@ -43,19 +43,19 @@ namespace BitFlyerDotNet.Historical
         public DateTime ExpireDate { get; set; }
 
         [Column(Order = 8)]
-        public BfTimeInForce TimeInForce { get; set; }
+        public BfTimeInForce? TimeInForce { get; set; }
 
         [Column(Order = 9)]
         public string OrderFailedReason { get; set; }
 
         [NotMapped]
-        public IBfChildOrder[] Children { get; set; }
+        public DbChildOrder[] Children { get; set; }
 
         public DbParentOrder()
         {
         }
 
-        public DbParentOrder(string productCode, BfParentOrderRequest req, BfParentOrderResponse resp)
+        public DbParentOrder(string productCode, BfParentOrder req, BfParentOrderResponse resp)
         {
             ProductCode = productCode;
             OrderType = req.OrderMethod;
@@ -67,7 +67,7 @@ namespace BitFlyerDotNet.Historical
             AcceptanceId = resp.ParentOrderAcceptanceId;
         }
 
-        public DbParentOrder(string productCode, BfaParentOrderDetail order)
+        public DbParentOrder(string productCode, BfParentOrderDetailStatus order)
         {
             ProductCode = productCode;
 
@@ -79,7 +79,7 @@ namespace BitFlyerDotNet.Historical
             AcceptanceId = order.ParentOrderAcceptanceId;
         }
 
-        public DbParentOrder(string productCode, BfaParentOrder order, BfaParentOrderDetail detail)
+        public DbParentOrder(string productCode, BfParentOrderStatus order, BfParentOrderDetailStatus detail)
         {
             ProductCode = productCode;
 
@@ -93,7 +93,7 @@ namespace BitFlyerDotNet.Historical
             OrderDate = order.ParentOrderDate;
         }
 
-        public void Update(BfaParentOrder order, BfaParentOrderDetail detail)
+        public void Update(BfParentOrderStatus order, BfParentOrderDetailStatus detail)
         {
             PagingId = order.PagingId;
             State = order.ParentOrderState;

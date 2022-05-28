@@ -8,6 +8,7 @@
 
 using System;
 using System.Linq;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
@@ -64,13 +65,13 @@ namespace PrivateApiTests
             _enableSendOrder = enable;
         }
 
-        void Dump(IBitFlyerResponse resp)
+        void Dump(BitFlyerResponse resp)
         {
             var jobject = JsonConvert.DeserializeObject(resp.Json);
             Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
-        void Dump(BfaChildOrder order)
+        void Dump(BfChildOrderStatus order)
         {
             Console.WriteLine($"{order.PagingId} {order.ChildOrderDate} {order.ChildOrderType} {order.ChildOrderState}");
         }
@@ -549,20 +550,21 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void SendChildOrder()
+        public async void SendChildOrder()
         {
             EnableSendOrder(false);
-            var resp = _client.SendChildOrder(_productCode, BfOrderType.Limit, BfTradeSide.Buy, 100.0m, 1.0m);
+            var order = BfOrderFactory.Limit(_productCode, BfTradeSide.Buy, 100.0m, 1.0m);
+            var resp = await _client.SendChildOrderAsync(order, CancellationToken.None);
             Assert.IsTrue(resp.IsOk);
             Console.WriteLine(GetRequestJson());
         }
 
         [TestMethod]
-        public void SendParentOrder()
+        public async void SendParentOrder()
         {
             EnableSendOrder(false);
-            var order = BfParentOrderRequest.Stop(_productCode, BfTradeSide.Sell, 100000m, 0.1m);
-            var resp = _client.SendParentOrder(order);
+            var order = BfOrderFactory.Stop(_productCode, BfTradeSide.Sell, 100000m, 0.1m);
+            var resp = await _client.SendParentOrderAsync(order, CancellationToken.None);
             Assert.IsTrue(resp.IsOk);
             Console.WriteLine(GetRequestJson());
         }

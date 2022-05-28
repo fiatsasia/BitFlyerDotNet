@@ -17,7 +17,7 @@ namespace OrderApiTests
     {
         static Queue<string> _childOrderAcceptanceIds = new Queue<string>();
 
-        static void ChildOrderMain()
+        static async void ChildOrderMain()
         {
             while (true)
             {
@@ -41,24 +41,24 @@ namespace OrderApiTests
                     {
                         case 'S':
                             {
-                                var request = BfChildOrderRequest.Market(ProductCode, BfTradeSide.Sell, OrderSize);
-                                var content = _client.SendChildOrder(request).GetContent();
-                                _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
+                                var order = BfOrderFactory.Market(ProductCode, BfTradeSide.Sell, OrderSize);
+                                var result = await _client.SendChildOrderAsync(order);
+                                _childOrderAcceptanceIds.Enqueue(result.ChildOrderAcceptanceId);
                             }
                             break;
 
                         case 'B':
                             {
-                                var request = BfChildOrderRequest.Market(ProductCode, BfTradeSide.Buy, OrderSize);
-                                var content = _client.SendChildOrder(request).GetContent();
-                                _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
+                                var order = BfOrderFactory.Market(ProductCode, BfTradeSide.Buy, OrderSize);
+                                var result = await _client.SendChildOrderAsync(order);
+                                _childOrderAcceptanceIds.Enqueue(result.ChildOrderAcceptanceId);
                             }
                             break;
 
                         case 'L':
                             {
-                                var request = BfChildOrderRequest.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize);
-                                var content = _client.SendChildOrder(request).GetContent();
+                                var order = BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize);
+                                var content = await _client.SendChildOrderAsync(order);
                                 _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
                             }
                             break;
@@ -80,25 +80,25 @@ namespace OrderApiTests
 
                         case 'T':
                             {
-                                var request = BfChildOrderRequest.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize, timeInForce: BfTimeInForce.FOK);
-                                var content = _client.SendChildOrder(request).GetContent();
-                                _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
+                                var order = BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize, timeInForce: BfTimeInForce.FOK);
+                                var result = await _client.SendChildOrderAsync(order);
+                                _childOrderAcceptanceIds.Enqueue(result.ChildOrderAcceptanceId);
                             }
                             break;
 
                         case 'M':
                             {
-                                var request = BfChildOrderRequest.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize, minuteToExpire: 1);
-                                var content = _client.SendChildOrder(request).GetContent();
-                                _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
+                                var order = BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize, minuteToExpire: 1);
+                                var result = await _client.SendChildOrderAsync(order);
+                                _childOrderAcceptanceIds.Enqueue(result.ChildOrderAcceptanceId);
                             }
                             break;
 
                         case 'I':
                             {
-                                var request = BfChildOrderRequest.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, 0.001m);
-                                var content = _client.SendChildOrder(request).GetContent();
-                                _childOrderAcceptanceIds.Enqueue(content.ChildOrderAcceptanceId);
+                                var order = BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize);
+                                var result = await _client.SendChildOrderAsync(order);
+                                _childOrderAcceptanceIds.Enqueue(result.ChildOrderAcceptanceId);
                             }
                             break;
 
@@ -141,7 +141,7 @@ namespace OrderApiTests
                                         break;
                                 }
 
-                                BitFlyerResponse<BfaChildOrder[]> resp = null;
+                                BitFlyerResponse<BfChildOrderStatus[]> resp = null;
                                 if (!string.IsNullOrEmpty(parentOrderId))
                                 {
                                     resp = _client.GetChildOrders(ProductCode, orderState: orderState, parentOrderId: parentOrderId);

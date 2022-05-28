@@ -81,7 +81,6 @@ namespace BitFlyerDotNet.Trading
         public BfxPositionsElement(BfChildOrderEvent ev, decimal size)
         {
             ChildOrderAcceptanceId = ev.ChildOrderAcceptanceId;
-            ExecutionIndex = ev.ExecutionId;
             Open = ev.EventDate;
             Price = ev.Price;
             CurrentSize = OpenSize = ev.Side == BfTradeSide.Buy ? size : -size;

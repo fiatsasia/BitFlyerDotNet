@@ -48,7 +48,7 @@ namespace BitFlyerDotNet.LightningApi
         public string OrderFailedReason { get; private set; }       // EventType = OrderFailed
 
         [JsonProperty(PropertyName = "exec_id")]
-        public int ExecutionId { get; private set; }                // EventType = Execution
+        public long ExecutionId { get; private set; }               // EventType = Execution
 
         [JsonProperty(PropertyName = "side")]
         [JsonConverter(typeof(StringEnumConverter))]
