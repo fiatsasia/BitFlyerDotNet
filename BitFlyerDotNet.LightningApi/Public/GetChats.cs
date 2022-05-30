@@ -32,9 +32,9 @@ namespace BitFlyerDotNet.LightningApi
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChats">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfChat[]>> GetChatsAsync(CancellationToken ct) => GetAsync<BfChat[]>(nameof(GetChats), string.Empty, ct);
+        public Task<BitFlyerResponse<BfChat[]>> GetChatsAsync(CancellationToken ct) => GetAsync<BfChat[]>(nameof(GetChatsAsync), string.Empty, ct);
 
-        public BitFlyerResponse<BfChat[]> GetChats() => GetChatsAsync(CancellationToken.None).Result;
+        public async Task<BfChat[]> GetChatsAsync() => (await GetChatsAsync(CancellationToken.None)).GetContent();
 
         /// <summary>
         /// Chat (Japan)
@@ -44,19 +44,19 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public Task<BitFlyerResponse<BfChat[]>> GetChatsAsync(DateTime fromDate, CancellationToken ct)
         {
-            return GetAsync<BfChat[]>(nameof(GetChats), "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"), ct);
+            return GetAsync<BfChat[]>(nameof(GetChatsAsync), "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"), ct);
         }
 
-        public BitFlyerResponse<BfChat[]> GetChats(DateTime fromDate) => GetChatsAsync(fromDate, CancellationToken.None).Result;
+        public async Task<BfChat[]> GetChatsAsync(DateTime fromDate) => (await GetChatsAsync(fromDate, CancellationToken.None)).GetContent();
 
         /// <summary>
         /// Chat (U.S.)
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChats">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfChat[]>> GetChatsUsaAsync(CancellationToken ct) => GetAsync<BfChat[]>(nameof(GetChats) + UsaMarket, string.Empty, ct);
+        public Task<BitFlyerResponse<BfChat[]>> GetChatsUsaAsync(CancellationToken ct) => GetAsync<BfChat[]>(nameof(GetChatsAsync) + UsaMarket, string.Empty, ct);
 
-        public BitFlyerResponse<BfChat[]> GetChatsUsa() => GetChatsUsaAsync(CancellationToken.None).Result;
+        public async Task<BfChat[]> GetChatsUsaAsync() => (await GetChatsUsaAsync(CancellationToken.None)).GetContent();
 
         /// <summary>
         /// Chat (U.S.)
@@ -65,18 +65,18 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="fromDate"></param>
         /// <returns></returns>
         public Task<BitFlyerResponse<BfChat[]>> GetChatsUsaAsync(DateTime fromDate, CancellationToken ct)
-            => GetAsync<BfChat[]>(nameof(GetChats) + UsaMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"), ct);
+            => GetAsync<BfChat[]>(nameof(GetChatsAsync) + UsaMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"), ct);
 
-        public BitFlyerResponse<BfChat[]> GetChatsUsa(DateTime fromDate) => GetChatsUsaAsync(fromDate, CancellationToken.None).Result;
+        public async Task<BfChat[]> GetChatsUsaAsync(DateTime fromDate) => (await GetChatsUsaAsync(fromDate, CancellationToken.None)).GetContent();
 
         /// <summary>
         /// Chat (E.U.)
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChats">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfChat[]>> GetChatsEu(CancellationToken ct) => GetAsync<BfChat[]>(nameof(GetChats) + EuMarket, string.Empty, ct);
+        public Task<BitFlyerResponse<BfChat[]>> GetChatsEuAsync(CancellationToken ct) => GetAsync<BfChat[]>(nameof(GetChatsAsync) + EuMarket, string.Empty, ct);
 
-        public BitFlyerResponse<BfChat[]> GetChatsEu() => GetChatsEu(CancellationToken.None).Result;
+        public async Task<BfChat[]> GetChatsEuAsync() => (await GetChatsEuAsync(CancellationToken.None)).GetContent();
 
         /// <summary>
         /// Chat (E.U.)
@@ -84,9 +84,9 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="fromDate"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfChat[]>> GetChatsEu(DateTime fromDate, CancellationToken ct)
-            => GetAsync<BfChat[]>(nameof(GetChats) + EuMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"), ct);
+        public Task<BitFlyerResponse<BfChat[]>> GetChatsEuAsync(DateTime fromDate, CancellationToken ct)
+            => GetAsync<BfChat[]>(nameof(GetChatsAsync) + EuMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"), ct);
 
-        public BitFlyerResponse<BfChat[]> GetChatsEu(DateTime fromDate) => GetChatsEu(fromDate, CancellationToken.None).Result;
+        public async Task<BfChat[]> GetChatsEuAsync(DateTime fromDate) => (await GetChatsEuAsync(fromDate, CancellationToken.None)).GetContent();
     }
 }

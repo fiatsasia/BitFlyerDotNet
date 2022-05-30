@@ -67,10 +67,10 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
-            return GetPrivateAsync<BfCoinOut[]>(nameof(GetCoinOuts), query, ct);
+            return GetPrivateAsync<BfCoinOut[]>(nameof(GetCoinOutsAsync), query, ct);
         }
 
-        public BitFlyerResponse<BfCoinOut[]> GetCoinOuts(int count = 0, int before = 0, int after = 0)
-            => GetCoinOutsAsync(count, before, after, CancellationToken.None).Result;
+        public async Task<BfCoinOut[]> GetCoinOutsAsync(int count = 0, int before = 0, int after = 0)
+            => (await GetCoinOutsAsync(count, before, after, CancellationToken.None)).GetContent();
     }
 }

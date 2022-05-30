@@ -92,26 +92,22 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             );
 
-            return GetPrivateAsync<BfParentOrderStatus[]>(nameof(GetParentOrders), query, ct);
+            return GetPrivateAsync<BfParentOrderStatus[]>("getparentorders", query, ct);
         }
 
-        public Task<BitFlyerResponse<BfParentOrderStatus[]>> GetParentOrdersAsync(
+        public async Task<BfParentOrderStatus[]> GetParentOrdersAsync(
             string productCode,
             BfOrderState orderState = BfOrderState.Unknown,
             int count = 0,
             uint before = 0,
             uint after = 0
-        )
-            => GetParentOrdersAsync(productCode, orderState, count, before, after, CancellationToken.None);
+        ) => (await GetParentOrdersAsync(productCode, orderState, count, before, after, CancellationToken.None)).GetContent();
 
-        public BitFlyerResponse<BfParentOrderStatus[]> GetParentOrders(string productCode, BfOrderState orderState = BfOrderState.Unknown, int count = 0, uint before = 0, uint after = 0)
-            => GetParentOrdersAsync(productCode, orderState, count, before, after).Result;
-
-        public IEnumerable<BfParentOrderStatus> GetParentOrders(string productCode, BfOrderState orderState, uint before, Func<BfParentOrderStatus, bool> predicate)
+        public async IAsyncEnumerable<BfParentOrderStatus> GetParentOrdersAsync(string productCode, BfOrderState orderState, uint before, Func<BfParentOrderStatus, bool> predicate)
         {
             while (true)
             {
-                var orders = GetParentOrders(productCode, orderState, ReadCountMax, before).GetContent();
+                var orders = await GetParentOrdersAsync(productCode, orderState, ReadCountMax, before: before);
                 if (orders.Length == 0)
                 {
                     break;
@@ -134,31 +130,7 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        public IEnumerable<BfParentOrderStatus> GetParentOrders(string productCode, DateTime after)
-            => GetParentOrders(productCode, BfOrderState.Unknown, 0, e => e.ParentOrderDate >= after);
-
-        public BfParentOrderStatus GetParentOrder(string productCode, BfParentOrderDetailStatus detail)
-        {
-            var result = GetParentOrders(productCode, count: 1, before: detail.PagingId + 1).GetContent();
-            if (result.Length == 0)
-            {
-                throw new KeyNotFoundException();
-            }
-            return result[0];
-        }
-
-        public BfParentOrderStatus GetParentOrder(string productCode, string parentOrderAcceptanceId = null, string parentOrderId = null)
-        {
-            if (string.IsNullOrEmpty(parentOrderAcceptanceId) && string.IsNullOrEmpty(parentOrderId))
-            {
-                throw new ArgumentException();
-            }
-
-            var detail = (!string.IsNullOrEmpty(parentOrderAcceptanceId)
-                ? GetParentOrderDetail(productCode, parentOrderAcceptanceId: parentOrderAcceptanceId)
-                : GetParentOrderDetail(productCode, parentOrderId: parentOrderId)).GetContent();
-
-            return GetParentOrder(productCode, detail);
-        }
+        public IAsyncEnumerable<BfParentOrderStatus> GetParentOrdersAsync(string productCode, DateTime after)
+            => GetParentOrdersAsync(productCode, BfOrderState.Unknown, 0, e => e.ParentOrderDate >= after);
     }
 }

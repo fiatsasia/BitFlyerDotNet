@@ -7,6 +7,7 @@
 //
 
 using System;
+using System.Threading.Tasks;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
 
@@ -17,7 +18,7 @@ namespace TradingApiTests
         const decimal PnLGap = 1000m;
         const decimal TrailingOffset = 3000m;
 
-        static async void ConditionalOrders(BfxApplication app)
+        static async Task ConditionalOrders(BfxApplication app)
         {
             var mds = await app.GetMarketDataSourceAsync(ProductCode);
 

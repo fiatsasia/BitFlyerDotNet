@@ -83,7 +83,7 @@ namespace BitFlyerDotNet.Historical
         // Parent orders
         public void Insert(string productCode, BfParentOrder req, BfParentOrderResponse resp)
         {
-            ParentOrders.Add(new DbParentOrder(productCode, req, resp));
+            ParentOrders.Add(new DbParentOrder(productCode, req, resp.ParentOrderAcceptanceId));
             for (int childOrderIndex = 0; childOrderIndex < req.Parameters.Count; childOrderIndex++)
             {
                 ChildOrders.Add(new DbChildOrder(req, resp, childOrderIndex));

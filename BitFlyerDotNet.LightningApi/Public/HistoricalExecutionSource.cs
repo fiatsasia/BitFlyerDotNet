@@ -32,7 +32,7 @@ namespace BitFlyerDotNet.LightningApi
                 {
                     while (true)
                     {
-                        var resp = client.GetExecutions(productCode, ReadCountMax, before, 0);
+                        var resp = await client.GetExecutionsAsync(productCode, ReadCountMax, before, 0, CancellationToken.None);
                         if (resp.IsError)
                         {
                             switch (resp.StatusCode)

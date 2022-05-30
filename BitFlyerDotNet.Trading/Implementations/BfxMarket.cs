@@ -49,42 +49,32 @@ namespace BitFlyerDotNet.Trading
             // Load active positions from market
             if (_productCode == BfProductCodeEx.FX_BTC_JPY)
             {
-                _positions.Update((await _client.GetPositionsAsync(BfProductCodeEx.FX_BTC_JPY)).GetContent());
+                _positions.Update(await _client.GetPositionsAsync(BfProductCodeEx.FX_BTC_JPY));
             }
 
             // Load active parent orders, their children and executions.
             var updatedChildOrderIds = new HashSet<string>();
-            foreach (var parentOrder in (await _client.GetParentOrdersAsync(_productCode, orderState: BfOrderState.Active)).GetContent())
+            foreach (var parentOrder in await _client.GetParentOrdersAsync(_productCode, orderState: BfOrderState.Active))
             {
-                var parentOrderDetail = (await _client.GetParentOrderDetailAsync(_productCode, parentOrderId: parentOrder.ParentOrderId)).GetContent();
-                var txParent = _orderTransactions.AddOrUpdate(parentOrder.ParentOrderAcceptanceId,
-                    _ =>
-                    {
-                        var tx = new BfxTransaction(_client);
-                        tx.TransactionChanged += OnTransactionChanged;
-                        return tx.Update(parentOrder, parentOrderDetail);
-                    },
+                var parentOrderDetail = await _client.GetParentOrderAsync(_productCode, parentOrderId: parentOrder.ParentOrderId);
+                _orderTransactions.AddOrUpdate(parentOrder.ParentOrderAcceptanceId,
+                    _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.Update(parentOrder, parentOrderDetail); },
                     (_, tx) => tx.Update(parentOrder, parentOrderDetail)
                 );
 
-                foreach (var childOrder in (await _client.GetChildOrdersAsync(_productCode, parentOrderId: parentOrder.ParentOrderId)).GetContent())
+                foreach (var childOrder in await _client.GetChildOrdersAsync(_productCode, parentOrderId: parentOrder.ParentOrderId))
                 {
                     updatedChildOrderIds.Add(childOrder.ChildOrderId);
-                    var execs = (await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId)).GetContent();
-                    var txChild = _orderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
-                        _ =>
-                        {
-                            var tx = new BfxTransaction(_client);
-                            tx.TransactionChanged += OnTransactionChanged;
-                            return tx.Update(childOrder, execs);
-                        },
+                    var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId);
+                    _orderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
+                        _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.Update(childOrder, execs); },
                         (_, tx) => tx.Update(childOrder, execs)
                     );
                 }
             }
 
             // Load active child orders and their executions
-            var childOrders = (await _client.GetChildOrdersAsync(_productCode, orderState: BfOrderState.Active)).GetContent();
+            var childOrders = await _client.GetChildOrdersAsync(_productCode, orderState: BfOrderState.Active);
             foreach (var childOrder in childOrders)
             {
                 if (updatedChildOrderIds.Contains(childOrder.ChildOrderId))
@@ -92,14 +82,9 @@ namespace BitFlyerDotNet.Trading
                     continue;
                 }
 
-                var execs = (await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId)).GetContent();
+                var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId);
                 _orderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
-                    _ =>
-                    {
-                        var tx = new BfxTransaction(_client);
-                        tx.TransactionChanged += OnTransactionChanged;
-                        return tx.Update(childOrder, execs);
-                    },
+                    _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.Update(childOrder, execs); },
                     (_, tx) => tx.Update(childOrder, execs)
                 );
             }
@@ -108,26 +93,17 @@ namespace BitFlyerDotNet.Trading
         internal void OnParentOrderEvent(BfParentOrderEvent e)
         {
             _orderTransactions.AddOrUpdate(e.ParentOrderAcceptanceId,
-                _ =>
-                {
-                    var tx = new BfxTransaction(_client);
-                    tx.TransactionChanged += OnTransactionChanged;
-                    return tx.OnParentOrderEvent(e);
-                },
+                _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.OnParentOrderEvent(e); },
                 (_, tx) => tx.OnParentOrderEvent(e)
             );
 
             switch (e.EventType)
             {
                 case BfOrderEventType.Trigger:
+                case BfOrderEventType.Complete:
                     _orderTransactions.AddOrUpdate(e.ChildOrderAcceptanceId,
-                        _ =>
-                        {
-                            var tx = new BfxTransaction(_client);
-                            tx.TransactionChanged += OnTransactionChanged;
-                            return tx.OnParentTriggerEvent(e);
-                        },
-                        (_, tx) => tx.OnParentTriggerEvent(e)
+                        _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.OnParentOrderEventForChildren(e); },
+                        (_, tx) => tx.OnParentOrderEventForChildren(e)
                     );
                     break;
             }
@@ -136,12 +112,7 @@ namespace BitFlyerDotNet.Trading
         internal void OnChildOrderEvent(BfChildOrderEvent e)
         {
             _orderTransactions.AddOrUpdate(e.ChildOrderAcceptanceId,
-                _ =>
-                {
-                    var tx = new BfxTransaction(_client);
-                    tx.TransactionChanged += OnTransactionChanged;
-                    return tx.OnChildOrderEvent(e);
-                },
+                _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.OnChildOrderEvent(e); },
                 (_, tx) => tx.OnChildOrderEvent(e));
         }
 
@@ -167,7 +138,6 @@ namespace BitFlyerDotNet.Trading
         {
             switch (e.EvenetType)
             {
-
             }
         }
     }

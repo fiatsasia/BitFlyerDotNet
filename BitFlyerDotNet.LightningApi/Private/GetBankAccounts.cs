@@ -43,8 +43,8 @@ namespace BitFlyerDotNet.LightningApi
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetBankAccounts">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfBankAccount[]>> GetBankAccountsAsync(CancellationToken ct) => GetPrivateAsync<BfBankAccount[]>(nameof(GetBankAccounts), string.Empty, ct);
+        public Task<BitFlyerResponse<BfBankAccount[]>> GetBankAccountsAsync(CancellationToken ct) => GetPrivateAsync<BfBankAccount[]>(nameof(GetBankAccountsAsync), string.Empty, ct);
 
-        public BitFlyerResponse<BfBankAccount[]> GetBankAccounts() => GetBankAccountsAsync(CancellationToken.None).Result;
+        public async Task<BfBankAccount[]> GetBankAccountsAsync() => (await GetBankAccountsAsync(CancellationToken.None)).GetContent();
     }
 }

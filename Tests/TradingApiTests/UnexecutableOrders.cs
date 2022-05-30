@@ -7,6 +7,7 @@
 //
 
 using System;
+using System.Threading.Tasks;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Trading;
 
@@ -14,7 +15,7 @@ namespace TradingApiTests
 {
     partial class Program
     {
-        static async void UnexecutableOrders(BfxApplication app)
+        static async Task UnexecutableOrders(BfxApplication app)
         {
             var mds = await app.GetMarketDataSourceAsync(ProductCode);
 

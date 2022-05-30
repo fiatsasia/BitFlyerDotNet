@@ -29,8 +29,8 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="productCode"></param>
         /// <returns></returns>
         public Task<BitFlyerResponse<BfMarketHealth>> GetHealthAsync(string productCode, CancellationToken ct)
-            => GetAsync<BfMarketHealth>(nameof(GetHealth), "product_code=" + productCode, ct);
+            => GetAsync<BfMarketHealth>(nameof(GetHealthAsync), "product_code=" + productCode, ct);
 
-        public BitFlyerResponse<BfMarketHealth> GetHealth(string productCode) => GetHealthAsync(productCode, CancellationToken.None).Result;
+        public async Task<BfMarketHealth> GetHealthAsync(string productCode) => (await GetHealthAsync(productCode, CancellationToken.None)).GetContent();
     }
 }

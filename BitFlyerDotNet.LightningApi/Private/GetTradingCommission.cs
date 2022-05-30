@@ -27,9 +27,9 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="productCode"></param>
         /// <returns></returns>
         public Task<BitFlyerResponse<BfTradingCommission>> GetTradingCommissionAsync(string productCode, CancellationToken ct)
-            => GetPrivateAsync<BfTradingCommission>(nameof(GetTradingCommission), "product_code=" + productCode, ct);
+            => GetPrivateAsync<BfTradingCommission>(nameof(GetTradingCommissionAsync), "product_code=" + productCode, ct);
 
-        public BitFlyerResponse<BfTradingCommission> GetTradingCommission(string productCode)
-            => GetTradingCommissionAsync(productCode, CancellationToken.None).Result;
+        public async Task<decimal> GetTradingCommissionAsync(string productCode)
+            => (await GetTradingCommissionAsync(productCode, CancellationToken.None)).GetContent().CommissionRate;
     }
 }

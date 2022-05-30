@@ -228,9 +228,10 @@ namespace BitFlyerDotNet.LightningApi
             _hash = new(Encoding.UTF8.GetBytes(apiSecret));
         }
 
-        internal async Task<BitFlyerResponse<T>> GetAsync<T>(string apiName, string queryParameters, CancellationToken ct)
+        internal async Task<BitFlyerResponse<T>> GetAsync<T>(string callerName, string queryParameters, CancellationToken ct)
         {
-            var path = PublicBasePath + apiName.ToLower();
+            var apiName = callerName.Replace("Async", "").ToLower();
+            var path = PublicBasePath + apiName;
             if (!string.IsNullOrEmpty(queryParameters))
             {
                 path += "?" + queryParameters;
@@ -305,15 +306,16 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        internal async Task<BitFlyerResponse<T>> GetPrivateAsync<T>(string apiName, string queryParameters, CancellationToken ct)
+        internal async Task<BitFlyerResponse<T>> GetPrivateAsync<T>(string callerName, string queryParameters, CancellationToken ct)
         {
             if (!IsAuthenticated)
             {
                 throw new BitFlyerUnauthorizedException("Access key and secret required.");
             }
 
+            var apiName = callerName.Replace("Async", "").ToLower();
             var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ff");
-            var path = PrivateBasePath + apiName.ToLower();
+            var path = PrivateBasePath + apiName;
             if (!string.IsNullOrEmpty(queryParameters))
             {
                 path += "?" + queryParameters;
@@ -437,7 +439,7 @@ namespace BitFlyerDotNet.LightningApi
                     {
                         case nameof(SendChildOrderAsync):
                         case nameof(SendParentOrderAsync):
-                        case nameof(CancelAllChildOrders):
+                        case nameof(CancelAllChildOrdersAsync):
                             if (_orderApiLimitter.CheckLimitReached())
                             {
                                 Log.Warn("Order API limit reached.");

@@ -6,10 +6,9 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace BitFlyerDotNet.LightningApi
 {
@@ -22,28 +21,19 @@ namespace BitFlyerDotNet.LightningApi
     {
         /// <summary>
         /// Cancel All Orders
-        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelAllChildOrders">Online help</see>
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelAllChildOrdersAsync">Online help</see>
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<string>> CancelAllChildOrdersAsync(BfCancelAllChildOrdersRequest request, CancellationToken ct)
-        {
-            return PostPrivateAsync<string>(nameof(CancelAllChildOrders), request, ct);
-        }
-
-        public BitFlyerResponse<string> CancelAllChildOrders(BfCancelAllChildOrdersRequest request)
-            => CancelAllChildOrdersAsync(request, CancellationToken.None).Result;
+        public Task<BitFlyerResponse<string>> CancelAllChildOrdersAsync(string productCode, CancellationToken ct)
+            => PostPrivateAsync<string>(nameof(CancelAllChildOrdersAsync), new BfCancelAllChildOrdersRequest { ProductCode = productCode }, ct);
 
         /// <summary>
         /// Cancel All Orders
-        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelAllChildOrders">Online help</see>
+        /// <see href="https://scrapbox.io/BitFlyerDotNet/CancelAllChildOrdersAsync">Online help</see>
         /// </summary>
         /// <param name="productCode"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<string>> CancelAllChildOrdersAsync(string productCode, CancellationToken ct)
-            => CancelAllChildOrdersAsync(new BfCancelAllChildOrdersRequest { ProductCode = productCode }, ct);
-
-        public BitFlyerResponse<string> CancelAllChildOrders(string productCode)
-            => CancelAllChildOrdersAsync(productCode, CancellationToken.None).Result;
+        public async Task<bool> CancelAllChildOrdersAsync(string productCode) => (await CancelAllChildOrdersAsync(productCode, CancellationToken.None)).IsOk;
     }
 }

@@ -33,8 +33,8 @@ namespace BitFlyerDotNet.LightningApi
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetBalance">Online help</see>
         /// </summary>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfBalance[]>> GetBalanceAsync(CancellationToken ct) => GetPrivateAsync<BfBalance[]>(nameof(GetBalance), string.Empty, ct);
+        public Task<BitFlyerResponse<BfBalance[]>> GetBalanceAsync(CancellationToken ct) => GetPrivateAsync<BfBalance[]>(nameof(GetPrivateAsync), string.Empty, ct);
 
-        public BitFlyerResponse<BfBalance[]> GetBalance() => GetBalanceAsync(CancellationToken.None).Result;
+        public async Task<BfBalance[]> GetBalanceAsync() => (await GetBalanceAsync(CancellationToken.None)).GetContent();
     }
 }

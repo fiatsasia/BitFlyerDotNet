@@ -41,8 +41,8 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <param name="productCode"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfBoard>> GetBoardAsync(string productCode, CancellationToken ct) => GetAsync<BfBoard>(nameof(GetBoard), "product_code=" + productCode, ct);
+        public Task<BitFlyerResponse<BfBoard>> GetBoardAsync(string productCode, CancellationToken ct) => GetAsync<BfBoard>(nameof(GetBoardAsync), "product_code=" + productCode, ct);
 
-        public BitFlyerResponse<BfBoard> GetBoard(string productCode) => GetBoardAsync(productCode, CancellationToken.None).Result;
+        public async Task<BfBoard> GetBoardAsync(string productCode) => (await GetBoardAsync(productCode, CancellationToken.None)).GetContent();
     }
 }

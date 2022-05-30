@@ -40,18 +40,6 @@ namespace BitFlyerDotNet.LightningApi
         /// Withdrawing Funds
         /// <see href="https://scrapbox.io/BitFlyerDotNet/Withdraw">Online help</see>
         /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public Task<BitFlyerResponse<BfWithdrawResponse>> WithdrawAsync(BfWithdrawRequest request, CancellationToken ct)
-            => PostPrivateAsync<BfWithdrawResponse>(nameof(Withdraw), request, CancellationToken.None);
-
-        public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfWithdrawRequest request)
-            => WithdrawAsync(request, CancellationToken.None).Result;
-
-        /// <summary>
-        /// Withdrawing Funds
-        /// <see href="https://scrapbox.io/BitFlyerDotNet/Withdraw">Online help</see>
-        /// </summary>
         /// <param name="currencyCode"></param>
         /// <param name="bankAccountId"></param>
         /// <param name="amount"></param>
@@ -59,7 +47,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public Task<BitFlyerResponse<BfWithdrawResponse>> WithdrawAsync(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode, CancellationToken ct)
         {
-            return WithdrawAsync(new ()
+            return PostPrivateAsync<BfWithdrawResponse>(nameof(WithdrawAsync), new BfWithdrawRequest
             {
                 CurrencyCode = currencyCode,
                 BankAccountId = bankAccountId,
@@ -68,7 +56,7 @@ namespace BitFlyerDotNet.LightningApi
             }, ct);
         }
 
-        public BitFlyerResponse<BfWithdrawResponse> Withdraw(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode)
-            => WithdrawAsync(currencyCode, bankAccountId, amount, authenticationCode, CancellationToken.None).Result;
+        public async Task<BfWithdrawResponse> WithdrawAsync(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode)
+            => (await WithdrawAsync(currencyCode, bankAccountId, amount, authenticationCode, CancellationToken.None)).GetContent();
     }
 }

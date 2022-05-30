@@ -34,8 +34,8 @@ namespace BitFlyerDotNet.LightningApi
     public partial class BitFlyerClient
     {
         public Task<BitFlyerResponse<BfCollateral>> GetCollateralAsync(CancellationToken ct)
-            => GetPrivateAsync<BfCollateral>(nameof(GetCollateral), string.Empty, ct);
+            => GetPrivateAsync<BfCollateral>(nameof(GetCollateralAsync), string.Empty, ct);
 
-        public BitFlyerResponse<BfCollateral> GetCollateral() => GetCollateralAsync(CancellationToken.None).Result;
+        public async Task<BfCollateral> GetCollateralAsync() => (await GetCollateralAsync(CancellationToken.None)).GetContent();
     }
 }

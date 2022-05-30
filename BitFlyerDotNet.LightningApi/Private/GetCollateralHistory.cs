@@ -56,17 +56,17 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
-            return GetPrivateAsync<BfCollateralHistory[]>(nameof(GetCollateralHistory), query, ct);
+            return GetPrivateAsync<BfCollateralHistory[]>(nameof(GetCollateralHistoryAsync), query, ct);
         }
 
-        public BitFlyerResponse<BfCollateralHistory[]> GetCollateralHistory(int count = 0, int before = 0, int after = 0)
-            => GetCollateralHistoryAsync(count, before, after, CancellationToken.None).Result;
+        public async Task<BfCollateralHistory[]> GetCollateralHistoryAsync(int count = 0, int before = 0, int after = 0)
+            => (await GetCollateralHistoryAsync(count, before, after, CancellationToken.None)).GetContent();
 
-        public IEnumerable<BfCollateralHistory> GetCollateralHistory(int before, Func<BfCollateralHistory, bool> predicate)
+        public async IAsyncEnumerable<BfCollateralHistory> GetCollateralHistoryAsync(int before, Func<BfCollateralHistory, bool> predicate)
         {
             while (true)
             {
-                var execs = GetCollateralHistory(ReadCountMax, before, 0).GetContent();
+                var execs = await GetCollateralHistoryAsync(ReadCountMax, before, 0);
                 if (execs.Length == 0)
                 {
                     break;

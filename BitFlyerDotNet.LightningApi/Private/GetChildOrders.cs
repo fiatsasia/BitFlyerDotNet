@@ -108,10 +108,10 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(parentOrderId) ? "&parent_order_id=" + parentOrderId : ""
             );
 
-            return GetPrivateAsync<BfChildOrderStatus[]>(nameof(GetChildOrders), query, ct);
+            return GetPrivateAsync<BfChildOrderStatus[]>(nameof(GetChildOrdersAsync), query, ct);
         }
 
-        public Task<BitFlyerResponse<BfChildOrderStatus[]>> GetChildOrdersAsync(
+        public async Task<BfChildOrderStatus[]> GetChildOrdersAsync(
             string productCode,
             BfOrderState orderState = BfOrderState.Unknown,
             int count = 0,
@@ -120,26 +120,13 @@ namespace BitFlyerDotNet.LightningApi
             string childOrderId = null,
             string childOrderAcceptanceId = null,
             string parentOrderId = null
-        )
-            => GetChildOrdersAsync(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, CancellationToken.None);
+        ) => (await GetChildOrdersAsync(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, CancellationToken.None)).GetContent();
 
-        public BitFlyerResponse<BfChildOrderStatus[]> GetChildOrders(
-            string productCode,
-            BfOrderState orderState = BfOrderState.Unknown,
-            int count = 0,
-            uint before = 0,
-            uint after = 0,
-            string childOrderId = null,
-            string childOrderAcceptanceId = null,
-            string parentOrderId = null
-        )
-            => GetChildOrdersAsync(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, CancellationToken.None).Result;
-
-        public IEnumerable<BfChildOrderStatus> GetChildOrders(string productCode, BfOrderState orderState, uint before, Func<BfChildOrderStatus, bool> predicate)
+        public async IAsyncEnumerable<BfChildOrderStatus> GetChildOrdersAsync(string productCode, BfOrderState orderState, uint before, Func<BfChildOrderStatus, bool> predicate)
         {
             while (true)
             {
-                var orders = GetChildOrders(productCode, orderState, ReadCountMax, before).GetContent();
+                var orders = await GetChildOrdersAsync(productCode, orderState, ReadCountMax, before);
                 if (orders.Length == 0)
                 {
                     break;
@@ -162,12 +149,13 @@ namespace BitFlyerDotNet.LightningApi
             }
         }
 
-        public IEnumerable<BfChildOrderStatus> GetChildOrders(string productCode, DateTime after) =>
-            GetChildOrders(productCode, BfOrderState.Active, 0, e => e.ChildOrderDate >= after)
-            .Concat(GetChildOrders(productCode, BfOrderState.Completed, 0, e => e.ChildOrderDate >= after))
-            .Concat(GetChildOrders(productCode, BfOrderState.Canceled, 0, e => e.ChildOrderDate >= after))
-            .Concat(GetChildOrders(productCode, BfOrderState.Expired, 0, e => e.ChildOrderDate >= after))
-            .Concat(GetChildOrders(productCode, BfOrderState.Rejected, 0, e => e.ChildOrderDate >= after))
+        public IAsyncEnumerable<BfChildOrderStatus> GetChildOrdersAsync(string productCode, DateTime after)
+            =>
+            GetChildOrdersAsync(productCode, BfOrderState.Active, 0, e => e.ChildOrderDate >= after)
+            .Concat(GetChildOrdersAsync(productCode, BfOrderState.Completed, 0, e => e.ChildOrderDate >= after))
+            .Concat(GetChildOrdersAsync(productCode, BfOrderState.Canceled, 0, e => e.ChildOrderDate >= after))
+            .Concat(GetChildOrdersAsync(productCode, BfOrderState.Expired, 0, e => e.ChildOrderDate >= after))
+            .Concat(GetChildOrdersAsync(productCode, BfOrderState.Rejected, 0, e => e.ChildOrderDate >= after))
             .OrderByDescending(e => e.PagingId);
     }
 }

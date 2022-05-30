@@ -13,6 +13,7 @@ using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using BitFlyerDotNet.LightningApi;
 using BitFlyerDotNet.Historical;
+using System.Threading.Tasks;
 
 namespace HistoricalApiTests
 {
@@ -92,17 +93,17 @@ namespace HistoricalApiTests
         }
 
         [TestMethod]
-        public void InitializeBalances()
+        public async Task InitializeBalances()
         {
             var account = new OrderSource(_client, _connStr, _productCode);
-            var balances = account.GetBalances(BfCurrencyCode.JPY, DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
+            var balances = await account.GetBalancesAsync(BfCurrencyCode.JPY, DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToListAsync();
         }
 
         [TestMethod]
-        public void InitializeCollaterals()
+        public async Task InitializeCollaterals()
         {
             var account = new OrderSource(_client, _connStr, _productCode);
-            var colls = account.GetCollaterals(DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToList();
+            var colls = await account.GetCollaterals(DateTime.UtcNow.AddYears(-3), DateTime.UtcNow).ToListAsync();
         }
 
         [TestMethod]

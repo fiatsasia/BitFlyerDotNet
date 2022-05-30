@@ -61,10 +61,10 @@ namespace BitFlyerDotNet.LightningApi
                 (before > 0) ? $"&before={before}" : "",
                 (after > 0) ? $"&after={after}" : ""
             );
-            return GetAsync<BfExecution[]>(nameof(GetExecutions), query, ct);
+            return GetAsync<BfExecution[]>(nameof(GetExecutionsAsync), query, ct);
         }
 
-        public BitFlyerResponse<BfExecution[]> GetExecutions(string productCode, long count = 0, long before = 0, long after = 0)
-            => GetExecutionsAsync(productCode, count, before, after, CancellationToken.None).Result;
+        public async Task<BfExecution[]> GetExecutionsAsync(string productCode, long count = 0, long before = 0, long after = 0)
+            => (await GetExecutionsAsync(productCode, count, before, after, CancellationToken.None)).GetContent();
     }
 }

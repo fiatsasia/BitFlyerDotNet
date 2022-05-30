@@ -55,7 +55,7 @@ namespace BitFlyerDotNet.Historical
         {
         }
 
-        public DbParentOrder(string productCode, BfParentOrder req, BfParentOrderResponse resp)
+        public DbParentOrder(string productCode, BfParentOrder req, string parentOrderAcceptanceId)
         {
             ProductCode = productCode;
             OrderType = req.OrderMethod;
@@ -64,7 +64,7 @@ namespace BitFlyerDotNet.Historical
             {
                 TimeInForce = BfTimeInForce.GTC;
             }
-            AcceptanceId = resp.ParentOrderAcceptanceId;
+            AcceptanceId = parentOrderAcceptanceId;
         }
 
         public DbParentOrder(string productCode, BfParentOrderDetailStatus order)

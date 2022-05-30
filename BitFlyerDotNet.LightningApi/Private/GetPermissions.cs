@@ -19,8 +19,8 @@ namespace BitFlyerDotNet.LightningApi
         /// </summary>
         /// <returns></returns>
         public Task<BitFlyerResponse<string[]>> GetPermissionsAsync(CancellationToken ct)
-            => GetPrivateAsync<string[]>(nameof(GetPermissions), string.Empty, ct);
+            => GetPrivateAsync<string[]>(nameof(GetPermissionsAsync), string.Empty, ct);
 
-        public BitFlyerResponse<string[]> GetPermissions() => GetPermissionsAsync(CancellationToken.None).Result;
+        public async Task<string[]> GetPermissionsAsync() => (await GetPermissionsAsync(CancellationToken.None)).GetContent();
     }
 }

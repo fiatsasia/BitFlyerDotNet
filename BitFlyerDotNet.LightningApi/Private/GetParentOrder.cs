@@ -76,7 +76,7 @@ namespace BitFlyerDotNet.LightningApi
         /// <param name="parentOrderId"></param>
         /// <param name="parentOrderAcceptanceId"></param>
         /// <returns></returns>
-        public Task<BitFlyerResponse<BfParentOrderDetailStatus>> GetParentOrderDetailAsync(string productCode, string parentOrderId, string parentOrderAcceptanceId, CancellationToken ct)
+        public Task<BitFlyerResponse<BfParentOrderDetailStatus>> GetParentOrderAsync(string productCode, string parentOrderId, string parentOrderAcceptanceId, CancellationToken ct)
         {
             if (string.IsNullOrEmpty(parentOrderId) && string.IsNullOrEmpty(parentOrderAcceptanceId))
             {
@@ -89,13 +89,10 @@ namespace BitFlyerDotNet.LightningApi
                 !string.IsNullOrEmpty(parentOrderAcceptanceId) ? "&parent_order_acceptance_id=" + parentOrderAcceptanceId : ""
             );
 
-            return GetPrivateAsync<BfParentOrderDetailStatus>("getparentorder", query, ct);
+            return GetPrivateAsync<BfParentOrderDetailStatus>(nameof(GetParentOrderAsync), query, ct);
         }
 
-        public Task<BitFlyerResponse<BfParentOrderDetailStatus>> GetParentOrderDetailAsync(string productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
-            => GetParentOrderDetailAsync(productCode, parentOrderId, parentOrderAcceptanceId, CancellationToken.None);
-
-        public BitFlyerResponse<BfParentOrderDetailStatus> GetParentOrderDetail(string productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
-            => GetParentOrderDetailAsync(productCode, parentOrderId, parentOrderAcceptanceId, CancellationToken.None).Result;
+        public async Task<BfParentOrderDetailStatus> GetParentOrderAsync(string productCode, string parentOrderId = null, string parentOrderAcceptanceId = null)
+            => (await GetParentOrderAsync(productCode, parentOrderId, parentOrderAcceptanceId, CancellationToken.None)).GetContent();
     }
 }

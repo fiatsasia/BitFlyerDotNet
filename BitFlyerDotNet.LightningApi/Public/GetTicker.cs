@@ -62,11 +62,9 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public Task<BitFlyerResponse<BfTicker>> GetTickerAsync(string productCode, CancellationToken ct)
         {
-            return GetAsync<BfTicker>(nameof(GetTicker), "product_code=" + productCode, ct);
+            return GetAsync<BfTicker>(nameof(GetTickerAsync), "product_code=" + productCode, ct);
         }
 
-        public Task<BitFlyerResponse<BfTicker>> GetTickerAsync(string productCode) => GetTickerAsync(productCode, CancellationToken.None);
-
-        public BitFlyerResponse<BfTicker> GetTicker(string productCode) => GetTickerAsync(productCode, CancellationToken.None).Result;
+        public async Task<BfTicker> GetTickerAsync(string productCode) => (await GetTickerAsync(productCode, CancellationToken.None)).GetContent();
     }
 }

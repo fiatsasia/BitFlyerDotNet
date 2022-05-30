@@ -61,11 +61,9 @@ namespace BitFlyerDotNet.LightningApi
         /// <returns></returns>
         public Task<BitFlyerResponse<BfPosition[]>> GetPositionsAsync(string productCode, CancellationToken ct)
         {
-            return GetPrivateAsync<BfPosition[]>(nameof(GetPositions), "product_code=" + productCode, ct);
+            return GetPrivateAsync<BfPosition[]>("getpositions", "product_code=" + productCode, ct);
         }
 
-        public Task<BitFlyerResponse<BfPosition[]>> GetPositionsAsync(string productCode) => GetPositionsAsync(productCode, CancellationToken.None);
-
-        public BitFlyerResponse<BfPosition[]> GetPositions(string productCode) => GetPositionsAsync(productCode, CancellationToken.None).Result;
+        public async Task<BfPosition[]> GetPositionsAsync(string productCode) => (await GetPositionsAsync(productCode, CancellationToken.None)).GetContent();
     }
 }

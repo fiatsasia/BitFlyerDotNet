@@ -74,15 +74,15 @@ namespace TradingApiTests
                         switch (GetCh())
                         {
                             case 'S':
-                                SimpleOrders(app);
+                                await SimpleOrders(app);
                                 break;
 
                             case 'C':
-                                ConditionalOrders(app);
+                                await ConditionalOrders(app);
                                 break;
 
                             case 'U':
-                                UnexecutableOrders(app);
+                                await UnexecutableOrders(app);
                                 break;
 
                             case 'P':

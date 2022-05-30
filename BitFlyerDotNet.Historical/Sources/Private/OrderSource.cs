@@ -82,12 +82,12 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         // Initial updates
         //======================================================================
-        public void UpdateRecentParentOrders(DateTime after)
+        public async void UpdateRecentParentOrders(DateTime after)
         {
-            foreach (var parent in _client.GetParentOrders(_productCode, after))
+            await foreach (var parent in _client.GetParentOrdersAsync(_productCode, after: after))
             {
                 var recParent = _ctx.FindParentOrder(_productCode, parent.ParentOrderAcceptanceId);
-                var detail = _client.GetParentOrderDetail(_productCode, parentOrderAcceptanceId: parent.ParentOrderAcceptanceId).GetContent();
+                var detail = await _client.GetParentOrderAsync(_productCode, parentOrderAcceptanceId: parent.ParentOrderAcceptanceId);
                 if (recParent != default)
                 {
                     recParent.Update(parent, detail); // child の更新は？
@@ -97,7 +97,7 @@ namespace BitFlyerDotNet.Historical
                     _ctx.ParentOrders.Add(new DbParentOrder(_productCode, parent, detail));
                 }
 
-                var children = new Queue<BfChildOrderStatus>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
+                var children = new Queue<BfChildOrderStatus>((await _client.GetChildOrdersAsync(_productCode, parentOrderId: parent.ParentOrderId)).OrderBy(e => e.ChildOrderAcceptanceId));
                 var baseIndex = -1;
                 if (children.Count > 0)
                 {
@@ -126,18 +126,18 @@ namespace BitFlyerDotNet.Historical
 
         public void UpdateRecentChildOrders(DateTime after)
         {
-            _ctx.Upsert(_productCode, _client.GetChildOrders(_productCode, after));
+            _ctx.Upsert(_productCode, _client.GetChildOrdersAsync(_productCode, after).ToEnumerable());
             _ctx.SaveChanges();
         }
 
         public void UpdateRecentExecutions(DateTime after)
         {
-            var execs = _client.GetPrivateExecutions(_productCode, after);
+            var execs = _client.GetPrivateExecutionsAsync(_productCode, after).ToEnumerable();
             _ctx.InsertIfNotExits(_productCode, execs);
             _ctx.SaveChanges();
         }
 
-        public void UpdateRecentOrders(DateTime after)
+        public async Task UpdateRecentOrders(DateTime after)
         {
             UpdateRecentParentOrders(after);
             UpdateRecentChildOrders(after);
@@ -154,7 +154,7 @@ namespace BitFlyerDotNet.Historical
                 }
 
                 // ** child-order-index determination is incomplete.
-                var children = _client.GetChildOrders(_productCode, parentOrderId: parent.OrderId).GetContent().OrderBy(e => e.ChildOrderDate);
+                var children = (await _client.GetChildOrdersAsync(_productCode, parentOrderId: parent.OrderId)).OrderBy(e => e.ChildOrderDate);
                 var childOrderIndex = 0;
                 foreach (var child in children)
                 {
@@ -183,9 +183,9 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         // Manage active orders
         //======================================================================
-        void UpdateActiveChildOrders()
+        async Task UpdateActiveChildOrders()
         {
-            var activeChildren = _client.GetChildOrders(_productCode, BfOrderState.Active).GetContent();
+            var activeChildren = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Active);
             var inactivatedChildIds = _ctx.GetChildOrders().Where(e => e.State == BfOrderState.Active).Select(e => e.AcceptanceId).ToList()
                 .Except(activeChildren.Select(e => e.ChildOrderAcceptanceId));
 
@@ -193,7 +193,7 @@ namespace BitFlyerDotNet.Historical
             // * Canceled child order is removed from server store.
             foreach (var inactivatedAcceptanceId in inactivatedChildIds)
             {
-                var inactivatedChild = _client.GetChildOrders(_productCode, childOrderAcceptanceId: inactivatedAcceptanceId).GetContent();
+                var inactivatedChild = await _client.GetChildOrdersAsync(_productCode, childOrderAcceptanceId: inactivatedAcceptanceId);
                 if (inactivatedChild.Length == 0) // Probably canceled
                 {
                     var rec = _ctx.GetChildOrders().Where(e => e.AcceptanceId == inactivatedAcceptanceId).First();
@@ -209,7 +209,7 @@ namespace BitFlyerDotNet.Historical
             foreach (var child in activeChildren)
             {
                 _ctx.Upsert(_productCode, child);
-                var execs = _client.GetPrivateExecutions(_productCode, childOrderAcceptanceId: child.ChildOrderAcceptanceId).GetContent();
+                var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderAcceptanceId: child.ChildOrderAcceptanceId);
                 if (execs.Length > 0)
                 {
                     _ctx.InsertIfNotExits(_productCode, execs);
@@ -218,25 +218,25 @@ namespace BitFlyerDotNet.Historical
             _ctx.SaveChanges();
         }
 
-        void UpdateActiveParentOrders()
+        async Task UpdateActiveParentOrders()
         {
             // Update active parent orders, descendants and executions
-            var activeParents = _client.GetParentOrders(_productCode, BfOrderState.Active).GetContent();
+            var activeParents = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Active);
             var inactivatedParents = _ctx.GetParentOrders().Where(e => e.State == BfOrderState.Active).ToList()
                 .Where(e => !activeParents.Any(f => f.ParentOrderAcceptanceId == e.AcceptanceId));
 
             // Inactivate parent orders
             foreach (var inactiveParent in inactivatedParents)
             {
-                var detail = _client.GetParentOrderDetail(_productCode, parentOrderAcceptanceId: inactiveParent.AcceptanceId).GetContent();
-                var parent = _client.GetParentOrders(_productCode, count: 1, before: detail.PagingId + 1).GetContent().ToArray()[0];
+                var detail = await _client.GetParentOrderAsync(_productCode, parentOrderAcceptanceId: inactiveParent.AcceptanceId);
+                var parent = (await _client.GetParentOrdersAsync(_productCode, count: 1, before: detail.PagingId + 1)).ToArray()[0];
                 inactiveParent.Update(parent, detail);
             }
 
             // Update active parent orders
             foreach (var parent in activeParents)
             {
-                var detail = _client.GetParentOrderDetail(_productCode, parentOrderId: parent.ParentOrderId).GetContent();
+                var detail = await _client.GetParentOrderAsync(_productCode, parentOrderId: parent.ParentOrderId);
                 var recParent = _ctx.FindParentOrder(_productCode, parent.ParentOrderAcceptanceId);
                 if (recParent == default) // if unmanaged order present
                 {
@@ -249,7 +249,7 @@ namespace BitFlyerDotNet.Historical
 
                 // Matches child orders and parent orders with generating child index.
                 // - OCO and only single active child, 
-                var children = new Queue<BfChildOrderStatus>(_client.GetChildOrders(_productCode, parentOrderId: parent.ParentOrderId).GetContent().OrderBy(e => e.ChildOrderAcceptanceId));
+                var children = new Queue<BfChildOrderStatus>((await _client.GetChildOrdersAsync(_productCode, parentOrderId: parent.ParentOrderId)).OrderBy(e => e.ChildOrderAcceptanceId));
                 int baseIndex = -1;
                 if (children.Count > 0)
                 {
@@ -264,7 +264,7 @@ namespace BitFlyerDotNet.Historical
                         {
                             var child = children.Dequeue();
                             _ctx.Upsert(_productCode, child, detail, childOrderIndex);
-                            var execs = _client.GetPrivateExecutions(_productCode, childOrderAcceptanceId: child.ChildOrderAcceptanceId).GetContent();
+                            var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderAcceptanceId: child.ChildOrderAcceptanceId);
                             if (execs.Length > 0)
                             {
                                 _ctx.InsertIfNotExits(_productCode, execs);
@@ -278,8 +278,8 @@ namespace BitFlyerDotNet.Historical
 
         public void UpdateActiveOrders() => _procQ.Add(() =>
         {
-            UpdateActiveChildOrders();
-            UpdateActiveParentOrders();
+            UpdateActiveChildOrders().Wait();
+            UpdateActiveParentOrders().Wait();
             return true;
         });
         #endregion Manage active orders
@@ -487,14 +487,14 @@ namespace BitFlyerDotNet.Historical
             var latestQuery = _ctx.GetExecutions().OrderByDescending(e => e.ExecutionId).Take(1);
             if (latestQuery.Count() == 0)
             {
-                _client.GetPrivateExecutions(productCode, 0, e => e.ExecutedTime >= start)
+                _client.GetPrivateExecutionsAsync(productCode, 0, e => e.ExecutedTime >= start).ToEnumerable()
                     .ForEach(e => _ctx.Executions.Add(new DbPrivateExecution(productCode, e)));
                 _ctx.SaveChanges();
             }
             else
             {
                 var after = latestQuery.First().ExecutionId;
-                _client.GetPrivateExecutions(productCode, 0, e => e.ExecutionId > after)
+                _client.GetPrivateExecutionsAsync(productCode, 0, e => e.ExecutionId > after).ToEnumerable()
                     .ForEach(e => _ctx.Executions.Add(new DbPrivateExecution(productCode, e)));
                 _ctx.SaveChanges();
 
@@ -502,7 +502,7 @@ namespace BitFlyerDotNet.Historical
                 if (oldestQuery.Count() > 0)
                 {
                     var oldest = oldestQuery.First();
-                    _client.GetPrivateExecutions(productCode, oldest.ExecutionId, e => e.ExecutedTime >= start)
+                    _client.GetPrivateExecutionsAsync(productCode, oldest.ExecutionId, e => e.ExecutedTime >= start).ToEnumerable()
                         .ForEach(e => _ctx.Executions.Add(new DbPrivateExecution(productCode, e)));
                     _ctx.SaveChanges();
                 }
@@ -511,62 +511,68 @@ namespace BitFlyerDotNet.Historical
             return _ctx.GetExecutions().OrderBy(e => e.ExecutedTime).Where(e => e.ExecutedTime >= start && e.ExecutedTime <= end);
         }
 
-        public IEnumerable<DbCollateral> GetCollaterals(DateTime start, DateTime end)
+        public async IAsyncEnumerable<DbCollateral> GetCollaterals(DateTime start, DateTime end)
         {
             var latestQuery = _ctx.GetCollaterals().OrderByDescending(e => e.Id).Take(1);
             if (latestQuery.Count() == 0)
             {
-                _client.GetCollateralHistory(0, e => e.Date >= start)
-                    .ForEach(e => _ctx.Collaterals.Add(new DbCollateral(e)));
+                await _client.GetCollateralHistoryAsync(0, e => e.Date >= start)
+                    .ForEachAsync(e => _ctx.Collaterals.Add(new DbCollateral(e)));
                 _ctx.SaveChanges();
             }
             else
             {
                 var after = latestQuery.First().Id;
-                _client.GetCollateralHistory(0, e => e.PagingId > after)
-                    .ForEach(e => _ctx.Collaterals.Add(new DbCollateral(e)));
+                await _client.GetCollateralHistoryAsync(0, e => e.PagingId > after)
+                    .ForEachAsync(e => _ctx.Collaterals.Add(new DbCollateral(e)));
                 _ctx.SaveChanges();
 
                 var oldestQuery = _ctx.GetCollaterals().OrderBy(e => e.Id).Take(1);
                 if (oldestQuery.Count() > 0)
                 {
                     var oldest = oldestQuery.First();
-                    _client.GetCollateralHistory(oldest.Id, e => e.Date >= start)
-                        .ForEach(e => _ctx.Collaterals.Add(new DbCollateral(e)));
+                    await _client.GetCollateralHistoryAsync(oldest.Id, e => e.Date >= start)
+                        .ForEachAsync(e => _ctx.Collaterals.Add(new DbCollateral(e)));
                     _ctx.SaveChanges();
                 }
             }
 
-            return _ctx.GetCollaterals().OrderBy(e => e.Date).Where(e => e.Date >= start && e.Date <= end);
+            foreach (var e in _ctx.GetCollaterals().OrderBy(e => e.Date).Where(e => e.Date >= start && e.Date <= end))
+            {
+                yield return e;
+            }
         }
 
-        public IEnumerable<DbBalance> GetBalances(BfCurrencyCode currencyCode, DateTime start, DateTime end)
+        public async IAsyncEnumerable<DbBalance> GetBalancesAsync(BfCurrencyCode currencyCode, DateTime start, DateTime end)
         {
             var latestQuery = _ctx.GetBalances().OrderByDescending(e => e.Id).Take(1);
             if (latestQuery.Count() == 0)
             {
-                _client.GetBalanceHistory(currencyCode, 0, e => e.EventDate >= start)
-                    .ForEach(e => _ctx.Balances.Add(new DbBalance(e)));
+                await _client.GetBalanceHistoryAsync(currencyCode, 0, e => e.EventDate >= start)
+                    .ForEachAsync(e => _ctx.Balances.Add(new DbBalance(e)));
                 _ctx.SaveChanges();
             }
             else
             {
                 var after = latestQuery.First().Id;
-                _client.GetBalanceHistory(currencyCode, 0, e => e.PagingId > after)
-                    .ForEach(e => _ctx.Balances.Add(new DbBalance(e)));
+                await _client.GetBalanceHistoryAsync(currencyCode, 0, e => e.PagingId > after)
+                    .ForEachAsync(e => _ctx.Balances.Add(new DbBalance(e)));
                 _ctx.SaveChanges();
 
                 var oldestQuery = _ctx.GetBalances().OrderBy(e => e.Id).Take(1);
                 if (oldestQuery.Count() > 0)
                 {
                     var oldest = oldestQuery.First();
-                    _client.GetBalanceHistory(currencyCode, oldest.Id, e => e.EventDate >= start)
-                        .ForEach(e => _ctx.Balances.Add(new DbBalance(e)));
+                    await _client.GetBalanceHistoryAsync(currencyCode, oldest.Id, e => e.EventDate >= start)
+                        .ForEachAsync(e => _ctx.Balances.Add(new DbBalance(e)));
                     _ctx.SaveChanges();
                 }
             }
 
-            return _ctx.GetBalances().OrderBy(e => e.Date).Where(e => e.Date >= start && e.Date <= end);
+            foreach (var e in _ctx.GetBalances().OrderBy(e => e.Date).Where(e => e.Date >= start && e.Date <= end))
+            {
+                yield return e;
+            }
         }
     }
 }

@@ -8,6 +8,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using BitFlyerDotNet.LightningApi;
 using Newtonsoft.Json;
 
@@ -102,18 +103,15 @@ namespace OrderApiTests
                             break;
 
                         case 'C':
+                            if (!await _client.CancelParentOrderAsync(ProductCode, parentOrderAcceptanceId: _parentOrderAcceptanceIds.Dequeue()))
                             {
-                                var resp = _client.CancelParentOrder(ProductCode, parentOrderAcceptanceId: _parentOrderAcceptanceIds.Dequeue());
-                                if (!resp.IsErrorOrEmpty)
-                                {
-                                    // Cancel order sent
-                                }
+                                // Cancel failed
                             }
                             break;
 
                         case 'G':
                             {
-                                var resp = _client.GetParentOrders(ProductCode);
+                                var resp = await _client.GetParentOrdersAsync(ProductCode, BfOrderState.Unknown, 0, 0, 0, CancellationToken.None);
                                 if (resp.IsOk)
                                 {
                                     var jobj = JsonConvert.DeserializeObject(resp.Json);

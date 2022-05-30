@@ -76,17 +76,17 @@ namespace BitFlyerDotNet.LightningApi
                 (before > 0) ? $"&before={before}" : "",
                 (after > 0) ? $"&after={after}" : ""
             );
-            return GetPrivateAsync<BfBalanceHistory[]>(nameof(GetBalanceHistory), query, ct);
+            return GetPrivateAsync<BfBalanceHistory[]>(nameof(GetBalanceHistoryAsync), query, ct);
         }
 
-        public BitFlyerResponse<BfBalanceHistory[]> GetBalanceHistory(BfCurrencyCode currencyCode, int count = 0, int before = 0, int after = 0)
-            => GetBalanceHistoryAsync(currencyCode, count, before, after, CancellationToken.None).Result;
+        public async Task<BfBalanceHistory[]> GetBalanceHistoryAsync(BfCurrencyCode currencyCode, int count = 0, int before = 0, int after = 0)
+            => (await GetBalanceHistoryAsync(currencyCode, count, before, after, CancellationToken.None)).GetContent();
 
-        public IEnumerable<BfBalanceHistory> GetBalanceHistory(BfCurrencyCode currencyCode, int before, Func<BfBalanceHistory, bool> predicate)
+        public async IAsyncEnumerable<BfBalanceHistory> GetBalanceHistoryAsync(BfCurrencyCode currencyCode, int before, Func<BfBalanceHistory, bool> predicate)
         {
             while (true)
             {
-                var balances = GetBalanceHistory(currencyCode, ReadCountMax, before, 0).GetContent();
+                var balances = (await GetBalanceHistoryAsync(currencyCode, ReadCountMax, before, 0, CancellationToken.None)).GetContent();
                 if (balances.Length == 0)
                 {
                     break;

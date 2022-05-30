@@ -7,6 +7,8 @@
 //
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
@@ -26,9 +28,9 @@ namespace PublicApiTests
         }
 
         [TestMethod]
-        public void GetBoard()
+        public async Task GetBoard()
         {
-            var resp = _client.GetBoard(ProductCode);
+            var resp = await _client.GetBoardAsync(ProductCode, CancellationToken.None);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var jobject = JsonConvert.DeserializeObject(resp.Json);
@@ -36,9 +38,9 @@ namespace PublicApiTests
         }
 
         [TestMethod]
-        public void GetBoardState()
+        public async Task GetBoardState()
         {
-            var resp = _client.GetBoardState(ProductCode);
+            var resp = await _client.GetBoardStateAsync(ProductCode, CancellationToken.None);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var jobject = JsonConvert.DeserializeObject(resp.Json);
@@ -46,10 +48,10 @@ namespace PublicApiTests
         }
 
         [TestMethod]
-        public void GetChats()
+        public async Task GetChats()
         {
             // Until 5 minutes before
-            var resp = _client.GetChats(DateTime.UtcNow - TimeSpan.FromMinutes(5));
+            var resp = await _client.GetChatsAsync(DateTime.UtcNow - TimeSpan.FromMinutes(5), CancellationToken.None);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var jobject = JsonConvert.DeserializeObject(resp.Json);
@@ -57,9 +59,31 @@ namespace PublicApiTests
         }
 
         [TestMethod]
-        public void GetExecutions()
+        public async Task GetChatsUsa()
         {
-            var resp = _client.GetExecutions(ProductCode);
+            // Until 5 minutes before
+            var resp = await _client.GetChatsUsaAsync(DateTime.UtcNow - TimeSpan.FromMinutes(5), CancellationToken.None);
+            Assert.IsFalse(resp.IsError); // Usually empty
+
+            var jobject = JsonConvert.DeserializeObject(resp.Json);
+            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+        }
+
+        [TestMethod]
+        public async Task GetChatsEu()
+        {
+            // Until 5 minutes before
+            var resp = await _client.GetChatsEuAsync(DateTime.UtcNow - TimeSpan.FromMinutes(5), CancellationToken.None);
+            Assert.IsFalse(resp.IsError); // Usually empty
+
+            var jobject = JsonConvert.DeserializeObject(resp.Json);
+            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+        }
+
+        [TestMethod]
+        public async Task GetExecutions()
+        {
+            var resp = await _client.GetExecutionsAsync(ProductCode, 0, 0, 0, CancellationToken.None);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var jobject = JsonConvert.DeserializeObject(resp.Json);
@@ -67,9 +91,9 @@ namespace PublicApiTests
         }
 
         [TestMethod]
-        public void GetHealth()
+        public async Task GetHealth()
         {
-            var resp = _client.GetHealth(ProductCode);
+            var resp = await _client.GetHealthAsync(ProductCode, CancellationToken.None);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var jobject = JsonConvert.DeserializeObject(resp.Json);
@@ -77,47 +101,43 @@ namespace PublicApiTests
         }
 
         [TestMethod]
-        public void GetMarketsAll()
+        public async Task GetMarkets()
         {
-            // If fails exception will be thrown
-            var resp = _client.GetMarketsAll();
-            foreach (var element in resp)
-            {
-                var jobject = JsonConvert.DeserializeObject(element.Json);
-                Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
-            }
-        }
-
-        [TestMethod]
-        public void GetMarkets()
-        {
-            var resp = _client.GetMarkets();
+            var resp = await _client.GetMarketsAsync(CancellationToken.None);
             var jobject = JsonConvert.DeserializeObject(resp.Json);
             Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
         [TestMethod]
-        public void GetMarketsUsa()
+        public async Task GetMarketsUsa()
         {
-            var resp = _client.GetMarketsUsa();
+            var resp = await _client.GetMarketsUsaAsync(CancellationToken.None);
             var jobject = JsonConvert.DeserializeObject(resp.Json);
             Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
         [TestMethod]
-        public void GetMarketsEu()
+        public async Task GetMarketsEu()
         {
-            var resp = _client.GetMarketsEu();
+            var resp = await _client.GetMarketsEuAsync(CancellationToken.None);
             var jobject = JsonConvert.DeserializeObject(resp.Json);
             Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
         [TestMethod]
-        public void GetTicker()
+        public async Task GetTicker()
         {
-            var resp = _client.GetTicker("FX_BTC_JPY");
+            var resp = await _client.GetTickerAsync("FX_BTC_JPY", CancellationToken.None);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
+            var jobject = JsonConvert.DeserializeObject(resp.Json);
+            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+        }
+
+        [TestMethod]
+        public async Task GetCorporateLeverage()
+        {
+            var resp = await _client.GetCorporateLeverageAsync(CancellationToken.None);
             var jobject = JsonConvert.DeserializeObject(resp.Json);
             Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }

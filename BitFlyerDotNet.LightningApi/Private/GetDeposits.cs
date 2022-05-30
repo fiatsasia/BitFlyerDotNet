@@ -55,10 +55,10 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             ).TrimStart('&');
 
-            return GetPrivateAsync<BfDeposit[]>(nameof(GetDeposits), query, ct);
+            return GetPrivateAsync<BfDeposit[]>(nameof(GetDepositsAsync), query, ct);
         }
 
-        public BitFlyerResponse<BfDeposit[]> GetDeposits(int count = 0, int before = 0, int after = 0)
-            => GetDepositsAsync(count, before, after, CancellationToken.None).Result;
+        public async Task<BfDeposit[]> GetDepositsAsync(int count = 0, int before = 0, int after = 0)
+            => (await GetDepositsAsync(count, before, after, CancellationToken.None)).GetContent();
     }
 }

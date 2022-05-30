@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
+using System.Threading;
 
 namespace OrderApiTests
 {
@@ -64,17 +65,16 @@ namespace OrderApiTests
                             break;
 
                         case 'C':
+                            if (!await _client.CancelChildOrderAsync(ProductCode, childOrderAcceptanceId: _childOrderAcceptanceIds.Dequeue()))
                             {
-                                var resp = _client.CancelChildOrder(ProductCode, childOrderAcceptanceId: _childOrderAcceptanceIds.Dequeue());
+                                // Cancel failed
                             }
                             break;
 
                         case 'A':
+                            if (await _client.CancelAllChildOrdersAsync(ProductCode))
                             {
-                                if (_client.CancelAllChildOrders(ProductCode).IsOk)
-                                {
-                                    _childOrderAcceptanceIds.Clear();
-                                }
+                                _childOrderAcceptanceIds.Clear();
                             }
                             break;
 
@@ -144,15 +144,15 @@ namespace OrderApiTests
                                 BitFlyerResponse<BfChildOrderStatus[]> resp = null;
                                 if (!string.IsNullOrEmpty(parentOrderId))
                                 {
-                                    resp = _client.GetChildOrders(ProductCode, orderState: orderState, parentOrderId: parentOrderId);
+                                    resp = await _client.GetChildOrdersAsync(ProductCode, orderState, 0, 0, 0, null, null, parentOrderId, CancellationToken.None);
                                 }
                                 else if (!string.IsNullOrEmpty(childOrderAcceptanceId))
                                 {
-                                    resp = _client.GetChildOrders(ProductCode, orderState: orderState, childOrderAcceptanceId: childOrderAcceptanceId);
+                                    resp = await _client.GetChildOrdersAsync(ProductCode, orderState, 0, 0, 0, null, childOrderAcceptanceId, null, CancellationToken.None);
                                 }
                                 else
                                 {
-                                    resp = _client.GetChildOrders(ProductCode, orderState: orderState);
+                                    resp = await _client.GetChildOrdersAsync(ProductCode, orderState, 0, 0, 0, null, null, null, CancellationToken.None);
                                 }
 
                                 if (resp.IsOk)

@@ -34,18 +34,14 @@ namespace BitFlyerDotNet.LightningApi
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetCoinAddresses">Online help</see>
         /// </summary>
         /// <returns></returns>
-        [Obsolete("This method is obsolete. Use GetAddresses instead.", false)]
-        public BitFlyerResponse<BfCoinAddress[]> GetCoinAddresses()
-            => GetPrivateAsync<BfCoinAddress[]>("getaddresses", string.Empty, CancellationToken.None).Result;
-
         /// <summary>
         /// Get Crypto Assets Deposit Addresses
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetCoinAddresses">Online help</see>
         /// </summary>
         /// <returns></returns>
         public Task<BitFlyerResponse<BfCoinAddress[]>> GetAddressesAsync(CancellationToken ct)
-            => GetPrivateAsync<BfCoinAddress[]>(nameof(GetAddresses), string.Empty, ct);
+            => GetPrivateAsync<BfCoinAddress[]>(nameof(GetAddressesAsync), string.Empty, ct);
 
-        public BitFlyerResponse<BfCoinAddress[]> GetAddresses() => GetAddressesAsync(CancellationToken.None).Result;
+        public async Task<BfCoinAddress[]> GetAddressesAsync() => (await GetAddressesAsync(CancellationToken.None)).GetContent();
     }
 }

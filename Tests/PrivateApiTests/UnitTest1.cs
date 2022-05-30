@@ -12,6 +12,7 @@ using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
+using System.Threading.Tasks;
 
 namespace PrivateApiTests
 {
@@ -77,12 +78,12 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void CancelAllChildOrders()
+        public async Task CancelAllChildOrders()
         {
             EnableSendOrder(true);
             try
             {
-                var resp = _client.CancelAllChildOrders(_productCode);
+                var resp = await _client.CancelAllChildOrdersAsync(_productCode, CancellationToken.None);
                 Assert.IsTrue(resp.IsOk); // Response message is nothing
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
@@ -91,47 +92,55 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void CancelChildOrderByAcceptanceId()
+        public async Task CancelChildOrderByAcceptanceId()
         {
+            throw new NotSupportedException();
+
             EnableSendOrder(false);
-            var resp = _client.CancelChildOrder(_productCode, childOrderAcceptanceId: DummyChildOrderAcceptanceId);
+            var resp = await _client.CancelChildOrderAsync(_productCode, null, DummyChildOrderAcceptanceId, CancellationToken.None);
             Assert.IsTrue(resp.IsOk);
             Console.WriteLine(GetRequestJson());
         }
 
         [TestMethod]
-        public void CancelChildOrderById()
+        public async Task CancelChildOrderById()
         {
+            throw new NotSupportedException();
+
             EnableSendOrder(false);
-            var resp = _client.CancelChildOrder(_productCode, childOrderId: DummyChildOrderId);
+            var resp = await _client.CancelChildOrderAsync(_productCode, DummyChildOrderId, null, CancellationToken.None);
             Assert.IsTrue(resp.IsOk); // Order force canceled
             Console.WriteLine(GetRequestJson());
         }
 
         [TestMethod]
-        public void CancelParentOrderByAcceptanceId()
+        public async Task CancelParentOrderByAcceptanceId()
         {
+            throw new NotSupportedException();
+
             EnableSendOrder(false);
-            var resp = _client.CancelParentOrder(_productCode, parentOrderAcceptanceId: DummyParentOrderAcceptanceId);
+            var resp = await _client.CancelParentOrderAsync(_productCode, null, DummyParentOrderAcceptanceId, CancellationToken.None);
             Assert.IsTrue(resp.IsOk); // Order force canceled
             Console.WriteLine(GetRequestJson());
         }
 
         [TestMethod]
-        public void CancelParentOrderById()
+        public async Task CancelParentOrderById()
         {
+            throw new NotSupportedException();
+
             EnableSendOrder(false);
-            var resp = _client.CancelParentOrder(_productCode, parentOrderId: DummyParentOrderId);
+            var resp = await _client.CancelParentOrderAsync(_productCode, DummyParentOrderId, null, CancellationToken.None);
             Assert.IsTrue(resp.IsOk); // Order force canceled
             Console.WriteLine(GetRequestJson());
         }
 
         [TestMethod]
-        public void GetBalance()
+        public async Task GetBalance()
         {
             try
             {
-                var resp = _client.GetBalance();
+                var resp = await _client.GetBalanceAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -142,11 +151,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetBalanceHistory()
+        public async Task GetBalanceHistory()
         {
             try
             {
-                var resp = _client.GetBalanceHistory(BfCurrencyCode.JPY, count: 5);
+                var resp = await _client.GetBalanceHistoryAsync(BfCurrencyCode.JPY, 5, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -157,11 +166,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetBankAccounts()
+        public async Task GetBankAccounts()
         {
             try
             {
-                var resp = _client.GetBankAccounts();
+                var resp = await _client.GetBankAccountsAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -172,11 +181,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetChildOrders()
+        public async Task GetChildOrders()
         {
             try
             {
-                var resp = _client.GetChildOrders(_productCode, count: 5);
+                var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -187,11 +196,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetActiveChildOrders()
+        public async Task GetActiveChildOrders()
         {
             try
             {
-                var resp = _client.GetChildOrders(_productCode, BfOrderState.Active, count: 5);
+                var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Active, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -202,11 +211,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetCompletedChildOrders()
+        public async Task GetCompletedChildOrders()
         {
             try
             {
-                var resp = _client.GetChildOrders(_productCode, BfOrderState.Completed, count: 5);
+                var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Completed, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -217,11 +226,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetCanceledChildOrders()
+        public async Task GetCanceledChildOrders()
         {
             try
             {
-                var resp = _client.GetChildOrders(_productCode, BfOrderState.Canceled, count: 5);
+                var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Canceled, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -232,11 +241,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetExpiredChildOrders()
+        public async Task GetExpiredChildOrders()
         {
             try
             {
-                var resp = _client.GetChildOrders(_productCode, BfOrderState.Expired, count: 5);
+                var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Expired, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -247,11 +256,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetRejectedChildOrders()
+        public async Task GetRejectedChildOrders()
         {
             try
             {
-                var resp = _client.GetChildOrders(_productCode, BfOrderState.Rejected, count: 5);
+                var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Rejected, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -262,12 +271,15 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetRecentChildOrders()
+        public async Task GetRecentChildOrders()
         {
             try
             {
-                var orders = _client.GetChildOrders(_productCode, DateTime.UtcNow - TimeSpan.FromDays(60));
-                orders.ForEach(e => Dump(e));
+                var orders = _client.GetChildOrdersAsync(_productCode, DateTime.UtcNow - TimeSpan.FromDays(60));
+                await foreach (var order in orders)
+                {
+                    Dump(order);
+                }
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -275,11 +287,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetAddresses()
+        public async Task GetAddresses()
         {
             try
             {
-                var resp = _client.GetAddresses();
+                var resp = await _client.GetAddressesAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -290,11 +302,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetCoinIns()
+        public async Task GetCoinIns()
         {
             try
             {
-                var resp = _client.GetCoinIns();
+                var resp = await _client.GetCoinInsAsync(0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -305,11 +317,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetCoinOuts()
+        public async Task GetCoinOuts()
         {
             try
             {
-                var resp = _client.GetCoinOuts();
+                var resp = await _client.GetCoinOutsAsync(0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -320,11 +332,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetCollateral()
+        public async Task GetCollateral()
         {
             try
             {
-                var resp = _client.GetCollateral();
+                var resp = await _client.GetCollateralAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -335,11 +347,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetCollateralHistory()
+        public async Task GetCollateralAccounts()
         {
             try
             {
-                var resp = _client.GetCollateralHistory(count: 5);
+                var resp = await _client.GetCollateralAccountsAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -350,11 +362,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetDeposits()
+        public async Task GetCollateralHistory()
         {
             try
             {
-                var resp = _client.GetDeposits();
+                var resp = await _client.GetCollateralHistoryAsync(5, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -365,12 +377,27 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetParentOrderDetail()
+        public async Task GetDeposits()
         {
-            var order = _client.GetParentOrders(_productCode, BfOrderState.Completed, 1).GetContent()[0];
+            try
+            {
+                var resp = await _client.GetDepositsAsync(0, 0, 0, CancellationToken.None);
+                Assert.IsFalse(resp.IsError, resp.ErrorMessage);
+                Dump(resp);
+                var content = resp.GetContent();
+            }
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
+        }
+
+        [TestMethod]
+        public async Task GetParentOrderDetail()
+        {
+            var order = (await _client.GetParentOrdersAsync(_productCode, BfOrderState.Completed, 1))[0];
             var parentOrderId = order.ParentOrderId;
 
-            var resp = _client.GetParentOrderDetail(_productCode, parentOrderId: parentOrderId);
+            var resp = await _client.GetParentOrderAsync(_productCode, parentOrderId, null, CancellationToken.None);
             Assert.IsFalse(resp.IsUnauthorized, "Permission denied");
             Assert.IsFalse(resp.IsError, resp.ErrorMessage);
             Dump(resp);
@@ -382,11 +409,11 @@ namespace PrivateApiTests
         // Probably old parent orders are stored another slow database.
         [TestMethod]
         [Timeout(30000)] // 30 seconds
-        public void GetParentOrders()
+        public async Task GetParentOrders()
         {
             try
             {
-                var resp = _client.GetParentOrders(_productCode);
+                var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -397,11 +424,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetActiveParentOrders()
+        public async Task GetActiveParentOrders()
         {
             try
             {
-                var resp = _client.GetParentOrders(_productCode, BfOrderState.Active);
+                var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Active, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -412,11 +439,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetCompletedParentOrders()
+        public async Task GetCompletedParentOrders()
         {
             try
             {
-                var resp = _client.GetParentOrders(_productCode, BfOrderState.Completed);
+                var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Completed, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -428,11 +455,11 @@ namespace PrivateApiTests
 
         [TestMethod]
         [Timeout(30000)] // 30 seconds
-        public void GetCanceledParentOrders()
+        public async Task GetCanceledParentOrders()
         {
             try
             {
-                var resp = _client.GetParentOrders(_productCode, BfOrderState.Canceled);
+                var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Canceled, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -443,11 +470,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetExpiredParentOrders()
+        public async Task GetExpiredParentOrders()
         {
             try
             {
-                var resp = _client.GetParentOrders(_productCode, BfOrderState.Expired);
+                var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Expired, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -458,11 +485,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetRejectedParentOrders()
+        public async Task GetRejectedParentOrders()
         {
             try
             {
-                var resp = _client.GetParentOrders(_productCode, BfOrderState.Rejected);
+                var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Rejected, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -473,11 +500,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetPermissions()
+        public async Task GetPermissions()
         {
             try
             {
-                var resp = _client.GetPermissions();
+                var resp = await _client.GetPermissionsAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -488,11 +515,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetPositions()
+        public async Task GetPositions()
         {
             try
             {
-                var resp = _client.GetPositions(_productCode);
+                var resp = await _client.GetPositionsAsync(_productCode, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -503,13 +530,13 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetExecutions()
+        public async Task GetExecutions()
         {
             try
             {
                 //var resp = _client.GetChildOrders(_productCode, BfOrderState.Completed, count: 1);
 
-                var resp = _client.GetPrivateExecutions(_productCode, count: 5, before: 1852461210);
+                var resp = await _client.GetPrivateExecutionsAsync(_productCode, 5, 1852461210, 0, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -520,11 +547,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetTradingCommission()
+        public async Task GetTradingCommission()
         {
             try
             {
-                var resp = _client.GetTradingCommission(_productCode);
+                var resp = await _client.GetTradingCommissionAsync(_productCode, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -535,11 +562,11 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public void GetWithdrawals()
+        public async Task GetWithdrawals()
         {
             try
             {
-                var resp = _client.GetWithdrawals();
+                var resp = await _client.GetWithdrawalsAsync(null, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -550,8 +577,20 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async void SendChildOrder()
+        public async Task Withdraw()
         {
+            EnableSendOrder(false);
+            var resp = await _client.WithdrawAsync(BfCurrencyCode.JPY, bankAccountId: 1234, amount: 12000m, authenticationCode: "012345", CancellationToken.None);
+            Assert.IsFalse(resp.IsUnauthorized, "Permission denied");
+            Assert.IsTrue(resp.IsOk);
+            Console.WriteLine(GetRequestJson());
+        }
+
+        [TestMethod]
+        public async Task SendChildOrder()
+        {
+            throw new NotSupportedException();
+
             EnableSendOrder(false);
             var order = BfOrderFactory.Limit(_productCode, BfTradeSide.Buy, 100.0m, 1.0m);
             var resp = await _client.SendChildOrderAsync(order, CancellationToken.None);
@@ -560,21 +599,13 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async void SendParentOrder()
+        public async Task SendParentOrder()
         {
+            throw new NotSupportedException();
+
             EnableSendOrder(false);
             var order = BfOrderFactory.Stop(_productCode, BfTradeSide.Sell, 100000m, 0.1m);
             var resp = await _client.SendParentOrderAsync(order, CancellationToken.None);
-            Assert.IsTrue(resp.IsOk);
-            Console.WriteLine(GetRequestJson());
-        }
-
-        [TestMethod]
-        public void Withdraw()
-        {
-            EnableSendOrder(false);
-            var resp = _client.Withdraw(BfCurrencyCode.JPY, bankAccountId: 1234, amount: 12000m, authenticationCode: "012345");
-            Assert.IsFalse(resp.IsUnauthorized, "Permission denied");
             Assert.IsTrue(resp.IsOk);
             Console.WriteLine(GetRequestJson());
         }
