@@ -48,7 +48,7 @@ namespace TradingApiTests
                             var side = SelectSide();
                             if (side != BfTradeSide.Unknown)
                             {
-                                await app.PlaceOrderAsync(BfOrderFactory.Market(ProductCode, side, mds.LastTradedPrice));
+                                await app.PlaceOrderAsync(BfOrderFactory.Market(ProductCode, side, _orderSize));
                             }
                         }
                         break;

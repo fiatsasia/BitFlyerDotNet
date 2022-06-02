@@ -24,7 +24,7 @@ namespace RealtimeApiTests
         static Queue<IDisposable> _disposeQ = new();
         static Dictionary<string, string> Properties;
 
-        const string ProductCode = "FX_BTC_JPY";
+        const string ProductCode = BfProductCode.FX_BTC_JPY;
         static RealtimeSourceFactory _factory;
         static bool _detail;
 
@@ -177,7 +177,7 @@ namespace RealtimeApiTests
             var left = Console.CursorLeft;
             var top = Console.CursorTop;
 
-            _factory.GetOrderBookSource("FX_BTC_JPY")
+            _factory.GetOrderBookSource(BfProductCode.FX_BTC_JPY)
             .Select(orderBook => orderBook.GetSnapshot(15)) // Take 15 orders from 300 orders
             .Subscribe(obs =>
             {

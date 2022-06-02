@@ -22,7 +22,7 @@ namespace OrderApiTests
         static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
         static CompositeDisposable _disposables = new CompositeDisposable();
 
-        const string ProductCode = "FX_BTC_JPY";
+        const string ProductCode = BfProductCode.FX_BTC_JPY;
         static readonly decimal OrderSize = 0.01m; // ProductCode.GetMinimumOrderSize();
         const decimal UnexecuteGap = 50000m;
         static BitFlyerClient _client;

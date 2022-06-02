@@ -42,34 +42,34 @@ namespace BitFlyerDotNet.LightningApi
 
         [JsonProperty(PropertyName = "child_order_type")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfOrderType ChildOrderType { get; private set; }     // EventType = Order
+        public BfOrderType? ChildOrderType { get; private set; }     // EventType = Order
 
         [JsonProperty(PropertyName = "reason")]
-        public string OrderFailedReason { get; private set; }       // EventType = OrderFailed
+        public string? OrderFailedReason { get; private set; }       // EventType = OrderFailed
 
         [JsonProperty(PropertyName = "exec_id")]
-        public long ExecutionId { get; private set; }               // EventType = Execution
+        public long? ExecutionId { get; private set; }               // EventType = Execution
 
         [JsonProperty(PropertyName = "side")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfTradeSide Side { get; private set; }               // EventType = Order, Execution
+        public BfTradeSide? Side { get; private set; }               // EventType = Order, Execution
 
         [JsonProperty(PropertyName = "price")]
-        public decimal Price { get; private set; }                  // EventType = Order(Order price), Execution(Executed price)
+        public decimal? Price { get; private set; }                  // EventType = Order(Order price), Execution(Executed price)
 
         [JsonProperty(PropertyName = "size")]
-        public decimal Size { get; private set; }                   // EventType = Order(Order size), Execution(Executed size)
+        public decimal? Size { get; private set; }                   // EventType = Order(Order size), Execution(Executed size)
 
         [JsonProperty(PropertyName = "expire_date")]
-        public DateTime ExpireDate { get; private set; }            // EventType = Order
+        public DateTime? ExpireDate { get; private set; }            // EventType = Order
 
         [JsonProperty(PropertyName = "commission")]
-        public decimal Commission { get; private set; }             // EventType = Execution
+        public decimal? Commission { get; private set; }             // EventType = Execution
 
         [JsonProperty(PropertyName = "sfd")]
-        public decimal SwapForDifference { get; private set; }      // EventType = Execution
+        public decimal? SwapForDifference { get; private set; }      // EventType = Execution
 
         [JsonProperty(PropertyName = "outstanding_size")]
-        public decimal OutstandingSize { get; private set; }        // EventType = Execution
+        public decimal? OutstandingSize { get; private set; }        // EventType = Execution
     }
 }

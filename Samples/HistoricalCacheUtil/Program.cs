@@ -25,7 +25,7 @@ namespace HistoricalCacheUtil
 
         static void Main(string[] args)
         {
-            var productCode = "FX_BTC_JPY";
+            var productCode = BfProductCode.FX_BTC_JPY;
             var client = new BitFlyerClient();
             var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
@@ -106,7 +106,7 @@ namespace HistoricalCacheUtil
                 Console.WriteLine("1)FXBTCJPY 2)BTCJPY 3)ETHJPY 4)BCHBTC 5)ETHBTC");
                 switch (GetCh())
                 {
-                    case '1': return "FX_BTC_JPY";
+                    case '1': return BfProductCode.FX_BTC_JPY;
                     case '2': return "BTC_JPY";
                     case '3': return "ETH_JPY";
                     case '4': return "BCH_BTC";

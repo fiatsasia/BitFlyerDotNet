@@ -7,6 +7,9 @@
 //
 
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
@@ -26,5 +29,14 @@ namespace BitFlyerDotNet.Trading
 
         public int CancelRetryMax { get; set; } = 3;
         public TimeSpan CancelRetryInterval { get; set; } = TimeSpan.FromSeconds(3);
+
+
+        public Dictionary<string, decimal> OrderSizeMax { get; } = new();
+        public bool OrderPriceLimitter { get; } = true;
+
+        public BfxConfiguration()
+        {
+            OrderSizeMax[BfProductCode.FX_BTC_JPY] = BfProductCode.GetMinimumOrderSize(BfProductCode.FX_BTC_JPY);
+        }
     }
 }

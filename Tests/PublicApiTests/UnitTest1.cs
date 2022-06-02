@@ -18,7 +18,7 @@ namespace PublicApiTests
     [TestClass]
     public class UnitTest1
     {
-        const string ProductCode = "FX_BTC_JPY";
+        const string ProductCode = BfProductCode.FX_BTC_JPY;
         BitFlyerClient _client;
 
         [TestInitialize]
@@ -127,7 +127,7 @@ namespace PublicApiTests
         [TestMethod]
         public async Task GetTicker()
         {
-            var resp = await _client.GetTickerAsync("FX_BTC_JPY", CancellationToken.None);
+            var resp = await _client.GetTickerAsync(BfProductCode.FX_BTC_JPY, CancellationToken.None);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var jobject = JsonConvert.DeserializeObject(resp.Json);

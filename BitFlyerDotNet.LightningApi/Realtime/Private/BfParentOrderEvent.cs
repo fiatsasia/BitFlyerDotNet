@@ -32,32 +32,32 @@ namespace BitFlyerDotNet.LightningApi
 
         [JsonProperty(PropertyName = "parent_order_type")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfOrderType ParentOrderType { get; private set; }    // EventType = Order
+        public BfOrderType? ParentOrderType { get; private set; }    // EventType = Order
 
         [JsonProperty(PropertyName = "reason")]
-        public string OrderFailedReason { get; private set; }       // EventType = OrderFailed
+        public string? OrderFailedReason { get; private set; }       // EventType = OrderFailed
 
         [JsonProperty(PropertyName = "child_order_type")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfOrderType ChildOrderType { get; private set; }     // EventType = Trigger
+        public BfOrderType? ChildOrderType { get; private set; }     // EventType = Trigger
 
         [JsonProperty(PropertyName = "parameter_index")]
-        public int ChildOrderIndex { get; private set; }            // EventType = Trigger, Complete
+        public int? ChildOrderIndex { get; private set; }            // EventType = Trigger, Complete
 
         [JsonProperty(PropertyName = "child_order_acceptance_id")]
-        public string ChildOrderAcceptanceId { get; private set; }  // EventType = Trigger, Complete
+        public string? ChildOrderAcceptanceId { get; private set; }  // EventType = Trigger, Complete
 
         [JsonProperty(PropertyName = "side")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public BfTradeSide Side { get; private set; }               // EventType = Trigger
+        public BfTradeSide? Side { get; private set; }               // EventType = Trigger
 
         [JsonProperty(PropertyName = "price")]
-        public decimal Price { get; private set; }                  // EventType = Trigger
+        public decimal? Price { get; private set; }                  // EventType = Trigger
 
         [JsonProperty(PropertyName = "size")]
-        public decimal Size { get; private set; }                   // EventType = Trigger
+        public decimal? Size { get; private set; }                   // EventType = Trigger
 
         [JsonProperty(PropertyName = "expire_date")]
-        public DateTime ExpireDate { get; private set; }            // EventType = Order, Trigger
+        public DateTime? ExpireDate { get; private set; }            // EventType = Order, Trigger
     }
 }

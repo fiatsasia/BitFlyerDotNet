@@ -15,26 +15,38 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxTransaction : BfxOrderStatus
+    public class BfxTransaction
     {
         public BfxTransactionState State { get; private set; }
         public event EventHandler<BfxTransactionChangedEventArgs>? TransactionChanged;
 
         BitFlyerClient _client;
         CancellationTokenSource _cts = new CancellationTokenSource();
+        BfxTrade _trade;
+        BfxConfiguration _config;
 
-        internal BfxTransaction(BitFlyerClient client)
+        internal BfxTransaction(BitFlyerClient client, string productCode, BfxConfiguration config)
         {
             _client = client;
+            _config = config;
+            _trade = new BfxTrade(productCode);
         }
 
         #region Child order
-        internal new BfxTransaction Update(BfChildOrder order, string childOrderAcceptanceId) => Update(order, childOrderAcceptanceId);
-        public new BfxTransaction Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs) => (BfxTransaction)base.Update(status, execs);
+        internal BfxTransaction Update(BfChildOrder order)
+        {
+            _trade.Update(order);
+            return this;
+        }
+        public BfxTransaction Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+        {
+            _trade.Update(status, execs);
+            return this;
+        }
 
         internal BfxTransaction OnParentOrderEventForChildren(BfParentOrderEvent e)
         {
-            var result = (BfxTransaction)base.UpdateChild(e);
+            _trade.UpdateChild(e);
             switch (e.EventType)
             {
                 case BfOrderEventType.Trigger:
@@ -43,7 +55,7 @@ namespace BitFlyerDotNet.Trading
                 case BfOrderEventType.Complete:
                     break;
             }
-            return result;
+            return this;
         }
 
         internal BfxTransaction OnChildOrderEvent(BfChildOrderEvent e)
@@ -51,11 +63,8 @@ namespace BitFlyerDotNet.Trading
             switch (e.EventType)
             {
                 case BfOrderEventType.Order:
-                    Update(e);
-                    break;
-
                 case BfOrderEventType.Execution:
-                    UpdateExecution(e);
+                    _trade.Update(e);
                     break;
             }
             return this;
@@ -63,19 +72,22 @@ namespace BitFlyerDotNet.Trading
 
         public async Task<string> PlaceOrderAsync(BfChildOrder order)
         {
-            for (var retry = 0; retry <= 3; retry++)
+            _trade.Update(order);
+            for (var retry = 0; retry <= _config.OrderRetryMax; retry++)
             {
                 _cts.Token.ThrowIfCancellationRequested();
                 var resp = await _client.SendChildOrderAsync(order, _cts.Token);
                 if (!resp.IsError)
                 {
-                    return resp.GetContent().ChildOrderAcceptanceId;
+                    var id = resp.GetContent().ChildOrderAcceptanceId;
+                    _trade.OrderAcceptanceId = id;
+                    return id;
                 }
 
                 Log.Warn($"SendChildOrder failed: {resp.StatusCode} {resp.ErrorMessage}");
                 _cts.Token.ThrowIfCancellationRequested();
                 Log.Info("Trying retry...");
-                await Task.Delay(3000);
+                await Task.Delay(_config.OrderRetryInterval);
             }
 
             Log.Error("SendOrderRequest - Retried out");
@@ -84,19 +96,28 @@ namespace BitFlyerDotNet.Trading
         #endregion Child order
 
         #region Parent order
-        internal new BfxTransaction Update(BfParentOrder order, string parentOrderAcceptanceId) => (BfxTransaction)base.Update(order, parentOrderAcceptanceId);
-        internal new BfxTransaction Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail) => (BfxTransaction)base.Update(status, detail);
+        internal BfxTransaction Update(BfParentOrder order)
+        {
+            _trade.Update(order);
+            return this;
+        }
+        internal BfxTransaction Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
+        {
+            _trade.Update(status, detail);
+            return this;
+        }
 
+#pragma warning disable CS8629
         internal BfxTransaction OnParentOrderEvent(BfParentOrderEvent e)
         {
             switch (e.EventType)
             {
                 case BfOrderEventType.Order:
-                    UpdateParent(e);
+                    _trade.UpdateParent(e);
                     break;
 
                 case BfOrderEventType.Trigger:
-                    Children[e.ChildOrderIndex].UpdateChild(e);
+                    _trade.UpdateChild(e.ChildOrderIndex.Value - 1, e);
                     break;
 
                 case BfOrderEventType.Complete:
@@ -104,22 +125,26 @@ namespace BitFlyerDotNet.Trading
             }
             return this;
         }
+#pragma warning restore CS8629
 
         // - 経過時間でリトライ終了のオプション
         public async Task<string> PlaceOrdertAsync(BfParentOrder order)
         {
-            for (var retry = 0; retry <= 3; retry++)
+            _trade.Update(order);
+            for (var retry = 0; retry <= _config.OrderRetryMax; retry++)
             {
                 _cts.Token.ThrowIfCancellationRequested();
                 var resp = await _client.SendParentOrderAsync(order, _cts.Token);
                 if (!resp.IsError)
                 {
-                    return resp.GetContent().ParentOrderAcceptanceId;
+                    var id = resp.GetContent().ParentOrderAcceptanceId;
+                    _trade.OrderAcceptanceId = id;
+                    return id;
                 }
 
                 _cts.Token.ThrowIfCancellationRequested();
                 Log.Info("Trying retry...");
-                await Task.Delay(5000);
+                await Task.Delay(_config.OrderRetryInterval);
             }
 
             Log.Error("SendOrderRequest - Retried out");
@@ -138,7 +163,7 @@ namespace BitFlyerDotNet.Trading
 
             try
             {
-                var resp = await _client.CancelParentOrderAsync(ProductCode, string.Empty, OrderAcceptanceId, _cts.Token);
+                var resp = await _client.CancelParentOrderAsync(_trade.ProductCode, string.Empty, _trade.OrderAcceptanceId, _cts.Token);
                 if (!resp.IsError)
                 {
                 }

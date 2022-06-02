@@ -24,9 +24,9 @@ namespace BitFlyerDotNet.Trading
         public decimal Commission { get; }
         public decimal SwapForDifference { get; }
         public decimal SwapPointAccumulate { get; }
-        public BfxPositions Positions { get; }
+        public BfxPositionManager Positions { get; }
 
-        internal BfxPosition(BfxPositions positions, BfxPositionsElement pos, BfChildOrderEvent? ev = default)
+        internal BfxPosition(BfxPositionManager positions, BfxPositionsElement pos, BfChildOrderEvent? ev = default)
         {
             Positions = positions;
             Open = pos.Open;
@@ -78,20 +78,22 @@ namespace BitFlyerDotNet.Trading
             _sfd = pos.SwapForDifference;
         }
 
-        public BfxPositionsElement(BfChildOrderEvent ev, decimal size)
+#pragma warning disable CS8629
+        public BfxPositionsElement(BfChildOrderEvent e, decimal size)
         {
-            ChildOrderAcceptanceId = ev.ChildOrderAcceptanceId;
-            Open = ev.EventDate;
-            Price = ev.Price;
-            CurrentSize = OpenSize = ev.Side == BfTradeSide.Buy ? size : -size;
-            _commission = ev.Commission;
-            _sfd = ev.SwapForDifference;
-        }
+            if (e.EventType != BfOrderEventType.Execution)
+            {
+                throw new ArgumentException();
+            }
 
-        public BfxPositionsElement(BfChildOrderEvent ev)
-            : this(ev, ev.Size)
-        {
+            ChildOrderAcceptanceId = e.ChildOrderAcceptanceId;
+            Open = e.EventDate;
+            Price = e.Price.Value;
+            CurrentSize = OpenSize = e.Side == BfTradeSide.Buy ? size : -size;
+            _commission = e.Commission.Value;
+            _sfd = e.SwapForDifference.Value;
         }
+#pragma warning restore CS8629
 
         internal BfxPositionsElement Split(decimal splitSize)
         {
@@ -109,8 +111,10 @@ namespace BitFlyerDotNet.Trading
         }
     }
 
-    public class BfxPositions
+    public class BfxPositionManager
     {
+        public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;
+
         Queue<BfxPositionsElement> _q = new Queue<BfxPositionsElement>();
 
         public decimal TotalSize => Math.Abs(_q.Sum(e => e.CurrentSize));
@@ -121,18 +125,29 @@ namespace BitFlyerDotNet.Trading
             return _q.ToList().Select(e => new BfxPosition(this, e));
         }
 
+        public void Update(BfPrivateExecution[] execs)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Update(BfPosition[] positions)
         {
             _q.Clear();
             positions.ForEach(e => _q.Enqueue(new BfxPositionsElement(e)));
         }
 
-        public BfxPosition[] Update(BfChildOrderEvent ev)
+#pragma warning disable CS8629
+        public BfxPosition[] Update(BfChildOrderEvent e)
         {
-            var executedSize = ev.Side == BfTradeSide.Buy ? ev.Size : -ev.Size;
+            if (e.EventType != BfOrderEventType.Execution)
+            {
+                throw new ArgumentException();
+            }
+
+            var executedSize = e.Side == BfTradeSide.Buy ? e.Size.Value : -e.Size.Value;
             if (_q.Count == 0 || Math.Sign(_q.Peek().OpenSize) == Math.Sign(executedSize))
             {
-                var pos = new BfxPositionsElement(ev);
+                var pos = new BfxPositionsElement(e, e.Size.Value);
                 _q.Enqueue(pos);
                 return new BfxPosition[] { new BfxPosition(this, pos) };
             }
@@ -157,16 +172,17 @@ namespace BitFlyerDotNet.Trading
                 }
             }
             var result = new List<BfxPosition>();
-            closedPos.ForEach(e => result.Add(new BfxPosition(this, e, ev)));
+            closedPos.ForEach(pos => result.Add(new BfxPosition(this, pos, e)));
 
             if (closeSize > 0m)
             {
-                var pos = new BfxPositionsElement(ev, Math.Abs(closeSize));
+                var pos = new BfxPositionsElement(e, Math.Abs(closeSize));
                 _q.Enqueue(pos);
                 result.Add(new BfxPosition(this, pos));
             }
 
             return result.ToArray();
         }
+#pragma warning restore CS8629
     }
 }

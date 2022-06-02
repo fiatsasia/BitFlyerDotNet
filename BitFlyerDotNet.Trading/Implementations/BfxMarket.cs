@@ -18,19 +18,27 @@ namespace BitFlyerDotNet.Trading
     public class BfxMarket : IDisposable
     {
         public bool IsInitialized { get; private set; }
+        public BfTicker Ticker { get; internal set; }
 
-        public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
+        public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged
+        {
+            add { _positions.PositionChanged += value; }
+            remove { _positions.PositionChanged -= value; }
+        }
+        public event EventHandler<BfxTradeChangedEventArgs>? TradeChanged;
 
         BitFlyerClient _client;
-        BfxPositions _positions = new();
+        string _productCode;
+        BfxConfiguration _config;
+
+        BfxPositionManager _positions = new();
         ConcurrentDictionary<string, BfxTransaction> _orderTransactions = new();
 
-        string _productCode;
-
-        public BfxMarket(BitFlyerClient client, string productCode)
+        public BfxMarket(BitFlyerClient client, string productCode, BfxConfiguration config)
         {
             _client = client;
             _productCode = productCode;
+            _config = config;
         }
 
         public void Dispose()
@@ -47,9 +55,9 @@ namespace BitFlyerDotNet.Trading
             IsInitialized = true;
 
             // Load active positions from market
-            if (_productCode == BfProductCodeEx.FX_BTC_JPY)
+            if (_productCode == BfProductCode.FX_BTC_JPY)
             {
-                _positions.Update(await _client.GetPositionsAsync(BfProductCodeEx.FX_BTC_JPY));
+                _positions.Update(await _client.GetPositionsAsync(BfProductCode.FX_BTC_JPY));
             }
 
             // Load active parent orders, their children and executions.
@@ -58,7 +66,7 @@ namespace BitFlyerDotNet.Trading
             {
                 var parentOrderDetail = await _client.GetParentOrderAsync(_productCode, parentOrderId: parentOrder.ParentOrderId);
                 _orderTransactions.AddOrUpdate(parentOrder.ParentOrderAcceptanceId,
-                    _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.Update(parentOrder, parentOrderDetail); },
+                    _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.TransactionChanged += OnTransactionChanged; return tx.Update(parentOrder, parentOrderDetail); },
                     (_, tx) => tx.Update(parentOrder, parentOrderDetail)
                 );
 
@@ -67,9 +75,10 @@ namespace BitFlyerDotNet.Trading
                     updatedChildOrderIds.Add(childOrder.ChildOrderId);
                     var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId);
                     _orderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
-                        _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.Update(childOrder, execs); },
+                        _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.TransactionChanged += OnTransactionChanged; return tx.Update(childOrder, execs); },
                         (_, tx) => tx.Update(childOrder, execs)
                     );
+                    _positions.Update(execs);
                 }
             }
 
@@ -84,7 +93,7 @@ namespace BitFlyerDotNet.Trading
 
                 var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId);
                 _orderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
-                    _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.Update(childOrder, execs); },
+                    _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.TransactionChanged += OnTransactionChanged; return tx.Update(childOrder, execs); },
                     (_, tx) => tx.Update(childOrder, execs)
                 );
             }
@@ -93,7 +102,7 @@ namespace BitFlyerDotNet.Trading
         internal void OnParentOrderEvent(BfParentOrderEvent e)
         {
             _orderTransactions.AddOrUpdate(e.ParentOrderAcceptanceId,
-                _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.OnParentOrderEvent(e); },
+                _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.TransactionChanged += OnTransactionChanged; return tx.OnParentOrderEvent(e); },
                 (_, tx) => tx.OnParentOrderEvent(e)
             );
 
@@ -101,37 +110,107 @@ namespace BitFlyerDotNet.Trading
             {
                 case BfOrderEventType.Trigger:
                 case BfOrderEventType.Complete:
+#pragma warning disable CS8604
                     _orderTransactions.AddOrUpdate(e.ChildOrderAcceptanceId,
-                        _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.OnParentOrderEventForChildren(e); },
+                        _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.TransactionChanged += OnTransactionChanged; return tx.OnParentOrderEventForChildren(e); },
                         (_, tx) => tx.OnParentOrderEventForChildren(e)
                     );
+#pragma warning restore CS8604
                     break;
             }
         }
 
         internal void OnChildOrderEvent(BfChildOrderEvent e)
         {
-            _orderTransactions.AddOrUpdate(e.ChildOrderAcceptanceId,
-                _ => { var tx = new BfxTransaction(_client); tx.TransactionChanged += OnTransactionChanged; return tx.OnChildOrderEvent(e); },
-                (_, tx) => tx.OnChildOrderEvent(e));
-        }
+            if (e.ProductCode == BfProductCode.FX_BTC_JPY && e.EventType == BfOrderEventType.Execution)
+            {
+                Task.Run(async () =>
+                {
+                    _positions.Update(e);
+                    _positions.Update(await _client.GetPositionsAsync(e.ProductCode));
+                });
+            }
 
-        public async Task<BfxTransaction> PlaceOrderAsync(BfParentOrder order)
-        {
-            // Sometimes parent order event arraives before send order process completes.
-            var tx = new BfxTransaction(_client);
-            tx.TransactionChanged += OnTransactionChanged;
-            var id = await tx.PlaceOrdertAsync(order);
-            return _orderTransactions.AddOrUpdate(id, _ => tx, (_, tx) => tx.Update(order, id));
+            _orderTransactions.AddOrUpdate(e.ChildOrderAcceptanceId,
+                _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.TransactionChanged += OnTransactionChanged; return tx.OnChildOrderEvent(e); },
+                (_, tx) => tx.OnChildOrderEvent(e));
         }
 
         public async Task<BfxTransaction> PlaceOrderAsync(BfChildOrder order)
         {
             // Sometimes child order event arraives before send order process completes.
-            var tx = new BfxTransaction(_client);
+            VerifyOrder(order);
+            var tx = new BfxTransaction(_client, _productCode, _config);
             tx.TransactionChanged += OnTransactionChanged;
             var id = await tx.PlaceOrderAsync(order);
-            return _orderTransactions.AddOrUpdate(id, _ => tx, (_, tx) => tx.Update(order, id));
+            return _orderTransactions.AddOrUpdate(id, _ => tx, (_, tx) => tx.Update(order));
+        }
+
+        public async Task<BfxTransaction> PlaceOrderAsync(BfParentOrder order)
+        {
+            // Sometimes parent order event arraives before send order process completes.
+            VerifyOrder(order);
+            var tx = new BfxTransaction(_client, _productCode, _config);
+            tx.TransactionChanged += OnTransactionChanged;
+            var id = await tx.PlaceOrdertAsync(order);
+            return _orderTransactions.AddOrUpdate(id, _ => tx, (_, tx) => tx.Update(order));
+        }
+
+        void VerifyOrder(BfChildOrder order)
+        {
+            if (order.Size > _config.OrderSizeMax[order.ProductCode])
+            {
+                throw new ArgumentException("Order size exceeds the maximum size.");
+            }
+
+            if (_config.OrderPriceLimitter && order.ChildOrderType == BfOrderType.Limit)
+            {
+#pragma warning disable CS8629
+                if (order.Side == BfTradeSide.Buy && order.Price.Value > Ticker.BestAsk)
+                {
+                    throw new ArgumentException("Buy order price is above best ask price.");
+                }
+                else if (order.Side == BfTradeSide.Sell && order.Price.Value < Ticker.BestBid)
+                {
+                    throw new ArgumentException("Sell order price is below best bid price.");
+                }
+#pragma warning restore CS8629
+            }
+        }
+
+        void VerifyOrder(BfParentOrder order)
+        {
+            foreach (var child in order.Parameters)
+            {
+                if (child.Size > _config.OrderSizeMax[_productCode])
+                {
+                    throw new ArgumentException("Order size exceeds the maximum size.");
+                }
+            }
+
+            var children = order.OrderMethod switch
+            {
+                BfOrderType.IFD => order.Parameters.Take(1),
+                BfOrderType.OCO => order.Parameters.Take(2),
+                BfOrderType.IFDOCO => order.Parameters.Take(1),
+                _ => throw new ArgumentException()
+            };
+            foreach (var child in children)
+            {
+                if (_config.OrderPriceLimitter && child.ConditionType == BfOrderType.Limit)
+                {
+#pragma warning disable CS8629
+                    if (child.Side == BfTradeSide.Buy && child.Price.Value > Ticker.BestAsk)
+                    {
+                        throw new ArgumentException("Buy order price is above best ask price.");
+                    }
+                    else if (child.Side == BfTradeSide.Sell && child.Price.Value < Ticker.BestBid)
+                    {
+                        throw new ArgumentException("Sell order price is below best bid price.");
+                    }
+#pragma warning restore CS8629
+                }
+            }
         }
 
         private void OnTransactionChanged(object sender, BfxTransactionChangedEventArgs e)

@@ -28,28 +28,40 @@ namespace BitFlyerDotNet.LightningApi
         XEM,
     }
 
-    public static class BfProductCodeEx
+    public static class BfProductCode
     {
+        public const string BTC_JPY = "BTC_JPY";
+        public const string XRP_JPY = "XRP_JPY";
+        public const string ETH_JPY = "ETH_JPY";
+        public const string XLM_JPY = "XLM_JPY";
+        public const string MONA_JPY = "MONA_JPY";
+        public const string ETH_BTC = "ETH_BTC";
+        public const string BCH_BTC = "BCH_BTC";
         public const string FX_BTC_JPY = "FX_BTC_JPY";
+        public const string BTCJPY_MAT1WK = "BTCJPY_MAT1WK";
+        public const string BTCJPY_MAT2WK = "BTCJPY_MAT2WK";
+        public const string BTCJPY_MAT3M = "BTCJPY_MAT3M";
+        public const string BTC_USD = "BTC_USD";
+        public const string BTC_EUR = "BTC_EUR";
 
         static Dictionary<string, int> _priceDecimals = new()
         {
-            { "BTC_JPY", 0 },
-            { "XRP_JPY", 0 },
-            { "ETH_JPY", 0 },
-            { "XLM_JPY", 0 },
-            { "MONA_JPY", 0 },
-            { "ETH_BTC", 5 },
-            { "BCH_BTC", 5 },
-            { "FX_BTC_JPY", 0 },
-            { "BTCJPY_MAT1WK", 0 },
-            { "BTCJPY_MAT2WK", 0 },
-            { "BTCJPY_MAT3M", 0 },
-            { "BTC_USD", 2 },
-            { "BTC_EUR", 2 },
+            { BTC_JPY, 0 },
+            { XRP_JPY, 0 },
+            { ETH_JPY, 0 },
+            { XLM_JPY, 0 },
+            { MONA_JPY, 0 },
+            { ETH_BTC, 5 },
+            { BCH_BTC, 5 },
+            { FX_BTC_JPY, 0 },
+            { BTCJPY_MAT1WK, 0 },
+            { BTCJPY_MAT2WK, 0 },
+            { BTCJPY_MAT3M, 0 },
+            { BTC_USD, 2 },
+            { BTC_EUR, 2 },
         };
 
-        static BfProductCodeEx()
+        static BfProductCode()
         {
         }
 
@@ -57,9 +69,9 @@ namespace BitFlyerDotNet.LightningApi
         {
             switch (productCode)
             {
-                case "FX_BTC_JPY":
-                case "ETH_BTC":
-                case "BCH_BTC":
+                case FX_BTC_JPY:
+                case ETH_BTC:
+                case BCH_BTC:
                     return 0.01m;
 
                 default:

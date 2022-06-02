@@ -11,6 +11,7 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
+
     public class BfxPositionChangedEventArgs : EventArgs
     {
         public BfxPositionEventType EventType { get; internal set; }
@@ -24,14 +25,14 @@ namespace BitFlyerDotNet.Trading
         }
     }
 
-    public class BfxOrderChangedEventArgs : EventArgs
+    public class BfxTradeChangedEventArgs : EventArgs
     {
         public BfxOrderEventType EventType { get; internal set; }
         public DateTime Time { get; internal set; }
         public BfxTransactionState State { get; internal set; }
         public BfOrderState OrderState { get; internal set; }
 
-        public BfxOrderStatus Order { get; }
+        public BfxTrade Order { get; }
         public object? Parameter { get; set; }
 
         public BfxOrderEventType ChildEventType { get; internal set; }

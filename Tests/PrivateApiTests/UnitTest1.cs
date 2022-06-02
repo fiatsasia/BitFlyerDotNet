@@ -534,9 +534,9 @@ namespace PrivateApiTests
         {
             try
             {
-                //var resp = _client.GetChildOrders(_productCode, BfOrderState.Completed, count: 1);
-
-                var resp = await _client.GetPrivateExecutionsAsync(_productCode, 5, 1852461210, 0, null, null, CancellationToken.None);
+                //var childOrder = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Completed, count: 1);
+                //var resp = await _client.GetPrivateExecutionsAsync(_productCode, 1, 0, 0, childOrder[0].ChildOrderId, null, CancellationToken.None);
+                var resp = await _client.GetPrivateExecutionsAsync(_productCode, 1, 0, 0, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();

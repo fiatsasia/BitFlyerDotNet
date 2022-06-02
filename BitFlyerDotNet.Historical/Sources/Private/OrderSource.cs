@@ -323,7 +323,7 @@ namespace BitFlyerDotNet.Historical
                 case BfOrderEventType.Trigger:
                 case BfOrderEventType.Complete:
                     parent.Update(poe);
-                    _ctx.FindChildOrder(_productCode, poe.ParentOrderAcceptanceId, poe.ChildOrderIndex - 1).Update(poe);
+                    _ctx.FindChildOrder(_productCode, poe.ParentOrderAcceptanceId, poe.ChildOrderIndex.Value - 1).Update(poe);
                     break;
             }
             _ctx.SaveChanges();

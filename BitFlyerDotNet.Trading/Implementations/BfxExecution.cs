@@ -11,26 +11,35 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    class BfxExecution
+    public class BfxExecution
     {
-        public long Id { get; }
-        public DateTime Time { get; }
-        public decimal Price { get; }
-        public decimal Size { get; }
-        public decimal? Commission { get; }
-        public decimal? SfdCollectedAmount { get; }
-        public string OrderId { get; }
+        public long Id { get; private set; }
+        public DateTime Time { get; private set; }
+        public decimal Price { get; private set; }
+        public decimal Size { get; private set; }
+        public decimal Commission { get; private set; }
+        public decimal? SwapForDifference { get; private set; }
+        public string OrderId { get; private set; }
 
-        public BfxExecution(BfChildOrderEvent coe)
+#pragma warning disable CS8629
+        public BfxExecution(BfChildOrderEvent e)
         {
-            Id = coe.ExecutionId;
-            Time = coe.EventDate;
-            Price = coe.Price;
-            Size = coe.Size;
-            Commission = coe.Commission;
-            SfdCollectedAmount = coe.SwapForDifference;
-            OrderId = coe.ChildOrderId;
+            OrderId = e.ChildOrderId;
+            Id = e.ExecutionId.Value;
+            Update(e);
         }
+
+        public BfxExecution Update(BfChildOrderEvent e)
+        {
+            if (e.EventType != BfOrderEventType.Execution) throw new ArgumentException();
+            Time = e.EventDate;
+            Price = e.Price.Value;
+            Size = e.Size.Value;
+            Commission = e.Commission.Value;
+            SwapForDifference = e.SwapForDifference;
+            return this;
+        }
+#pragma warning restore CS8629
 
         public BfxExecution(BfPrivateExecution exec)
         {

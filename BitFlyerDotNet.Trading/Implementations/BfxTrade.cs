@@ -14,41 +14,50 @@ using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Trading
 {
-    public class BfxOrderStatus
+    public class BfxTrade
     {
-        public string ProductCode { get; protected set; }
-        public BfOrderType OrderType { get; protected set; }
-        public BfTradeSide? Side { get; protected set; }
-        public decimal? OrderPrice { get; protected set; }
-        public decimal? OrderSize { get; protected set; }
-        public decimal? TriggerPrice { get; protected set; }
-        public decimal? TrailOffset { get; set; }
-        public int? MinuteToExpire { get; protected set; }
-        public BfTimeInForce? TimeInForce { get; protected set; }
+        #region Order informations
+        public string ProductCode { get; }
+        public BfOrderType OrderType { get; private set; }
+        public BfTradeSide? Side { get; private set; }
+        public decimal? OrderSize { get; private set; }
+        public decimal? OrderPrice { get; private set; }
+        public decimal? TriggerPrice { get; private set; }
+        public decimal? TrailOffset { get; private set; }
+        public int? MinuteToExpire { get; private set; }
+        public BfTimeInForce? TimeInForce { get; private set; }
+        public ReadOnlyCollection<BfxTrade> Children { get; private set; }
+        #endregion Order informations
+
+        #region Order management info
+        public string? OrderAcceptanceId { get; internal set; }
+        public string? OrderId { get; private set; }
+        public DateTime? OrderDate { get; private set; }
+        public DateTime? ExpireDate { get; private set; }
+        public BfOrderState? OrderState { get; private set; }
+        #endregion Order management info
 
         public uint? PagingId { get; protected set; }
         public decimal? AveragePrice { get; protected set; }
-        public string? OrderAcceptanceId { get; protected set; }
-        public string? OrderId { get; protected set; }
-        public DateTime? OrderDate { get; protected set; }
-        public BfOrderState? OrderState { get; protected set; }
-        public DateTime? ExpireDate { get; protected set; }
         public decimal? OutstandingSize { get; protected set; }
         public decimal? CancelSize { get; protected set; }
         public decimal? ExecutedPrice { get; protected set; }
         public decimal? ExecutedSize { get; protected set; }
         public decimal? TotalCommission { get; protected set; }
 
-        public ReadOnlyCollection<BfxOrderStatus> Children { get; protected set; }
-
         ConcurrentDictionary<long, BfxExecution> _execs = new();
 
-        internal BfxOrderStatus Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
+        internal BfxTrade(string productCode)
+        {
+            ProductCode = productCode;
+        }
+
+
+        internal void Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
         {
             OrderAcceptanceId = status.ParentOrderAcceptanceId;
             PagingId = status.PagingId;
             OrderId = status.ParentOrderId;
-            ProductCode = status.ProductCode;
             OrderType = status.ParentOrderType;
             OrderPrice = status.Price;
             AveragePrice = status.AveragePrice;
@@ -70,10 +79,8 @@ namespace BitFlyerDotNet.Trading
             throw new NotImplementedException();
         }
 
-        internal BfxOrderStatus Update(BfParentOrder order, string parentOrderAcceptanceId)
+        internal void Update(BfParentOrder order)
         {
-            OrderAcceptanceId = parentOrderAcceptanceId;
-            ProductCode = order.Parameters[0].ProductCode;
             OrderType = order.OrderMethod;
 
             for (int index = 0; index < order.Parameters.Count; index++)
@@ -84,30 +91,37 @@ namespace BitFlyerDotNet.Trading
             throw new NotImplementedException();
         }
 
-        internal BfxOrderStatus UpdateChild(BfParentOrderEvent e)
+        internal void UpdateChild(BfParentOrderEvent e)
         {
-            OrderType = e.ChildOrderType;
+            if (e.ChildOrderType.HasValue)
+            {
+                OrderType = e.ChildOrderType.Value;
+            }
             OrderAcceptanceId = e.ChildOrderAcceptanceId;
             Side = e.Side;
             OrderPrice = e.Price > decimal.Zero ? e.Price : null;
             OrderSize = e.Size;
             ExpireDate = e.ExpireDate;
-            return this;
         }
 
-        internal BfxOrderStatus UpdateParent(BfParentOrderEvent e)
+        internal void UpdateChild(int childOrderIndex, BfParentOrderEvent e)
+        {
+            Children[childOrderIndex].UpdateChild(e);
+        }
+
+        internal void UpdateParent(BfParentOrderEvent e)
         {
             OrderAcceptanceId = e.ParentOrderAcceptanceId;
             OrderId = e.ParentOrderId;
-            ProductCode = e.ProductCode;
-            OrderType = e.ParentOrderType;
+            if (e.ParentOrderType.HasValue)
+            {
+                OrderType = e.ParentOrderType.Value;
+            }
             OrderState = BfOrderState.Active;
-            return this;
         }
 
         internal void Update(BfParentOrderParameter order)
         {
-            ProductCode = order.ProductCode;
             OrderType = order.ConditionType;
             Side = order.Side;
             OrderPrice = order.Price;
@@ -118,7 +132,6 @@ namespace BitFlyerDotNet.Trading
 
         internal void Update(BfParentOrderDetailStatusParameter order)
         {
-            ProductCode = order.ProductCode;
             OrderType = order.ConditionType;
             Side = order.Side;
             OrderPrice = order.Price;
@@ -127,28 +140,24 @@ namespace BitFlyerDotNet.Trading
             TrailOffset = order.Offset;
         }
 
-        internal BfxOrderStatus Update(BfChildOrder order, string childOrderAcceptanceId)
+        internal void Update(BfChildOrder order, string childOrderAcceptanceId)
         {
             OrderAcceptanceId = childOrderAcceptanceId;
 
-            ProductCode = order.ProductCode;
             OrderType = order.ChildOrderType;
             Side = order.Side;
             OrderPrice = order.Price;
             OrderSize = order.Size;
             MinuteToExpire = order.MinuteToExpire;
             TimeInForce = order.TimeInForce;
-
-            return this;
         }
 
-        public BfxOrderStatus Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+        public void Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
         {
             // Set order
             OrderAcceptanceId = status.ChildOrderAcceptanceId;
             PagingId = status.PagingId;
             OrderId = status.ChildOrderId;
-            ProductCode = status.ProductCode;
             Side = status.Side;
             OrderType = status.ChildOrderType;
             OrderPrice = status.Price;
@@ -167,22 +176,26 @@ namespace BitFlyerDotNet.Trading
             {
                 _execs.GetOrAdd(exec.ExecutionId, _ => new BfxExecution(exec));
             }
-
-            return this;
         }
 
         public void Update(BfChildOrderEvent e)
         {
             OrderAcceptanceId = e.ChildOrderAcceptanceId;
             OrderId = e.ChildOrderId;
-            ProductCode = e.ProductCode;
-            OrderType = e.ChildOrderType;
+            if (e.ChildOrderType.HasValue) OrderType = e.ChildOrderType.Value;
             OrderState = BfOrderState.Active;
+
+            if (e.EventType == BfOrderEventType.Execution)
+            {
+#pragma warning disable CS8629
+                _execs.AddOrUpdate(e.ExecutionId.Value, id => new BfxExecution(e), (id, exec) => exec.Update(e));
+#pragma warning restore CS8629
+            }
         }
 
-        public void UpdateExecution(BfChildOrderEvent e)
+        public void Update(BfPosition[] positions)
         {
-            _execs.GetOrAdd(e.ExecutionId, _ => new BfxExecution(e));
+            throw new NotImplementedException();
         }
     }
 }

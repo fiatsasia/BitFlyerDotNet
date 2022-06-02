@@ -22,7 +22,7 @@ namespace TradingApiTests
 {
     partial class Program
     {
-        const string ProductCode = "FX_BTC_JPY";
+        const string ProductCode = BfProductCode.FX_BTC_JPY;
         const decimal UnexecutableGap = 50000m;
         const string TimeFormat = "yyyy/MM/dd HH:mm:ss.ffff";
         const string OrderCacheFileName = "TradingApiTests.db3";
@@ -47,14 +47,14 @@ namespace TradingApiTests
                 key = secret = string.Empty;
             }
 
-            //_orderSize = ProductCode.GetMinimumOrderSize();
-            _orderSize = 0.01m;
+            _orderSize = BfProductCode.GetMinimumOrderSize(ProductCode);
 
             var connStr = "data source=" + Path.Combine(Properties["CacheDirectoryPath"], OrderCacheFileName);
             using (var app = new BfxApplication(key, secret))
             {
                 app.OrderChanged += OnOrderChanged;
                 app.PositionChanged += OnPositionChanged;
+                app.TradeChanged += OnTradeChanged;
 
                 while (true)
                 {
@@ -170,12 +170,17 @@ namespace TradingApiTests
             DumpResponse(_account.Client.GetPositions(ProductCode));*/
         }
 
-        static void OnPositionChanged(object sender, BfxPositionChangedEventArgs ev)
+        static void OnOrderChanged(object sender, BfxOrderChangedEventArgs e)
         {
-            PrintPosition(ev.Position);
+
         }
 
-        private static void OnOrderChanged(object sender, BfxOrderChangedEventArgs e)
+        static void OnPositionChanged(object sender, BfxPositionChangedEventArgs e)
+        {
+            PrintPosition(e.Position);
+        }
+
+        private static void OnTradeChanged(object sender, BfxTradeChangedEventArgs e)
         {
             var sb = new List<string>();
             sb.Add(e.Time.ToString(TimeFormat));
@@ -226,7 +231,7 @@ namespace TradingApiTests
             }*/
         }
 
-        static void PrintOrder(BfxOrderStatus order)
+        static void PrintOrder(BfxTrade order)
         {
 
         }

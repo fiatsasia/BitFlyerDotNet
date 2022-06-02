@@ -254,22 +254,24 @@ namespace BitFlyerDotNet.Historical
             ChildOrderIndex = childOrderIndex;
         }
 
+#pragma warning disable CS8629
         public void Update(BfParentOrderEvent poe)
         {
             ParentOrderAcceptanceId = poe.ParentOrderAcceptanceId;
             ParentOrderId = poe.ParentOrderId;
             AcceptanceId = poe.ChildOrderAcceptanceId;
-            ChildOrderIndex = poe.ChildOrderIndex - 1;
 
             switch (poe.EventType)
             {
                 case BfOrderEventType.Trigger:
                     ExpireDate = poe.ExpireDate;
+                    ChildOrderIndex = poe.ChildOrderIndex.Value - 1;
                     break;
 
                 case BfOrderEventType.Complete:
                     break;
             }
         }
+#pragma warning restore CS8629
     }
 }

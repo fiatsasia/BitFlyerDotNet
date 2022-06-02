@@ -19,6 +19,7 @@ namespace BitFlyerDotNet.Trading
 {
     public class BfxApplication : IDisposable
     {
+        BfxConfiguration Config { get; }
         public bool IsInitialized => _markets.Count() > 0;
 
         CompositeDisposable _disposables = new();
@@ -30,12 +31,21 @@ namespace BitFlyerDotNet.Trading
         #region Initialize and Finalize
         public BfxApplication()
         {
+            Config = new BfxConfiguration();
             _client = new BitFlyerClient().AddTo(_disposables);
             _rts = new RealtimeSourceFactory();
         }
 
         public BfxApplication(string key, string secret)
         {
+            Config = new BfxConfiguration();
+            _client = new BitFlyerClient(key, secret).AddTo(_disposables);
+            _rts = new RealtimeSourceFactory(key, secret);
+        }
+
+        public BfxApplication(BfxConfiguration config, string key, string secret)
+        {
+            Config = config;
             _client = new BitFlyerClient(key, secret).AddTo(_disposables);
             _rts = new RealtimeSourceFactory(key, secret);
         }
@@ -57,8 +67,8 @@ namespace BitFlyerDotNet.Trading
 
             foreach (var productCode in availableMarkets.Select(e => !string.IsNullOrEmpty(e.Alias) ? e.Alias : e.ProductCode))
             {
-                var market = new BfxMarket(_client, productCode);
-                market.OrderChanged += OnOrderChanged;
+                var market = new BfxMarket(_client, productCode, Config);
+                market.TradeChanged += OnTradeChanged;
                 _markets.Add(productCode, market);
             }
 
@@ -102,6 +112,8 @@ namespace BitFlyerDotNet.Trading
 
             if (!market.IsInitialized)
             {
+                market.Ticker = await _client.GetTickerAsync(productCode);
+                _rts.GetTickerSource(productCode).Subscribe(ticker => { market.Ticker = ticker; });
                 await market.InitializeAsync();
             }
         }
@@ -110,8 +122,9 @@ namespace BitFlyerDotNet.Trading
         #region Events
         public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
         public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;
+        public event EventHandler<BfxTradeChangedEventArgs>? TradeChanged;
 
-        private void OnOrderChanged(object sender, BfxOrderChangedEventArgs e) => OrderChanged?.Invoke(sender, e);
+        private void OnTradeChanged(object sender, BfxTradeChangedEventArgs e) => TradeChanged?.Invoke(sender, e);
         #endregion Events
 
         public async Task<BfxMarket> GetMarketAsync(string productCode)
@@ -136,7 +149,7 @@ namespace BitFlyerDotNet.Trading
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<BfxOrderStatus>> GetActiveOrdersAsync(string productCode)
+        public Task<IEnumerable<BfxTrade>> GetActiveOrdersAsync(string productCode)
         {
             throw new NotImplementedException();
         }

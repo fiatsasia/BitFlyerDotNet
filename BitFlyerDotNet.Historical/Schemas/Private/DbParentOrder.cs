@@ -101,11 +101,11 @@ namespace BitFlyerDotNet.Historical
             TimeInForce = detail.TimeInForce;
         }
 
-        public DbParentOrder(string productCode, BfParentOrderEvent poe)
+        public DbParentOrder(string productCode, BfParentOrderEvent e)
         {
             ProductCode = productCode;
-            OrderType = poe.ParentOrderType;
-            Update(poe);
+            if (e.ParentOrderType.HasValue) OrderType = e.ParentOrderType.Value;
+            Update(e);
         }
 
         public void Update(BfParentOrderEvent poe)
@@ -123,7 +123,7 @@ namespace BitFlyerDotNet.Historical
             if (poe.EventType == BfOrderEventType.Order)
             {
                 OrderDate = poe.EventDate;
-                ExpireDate = poe.ExpireDate;
+                ExpireDate = poe.ExpireDate.Value;
             }
             if (poe.EventType == BfOrderEventType.OrderFailed)
             {

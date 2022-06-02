@@ -92,7 +92,7 @@ namespace BitFlyerDotNet.LightningApi
                 (after > 0)  ? $"&after={after}"   : ""
             );
 
-            return GetPrivateAsync<BfParentOrderStatus[]>("getparentorders", query, ct);
+            return GetPrivateAsync<BfParentOrderStatus[]>(nameof(GetParentOrdersAsync), query, ct);
         }
 
         public async Task<BfParentOrderStatus[]> GetParentOrdersAsync(

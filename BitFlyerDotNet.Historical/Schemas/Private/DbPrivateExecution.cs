@@ -71,11 +71,11 @@ namespace BitFlyerDotNet.Historical
             Size = exec.Size;
             if (exec.Side == BfTradeSide.Sell)
             {
-                Amount = (exec.Price * exec.Size).Truncate(BfProductCodeEx.GetPriceDecimals(productCode));
+                Amount = (exec.Price * exec.Size).Truncate(BfProductCode.GetPriceDecimals(productCode));
             }
             else
             {
-                Amount = (exec.Price * exec.Size).Ceiling(BfProductCodeEx.GetPriceDecimals(productCode));
+                Amount = (exec.Price * exec.Size).Ceiling(BfProductCode.GetPriceDecimals(productCode));
             }
 
             ChildOrderId = exec.ChildOrderId;
@@ -87,18 +87,23 @@ namespace BitFlyerDotNet.Historical
 
         public DbPrivateExecution(string productCode, BfChildOrderEvent coe)
         {
+            if (coe.EventType != BfOrderEventType.Execution)
+            {
+                throw new ArgumentException();
+            }
+
             ProductCode = productCode;
-            ExecutionId = coe.ExecutionId;
-            Side = coe.Side;
-            Price = coe.Price;
-            Size = coe.Size;
+            ExecutionId = coe.ExecutionId.Value;
+            Side = coe.Side.Value;
+            Price = coe.Price.Value;
+            Size = coe.Size.Value;
             if (coe.Side == BfTradeSide.Sell)
             {
-                Amount = (coe.Price * coe.Size).Truncate(BfProductCodeEx.GetPriceDecimals(productCode));
+                Amount = (coe.Price.Value * coe.Size.Value).Truncate(BfProductCode.GetPriceDecimals(productCode));
             }
             else
             {
-                Amount = (coe.Price * coe.Size).Ceiling(BfProductCodeEx.GetPriceDecimals(productCode));
+                Amount = (coe.Price.Value * coe.Size.Value).Ceiling(BfProductCode.GetPriceDecimals(productCode));
             }
 
             ChildOrderId = coe.ChildOrderId;
