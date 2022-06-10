@@ -6,14 +6,13 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.LightningApi
-{
-    public class BitFlyerClientConfig
-    {
-        public const int MinuteToExpireDefault = 43200; // 30 days
-        public const BfTimeInForce TimeInForceDefault = BfTimeInForce.GTC;
+namespace BitFlyerDotNet.LightningApi;
 
-        public int MinuteToExpire { get; set; } = 0;
-        public BfTimeInForce TimeInForce { get; set; } = BfTimeInForce.NotSpecified;
-    }
+public class BitFlyerClientConfig
+{
+    public const int MinuteToExpireDefault = 43200; // 30 days
+    public const BfTimeInForce TimeInForceDefault = BfTimeInForce.GTC;
+
+    public int MinuteToExpire { get; set; } = 0;
+    public BfTimeInForce TimeInForce { get; set; } = BfTimeInForce.NotSpecified;
 }

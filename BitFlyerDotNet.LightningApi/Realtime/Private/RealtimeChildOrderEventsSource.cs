@@ -6,30 +6,26 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using Newtonsoft.Json.Linq;
+namespace BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.LightningApi
+class RealtimeChildOrderEventsSource : RealtimeSourceBase<BfChildOrderEvent>
 {
-    class RealtimeChildOrderEventsSource : RealtimeSourceBase<BfChildOrderEvent>
+    Action<RealtimeChildOrderEventsSource> _dispose;
+
+    public RealtimeChildOrderEventsSource(WebSocketChannels channels, Action<RealtimeChildOrderEventsSource> dispose)
+        : base(channels, "child_order_events")
     {
-        Action<RealtimeChildOrderEventsSource> _dispose;
+        _dispose = dispose;
+    }
 
-        public RealtimeChildOrderEventsSource(WebSocketChannels channels, Action<RealtimeChildOrderEventsSource> dispose)
-            : base(channels, "child_order_events")
-        {
-            _dispose = dispose;
-        }
+    public override object OnMessageReceived(JToken token)
+    {
+        return DispatchArrayMessage(token); // Channel returns array format
+    }
 
-        public override object OnMessageReceived(JToken token)
-        {
-            return DispatchArrayMessage(token); // Channel returns array format
-        }
-
-        protected override void OnDispose()
-        {
-            base.OnDispose();
-            _dispose(this);
-        }
+    protected override void OnDispose()
+    {
+        base.OnDispose();
+        _dispose(this);
     }
 }

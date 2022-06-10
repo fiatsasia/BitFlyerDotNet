@@ -6,33 +6,29 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using Newtonsoft.Json.Linq;
+namespace BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.LightningApi
+class RealtimeTickerSource : RealtimeSourceBase<BfTicker>
 {
-    class RealtimeTickerSource : RealtimeSourceBase<BfTicker>
+    public readonly string ProductCode;
+    Action<RealtimeTickerSource> _dispose;
+
+    internal RealtimeTickerSource(WebSocketChannels channels, string productCode, Action<RealtimeTickerSource> dispose)
+        : base(channels, $"lightning_ticker_{productCode}")
     {
-        public readonly string ProductCode;
-        Action<RealtimeTickerSource> _dispose;
+        ProductCode = productCode;
+        _dispose = dispose;
+    }
 
-        internal RealtimeTickerSource(WebSocketChannels channels, string productCode, Action<RealtimeTickerSource> dispose)
-            : base(channels, $"lightning_ticker_{productCode}")
-        {
-            ProductCode = productCode;
-            _dispose = dispose;
-        }
+    protected override void OnDispose()
+    {
+        base.OnDispose();
+        _dispose(this);
+    }
 
-        protected override void OnDispose()
-        {
-            base.OnDispose();
-            _dispose(this);
-        }
-
-        public override object OnMessageReceived(JToken token)
-        {
-            //Log.Trace($"{nameof(RealtimeTickerSource)}.{nameof(OnMessageReceived)}");
-            return DispatchMessage(token);
-        }
+    public override object OnMessageReceived(JToken token)
+    {
+        //Log.Trace($"{nameof(RealtimeTickerSource)}.{nameof(OnMessageReceived)}");
+        return DispatchMessage(token);
     }
 }

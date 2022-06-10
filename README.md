@@ -56,7 +56,7 @@ using (var client = new BitFlyerClient())
 // ¬s”ƒ’•¶‚ğ‘—M‚·‚éB
 using (var client = new BitFlyerClient(key, secret))
 {
-    client.SendChildOrder("FX_BTC_JPY", BfOrderType.Market, BfTradeSide.Buy, 0.001);
+    await client.SendChildOrderAsync("FX_BTC_JPY", BfOrderType.Market, BfTradeSide.Buy, 0.001);
 }
 ```
 

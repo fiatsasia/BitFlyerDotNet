@@ -6,25 +6,22 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
+namespace BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.LightningApi
+public class BitFlyerDotNetException : ApplicationException
 {
-    public class BitFlyerDotNetException : ApplicationException
-    {
-        public BitFlyerDotNetException() : base() { }
-        public BitFlyerDotNetException(string message) : base(message) { }
-    }
+    public BitFlyerDotNetException() : base() { }
+    public BitFlyerDotNetException(string message) : base(message) { }
+}
 
-    public class BitFlyerUnauthorizedException : BitFlyerDotNetException
-    {
-        public BitFlyerUnauthorizedException() : base() { }
-        public BitFlyerUnauthorizedException(string message) : base(message) { }
-    }
+public class BitFlyerUnauthorizedException : BitFlyerDotNetException
+{
+    public BitFlyerUnauthorizedException() : base() { }
+    public BitFlyerUnauthorizedException(string message) : base(message) { }
+}
 
-    public class BitFlyerApiLimitException : BitFlyerDotNetException
-    {
-        public BitFlyerApiLimitException() : base() { }
-        public BitFlyerApiLimitException(string message) : base(message) { }
-    }
+public class BitFlyerApiLimitException : BitFlyerDotNetException
+{
+    public BitFlyerApiLimitException() : base() { }
+    public BitFlyerApiLimitException(string message) : base(message) { }
 }

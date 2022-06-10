@@ -6,60 +6,55 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using System.Reactive.Linq;
-using System.Reactive.Disposables;
+namespace BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.LightningApi
+internal class BfOrderBookStream : IObservable<BfOrderBook>
 {
-    internal class BfOrderBookStream : IObservable<BfOrderBook>
+    public readonly string ProductCode;
+    IObservable<BfOrderBook> _source;
+    IDisposable _disposable;
+    Action<BfOrderBookStream> _dispose;
+
+    public BfOrderBookStream(string productCode, RealtimeBoardSnapshotSource snapshot, RealtimeBoardSource update, Action<BfOrderBookStream> dispose)
     {
-        public readonly string ProductCode;
-        IObservable<BfOrderBook> _source;
-        IDisposable _disposable;
-        Action<BfOrderBookStream> _dispose;
+        ProductCode = productCode;
+        _dispose = dispose;
 
-        public BfOrderBookStream(string productCode, RealtimeBoardSnapshotSource snapshot, RealtimeBoardSource update, Action<BfOrderBookStream> dispose)
+        _source = Observable.Create<BfOrderBook>(observer =>
         {
-            ProductCode = productCode;
-            _dispose = dispose;
-
-            _source = Observable.Create<BfOrderBook>(observer =>
+            var orderBook = new BfOrderBook();
+            var disposable =
+                snapshot.Select(e => (orders: e, isreset: true))
+                .Merge(
+                    update.Select(e => (orders: e, isreset: false))
+                )
+            .Subscribe(e =>
             {
-                var orderBook = new BfOrderBook();
-                var disposable =
-                    snapshot.Select(e => (orders: e, isreset: true))
-                    .Merge(
-                        update.Select(e => (orders: e, isreset: false))
-                    )
-                .Subscribe(e =>
+                if (e.isreset)
                 {
-                    if (e.isreset)
-                    {
-                        orderBook.Reset(e.orders);
-                    }
-                    else
-                    {
-                        orderBook.UpdateDelta(e.orders);
-                    }
+                    orderBook.Reset(e.orders);
+                }
+                else
+                {
+                    orderBook.UpdateDelta(e.orders);
+                }
 
-                    observer.OnNext(orderBook);
-                });
-
-                return () => { disposable.Dispose(); };
+                observer.OnNext(orderBook);
             });
-        }
 
-        public IDisposable Subscribe(IObserver<BfOrderBook> observer)
-        {
-            _disposable = _source.Subscribe(observer);
-            return Disposable.Create(OnDispose);
-        }
+            return () => { disposable.Dispose(); };
+        });
+    }
 
-        void OnDispose()
-        {
-            _disposable.Dispose();
-            _dispose(this);
-        }
+    public IDisposable Subscribe(IObserver<BfOrderBook> observer)
+    {
+        _disposable = _source.Subscribe(observer);
+        return Disposable.Create(OnDispose);
+    }
+
+    void OnDispose()
+    {
+        _disposable.Dispose();
+        _dispose(this);
     }
 }

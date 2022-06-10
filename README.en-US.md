@@ -52,7 +52,7 @@ using (var client = new BitFlyerClient())
 // Market buy order
 using (var client = new BitFlyerClient(key, secret))
 {
-    client.SendChildOrder("FX_BTC_JPY", BfOrderType.Market, BfTradeSide.Buy, 0.001);
+    await client.SendChildOrderAsync("FX_BTC_JPY", BfOrderType.Market, BfTradeSide.Buy, 0.001);
 }
 ```
 [More sample code from here ->](https://scrapbox.io/BitFlyerDotNet/Samples)

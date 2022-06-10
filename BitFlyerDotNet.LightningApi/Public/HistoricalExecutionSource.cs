@@ -6,73 +6,64 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Net;
-using System.Reactive.Linq;
-using System.Reactive.Disposables;
+namespace BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.LightningApi
+public class HistoricalExecutionSource : IObservable<BfExecution>
 {
-    public class HistoricalExecutionSource : IObservable<BfExecution>
+    const long ReadCountMax = 500;
+
+    CancellationTokenSource _cancel = new CancellationTokenSource();
+    CompositeDisposable _disposables = new CompositeDisposable();
+    IObservable<BfExecution> _source;
+
+    public HistoricalExecutionSource(BitFlyerClient client, string productCode, long before, long after, long readCount=ReadCountMax)
     {
-        const long ReadCountMax = 500;
-
-        CancellationTokenSource _cancel = new CancellationTokenSource();
-        CompositeDisposable _disposables = new CompositeDisposable();
-        IObservable<BfExecution> _source;
-
-        public HistoricalExecutionSource(BitFlyerClient client, string productCode, long before, long after, long readCount=ReadCountMax)
-        {
-            readCount = Math.Min(readCount, ReadCountMax);
-            _source = Observable.Create<BfExecution>(observer => {
-                return Task.Run(async () =>
+        readCount = Math.Min(readCount, ReadCountMax);
+        _source = Observable.Create<BfExecution>(observer => {
+            return Task.Run(async () =>
+            {
+                while (true)
                 {
-                    while (true)
+                    var resp = await client.GetExecutionsAsync(productCode, ReadCountMax, before, 0, CancellationToken.None);
+                    if (resp.IsError)
                     {
-                        var resp = await client.GetExecutionsAsync(productCode, ReadCountMax, before, 0, CancellationToken.None);
-                        if (resp.IsError)
+                        switch (resp.StatusCode)
                         {
-                            switch (resp.StatusCode)
-                            {
-                                case HttpStatusCode.BadRequest: // no more records
-                                    observer.OnCompleted();
-                                    return;
-
-                                case HttpStatusCode.InternalServerError:
-                                    await Task.Delay(30 * 1000); // Probably server is in maintanace. wait 30 secs
-                                    break;
-                            }
-                            continue;
-                        }
-
-                        var elements = resp.GetContent();
-                        foreach (var element in elements)
-                        {
-                            if (_cancel.IsCancellationRequested)
-                            {
+                            case HttpStatusCode.BadRequest: // no more records
                                 observer.OnCompleted();
                                 return;
-                            }
-                            if (element.ExecutionId <= after)
-                            {
-                                observer.OnCompleted();
-                                return;
-                            }
-                            observer.OnNext(element);
+
+                            case HttpStatusCode.InternalServerError:
+                                await Task.Delay(30 * 1000); // Probably server is in maintanace. wait 30 secs
+                                break;
                         }
-                        before = elements.Last().ExecutionId;
+                        continue;
                     }
-                });
-            });
-        }
 
-        public IDisposable Subscribe(IObserver<BfExecution> observer)
-        {
-            _source.Subscribe(observer).AddTo(_disposables);
-            return Disposable.Create(() => _cancel.Cancel());
-        }
+                    var elements = resp.GetContent();
+                    foreach (var element in elements)
+                    {
+                        if (_cancel.IsCancellationRequested)
+                        {
+                            observer.OnCompleted();
+                            return;
+                        }
+                        if (element.ExecutionId <= after)
+                        {
+                            observer.OnCompleted();
+                            return;
+                        }
+                        observer.OnNext(element);
+                    }
+                    before = elements.Last().ExecutionId;
+                }
+            });
+        });
+    }
+
+    public IDisposable Subscribe(IObserver<BfExecution> observer)
+    {
+        _source.Subscribe(observer).AddTo(_disposables);
+        return Disposable.Create(() => _cancel.Cancel());
     }
 }

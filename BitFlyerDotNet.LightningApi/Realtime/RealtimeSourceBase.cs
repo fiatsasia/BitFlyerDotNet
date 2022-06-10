@@ -6,66 +6,60 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using System.Reactive.Disposables;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+namespace BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.LightningApi
+abstract class RealtimeSourceBase<TSource> : IRealtimeSource, IObservable<TSource> where TSource : class
 {
-    abstract class RealtimeSourceBase<TSource> : IRealtimeSource, IObservable<TSource> where TSource : class
+    WebSocketChannels _channels;
+
+    public string ChannelName { get; private set; }
+    IObserver<TSource> _observer;
+
+    public RealtimeSourceBase(WebSocketChannels channels, string channelName)
     {
-        WebSocketChannels _channels;
+        _channels = channels;
+        ChannelName = channelName;
+    }
 
-        public string ChannelName { get; private set; }
-        IObserver<TSource> _observer;
+    public void Subscribe()
+    {
+        _channels.Send(JsonConvert.SerializeObject(new { method = "subscribe", @params = new { channel = ChannelName } }));
+    }
 
-        public RealtimeSourceBase(WebSocketChannels channels, string channelName)
+    public IDisposable Subscribe(IObserver<TSource> observer)
+    {
+        _observer = observer;
+        Subscribe();
+        return Disposable.Create(OnDispose);
+    }
+
+    protected virtual void OnDispose()
+    {
+        if (_channels.IsOpened)
         {
-            _channels = channels;
-            ChannelName = channelName;
+            _channels.Send(JsonConvert.SerializeObject(new { method = "unsubscribe", @params = new { channel = ChannelName } }));
         }
+        _observer?.OnCompleted();
+        _observer = null;
+    }
 
-        public void Subscribe()
+    public abstract object OnMessageReceived(JToken token);
+
+    protected object DispatchMessage(JToken token)
+    {
+        //Log.Trace($"RealtimeSourceBase.{nameof(DispatchMessage)} observer is {_observer != null}");
+        var message = token.ToObject<TSource>();
+        _observer?.OnNext(message);
+        return message;
+    }
+
+    protected object DispatchArrayMessage(JToken token)
+    {
+        var messages = token.ToObject<TSource[]>();
+        foreach (var message in messages)
         {
-            _channels.Send(JsonConvert.SerializeObject(new { method = "subscribe", @params = new { channel = ChannelName } }));
-        }
-
-        public IDisposable Subscribe(IObserver<TSource> observer)
-        {
-            _observer = observer;
-            Subscribe();
-            return Disposable.Create(OnDispose);
-        }
-
-        protected virtual void OnDispose()
-        {
-            if (_channels.IsOpened)
-            {
-                _channels.Send(JsonConvert.SerializeObject(new { method = "unsubscribe", @params = new { channel = ChannelName } }));
-            }
-            _observer?.OnCompleted();
-            _observer = null;
-        }
-
-        public abstract object OnMessageReceived(JToken token);
-
-        protected object DispatchMessage(JToken token)
-        {
-            //Log.Trace($"RealtimeSourceBase.{nameof(DispatchMessage)} observer is {_observer != null}");
-            var message = token.ToObject<TSource>();
             _observer?.OnNext(message);
-            return message;
         }
-
-        protected object DispatchArrayMessage(JToken token)
-        {
-            var messages = token.ToObject<TSource[]>();
-            foreach (var message in messages)
-            {
-                _observer?.OnNext(message);
-            }
-            return messages;
-        }
+        return messages;
     }
 }

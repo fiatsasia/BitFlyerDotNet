@@ -6,79 +6,72 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Reactive.Disposables;
-using Newtonsoft.Json;
+namespace BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.LightningApi
+static class EnumUtil
 {
-    static class EnumUtil
+    public static string ToEnumString<TEnum>(this TEnum type) where TEnum : struct
     {
-        public static string ToEnumString<TEnum>(this TEnum type) where TEnum : struct
+        var enumType = typeof(TEnum);
+        var name = Enum.GetName(enumType, type);
+        var enumMemberAttribute = ((EnumMemberAttribute[])enumType.GetField(name).GetCustomAttributes(typeof(EnumMemberAttribute), true)).SingleOrDefault();
+        return enumMemberAttribute?.Value ?? type.ToString();
+    }
+}
+
+static class RxUtil
+{
+    public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
+    {
+        disposable.Add(resource);
+        return resource;
+    }
+}
+
+class DecimalJsonConverter : JsonConverter
+{
+    public DecimalJsonConverter() { }
+    public override bool CanRead { get { return false; } }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        throw new NotSupportedException("Unnecessary because CanRead is false. The type will skip the converter.");
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return (objectType == typeof(decimal) || objectType == typeof(float) || objectType == typeof(double));
+    }
+
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        if (DecimalJsonConverter.IsWholeValue(value))
         {
-            var enumType = typeof(TEnum);
-            var name = Enum.GetName(enumType, type);
-            var enumMemberAttribute = ((EnumMemberAttribute[])enumType.GetField(name).GetCustomAttributes(typeof(EnumMemberAttribute), true)).SingleOrDefault();
-            return enumMemberAttribute?.Value ?? type.ToString();
+            writer.WriteRawValue(JsonConvert.ToString(Convert.ToInt64(value)));
+        }
+        else
+        {
+            writer.WriteRawValue(JsonConvert.ToString(value));
         }
     }
 
-    static class RxUtil
+    private static bool IsWholeValue(object value)
     {
-        public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
+        switch (value)
         {
-            disposable.Add(resource);
-            return resource;
-        }
-    }
+            case decimal dec:
+                int precision = (Decimal.GetBits((decimal)(double)dec)[3] >> 16) & 0xFF;
+                return precision == 0;
 
-    class DecimalJsonConverter : JsonConverter
-    {
-        public DecimalJsonConverter() { }
-        public override bool CanRead { get { return false; } }
+            case double d:
+                return d == Math.Truncate(d);
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            throw new NotSupportedException("Unnecessary because CanRead is false. The type will skip the converter.");
-        }
+            case float f:
+                double df = (double)f;
+                return df == Math.Truncate(df);
 
-        public override bool CanConvert(Type objectType)
-        {
-            return (objectType == typeof(decimal) || objectType == typeof(float) || objectType == typeof(double));
-        }
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            if (DecimalJsonConverter.IsWholeValue(value))
-            {
-                writer.WriteRawValue(JsonConvert.ToString(Convert.ToInt64(value)));
-            }
-            else
-            {
-                writer.WriteRawValue(JsonConvert.ToString(value));
-            }
-        }
-
-        private static bool IsWholeValue(object value)
-        {
-            switch (value)
-            {
-                case decimal dec:
-                    int precision = (Decimal.GetBits((decimal)(double)dec)[3] >> 16) & 0xFF;
-                    return precision == 0;
-
-                case double d:
-                    return d == Math.Truncate(d);
-
-                case float f:
-                    double df = (double)f;
-                    return df == Math.Truncate(df);
-
-                default:
-                    return false;
-            }
+            default:
+                return false;
         }
     }
 }

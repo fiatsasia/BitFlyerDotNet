@@ -6,14 +6,11 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using Newtonsoft.Json.Linq;
+namespace BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.LightningApi
+interface IRealtimeSource
 {
-    interface IRealtimeSource
-    {
-        string ChannelName { get; }
-        object OnMessageReceived(JToken token);
-        void Subscribe();
-    }
+    string ChannelName { get; }
+    object OnMessageReceived(JToken token);
+    void Subscribe();
 }

@@ -6,57 +6,50 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using System.IO;
-using System.Net.WebSockets;
-using System.Threading;
-using System.Threading.Tasks;
+namespace BitFlyerDotNet.LightningApi;
 
-namespace BitFlyerDotNet.LightningApi
+class WebSocketStream : MemoryStream
 {
-    class WebSocketStream : MemoryStream
+    readonly ClientWebSocket _ws;
+
+    public WebSocketStream(ClientWebSocket ws)
     {
-        readonly ClientWebSocket _ws;
+        _ws = ws;
+    }
 
-        public WebSocketStream(ClientWebSocket ws)
+    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct)
+    {
+        if (_ws.State != WebSocketState.Open)
         {
-            _ws = ws;
+            return 0;
         }
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct)
+        WebSocketReceiveResult wsrr;
+        int readBytes = 0;
+        while (true)
         {
-            if (_ws.State != WebSocketState.Open)
+            wsrr = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer, offset, count), ct);
+            readBytes += wsrr.Count;
+            if (wsrr.EndOfMessage)
             {
-                return 0;
+                break;
             }
+            offset += wsrr.Count;
+            count -= wsrr.Count;
+        };
 
-            WebSocketReceiveResult wsrr;
-            int readBytes = 0;
-            while (true)
-            {
-                wsrr = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer, offset, count), ct);
-                readBytes += wsrr.Count;
-                if (wsrr.EndOfMessage)
-                {
-                    break;
-                }
-                offset += wsrr.Count;
-                count -= wsrr.Count;
-            };
-
-            if (wsrr.MessageType == WebSocketMessageType.Close)
-            {
-                await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", ct);
-                return 0;
-            }
-
-            return readBytes;
-        }
-
-        public override async Task FlushAsync(CancellationToken ct)
+        if (wsrr.MessageType == WebSocketMessageType.Close)
         {
-            await _ws.SendAsync(new ArraySegment<byte>(ToArray()), WebSocketMessageType.Binary, true, ct);
-            SetLength(0);
+            await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", ct);
+            return 0;
         }
+
+        return readBytes;
+    }
+
+    public override async Task FlushAsync(CancellationToken ct)
+    {
+        await _ws.SendAsync(new ArraySegment<byte>(ToArray()), WebSocketMessageType.Binary, true, ct);
+        SetLength(0);
     }
 }
