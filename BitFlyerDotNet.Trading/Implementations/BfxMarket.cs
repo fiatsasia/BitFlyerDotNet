@@ -62,7 +62,7 @@ namespace BitFlyerDotNet.Trading
 
             // Load active parent orders, their children and executions.
             var updatedChildOrderIds = new HashSet<string>();
-            foreach (var parentOrder in await _client.GetParentOrdersAsync(_productCode, orderState: BfOrderState.Active))
+            await foreach (var parentOrder in _client.GetParentOrdersAsync(_productCode, BfOrderState.Active, 0, 0, e => true))
             {
                 var parentOrderDetail = await _client.GetParentOrderAsync(_productCode, parentOrderId: parentOrder.ParentOrderId);
                 _orderTransactions.AddOrUpdate(parentOrder.ParentOrderAcceptanceId,
@@ -112,8 +112,8 @@ namespace BitFlyerDotNet.Trading
                 case BfOrderEventType.Complete:
 #pragma warning disable CS8604
                     _orderTransactions.AddOrUpdate(e.ChildOrderAcceptanceId,
-                        _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.TransactionChanged += OnTransactionChanged; return tx.OnParentOrderEventForChildren(e); },
-                        (_, tx) => tx.OnParentOrderEventForChildren(e)
+                        _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.TransactionChanged += OnTransactionChanged; return tx.OnTriggerOrCompleteEvent(e); },
+                        (_, tx) => tx.OnTriggerOrCompleteEvent(e)
                     );
 #pragma warning restore CS8604
                     break;
@@ -217,6 +217,42 @@ namespace BitFlyerDotNet.Trading
         {
             switch (e.EvenetType)
             {
+            }
+        }
+
+        public async IAsyncEnumerable<BfxOrder> GetOrdersAsync(BfOrderState orderState, int count, Func<BfxOrder, bool> predicate)
+        {
+            if (count == 0)
+            {
+                count = int.MaxValue;
+            }
+
+            var updatedChildOrderIds = new HashSet<string>();
+            await foreach (var parentOrder in _client.GetParentOrdersAsync(_productCode, orderState, 0, 0, e => true))
+            {
+                if (count-- == 0)
+                {
+                    yield break;
+                }
+
+                var trade = new BfxTrade(_productCode);
+                var parentOrderDetail = await _client.GetParentOrderAsync(_productCode, parentOrderId: parentOrder.ParentOrderId);
+                trade.Update(parentOrder, parentOrderDetail);
+
+                foreach (var childOrder in await _client.GetChildOrdersAsync(_productCode, parentOrderId: parentOrder.ParentOrderId))
+                {
+                    updatedChildOrderIds.Add(childOrder.ChildOrderId);
+                    var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId);
+                    trade.Update(childOrder, execs);
+                }
+
+                var order = new BfxOrder(trade);
+                if (!predicate(order))
+                {
+                    yield break;
+                }
+
+                yield return order;
             }
         }
     }

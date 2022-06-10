@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28803.352
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BitFlyerDotNet.LightningApi", "BitFlyerDotNet.LightningApi\BitFlyerDotNet.LightningApi.csproj", "{9FA12A70-5D3F-4107-9E6A-DDF5DD0B3778}"
 EndProject
@@ -12,7 +12,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D7EC7583-901A-4F60-88ED-9F33C10350D8}"
 	ProjectSection(SolutionItems) = preProject
 		LICENSE.txt = LICENSE.txt
-		README.ja-JP.md = README.ja-JP.md
+		README.en-US.md = README.en-US.md
 		README.md = README.md
 	EndProjectSection
 EndProject

@@ -50,6 +50,7 @@ namespace BitFlyerDotNet.Trading
         internal BfxTrade(string productCode)
         {
             ProductCode = productCode;
+            Children = new ReadOnlyCollection<BfxTrade>(new List<BfxTrade>(3));
         }
 
 
@@ -59,39 +60,43 @@ namespace BitFlyerDotNet.Trading
             PagingId = status.PagingId;
             OrderId = status.ParentOrderId;
             OrderType = status.ParentOrderType;
-            OrderPrice = status.Price;
-            AveragePrice = status.AveragePrice;
-            OrderSize = status.Size;
             OrderState = status.ParentOrderState;
             ExpireDate = status.ExpireDate;
             OrderDate = status.ParentOrderDate;
-            OutstandingSize = status.OutstandingSize;
-            CancelSize = status.CancelSize;
-            ExecutedSize = status.ExecutedSize;
             TotalCommission = status.TotalCommission;
 
             TimeInForce = detail.TimeInForce == BfTimeInForce.NotSpecified ? null : detail.TimeInForce;
-            for (int index = 0; index < detail.Parameters.Length; index++)
-            {
-                Children[index].Update(detail.Parameters[index]);
-            }
 
-            throw new NotImplementedException();
+            if (detail.Parameters.Length == 1) // Stop/StopLimit
+            {
+                Update(detail.Parameters[0]);
+            }
+            else
+            {
+                for (int index = 0; index < detail.Parameters.Length; index++)
+                {
+                    Children[index].Update(detail.Parameters[index]);
+                }
+            }
         }
 
         internal void Update(BfParentOrder order)
         {
-            OrderType = order.OrderMethod;
-
-            for (int index = 0; index < order.Parameters.Count; index++)
+            if (order.Parameters.Count == 1) // Stop/StopLimit
             {
-                Children[index].Update(order.Parameters[index]);
+                Update(order.Parameters[0]);
             }
-
-            throw new NotImplementedException();
+            else
+            {
+                OrderType = order.OrderMethod;
+                for (int index = 0; index < order.Parameters.Count; index++)
+                {
+                    Children[index].Update(order.Parameters[index]);
+                }
+            }
         }
 
-        internal void UpdateChild(BfParentOrderEvent e)
+        internal void OnTriggerOrCompleteEvent(BfParentOrderEvent e)
         {
             if (e.ChildOrderType.HasValue)
             {
@@ -104,12 +109,21 @@ namespace BitFlyerDotNet.Trading
             ExpireDate = e.ExpireDate;
         }
 
-        internal void UpdateChild(int childOrderIndex, BfParentOrderEvent e)
+        internal void OnTriggerEvent(int childOrderIndex, BfParentOrderEvent e)
         {
-            Children[childOrderIndex].UpdateChild(e);
+            if (childOrderIndex == 0 && (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit || OrderType == BfOrderType.Trail))
+            {
+                OrderId = e.ParentOrderId;
+                OrderAcceptanceId = e.ParentOrderAcceptanceId;
+                Side = e.Side;
+                TriggerPrice = e.Price > decimal.Zero ? e.Price : null;
+                OrderSize = e.Size;
+                ExpireDate = e.ExpireDate;
+            }
+            Children[childOrderIndex].OnTriggerOrCompleteEvent(e);
         }
 
-        internal void UpdateParent(BfParentOrderEvent e)
+        internal void OnParentOrdered(BfParentOrderEvent e)
         {
             OrderAcceptanceId = e.ParentOrderAcceptanceId;
             OrderId = e.ParentOrderId;

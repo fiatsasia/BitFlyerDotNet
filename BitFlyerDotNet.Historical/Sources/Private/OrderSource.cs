@@ -84,7 +84,7 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         public async void UpdateRecentParentOrders(DateTime after)
         {
-            await foreach (var parent in _client.GetParentOrdersAsync(_productCode, after: after))
+            await foreach (var parent in _client.GetParentOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, e => e.ParentOrderDate >= after))
             {
                 var recParent = _ctx.FindParentOrder(_productCode, parent.ParentOrderAcceptanceId);
                 var detail = await _client.GetParentOrderAsync(_productCode, parentOrderAcceptanceId: parent.ParentOrderAcceptanceId);
@@ -126,7 +126,7 @@ namespace BitFlyerDotNet.Historical
 
         public void UpdateRecentChildOrders(DateTime after)
         {
-            _ctx.Upsert(_productCode, _client.GetChildOrdersAsync(_productCode, after).ToEnumerable());
+            _ctx.Upsert(_productCode, _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, e => e.ChildOrderDate > after).ToEnumerable());
             _ctx.SaveChanges();
         }
 

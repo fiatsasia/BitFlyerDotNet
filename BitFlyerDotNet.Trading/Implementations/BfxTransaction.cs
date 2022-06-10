@@ -44,17 +44,9 @@ namespace BitFlyerDotNet.Trading
             return this;
         }
 
-        internal BfxTransaction OnParentOrderEventForChildren(BfParentOrderEvent e)
+        internal BfxTransaction OnTriggerOrCompleteEvent(BfParentOrderEvent e)
         {
-            _trade.UpdateChild(e);
-            switch (e.EventType)
-            {
-                case BfOrderEventType.Trigger:
-                    break;
-
-                case BfOrderEventType.Complete:
-                    break;
-            }
+            _trade.OnTriggerOrCompleteEvent(e);
             return this;
         }
 
@@ -113,11 +105,11 @@ namespace BitFlyerDotNet.Trading
             switch (e.EventType)
             {
                 case BfOrderEventType.Order:
-                    _trade.UpdateParent(e);
+                    _trade.OnParentOrdered(e);
                     break;
 
                 case BfOrderEventType.Trigger:
-                    _trade.UpdateChild(e.ChildOrderIndex.Value - 1, e);
+                    _trade.OnTriggerEvent(e.ChildOrderIndex.Value - 1, e);
                     break;
 
                 case BfOrderEventType.Complete:

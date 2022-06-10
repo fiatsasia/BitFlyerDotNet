@@ -1,54 +1,18 @@
 # BitFlyerDotNet
-[譌･譛ｬ隱枉(README.ja-JP.md)  
-BitFlyerDotNet is [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) wrapper and libraries for .NET Standard 2.0.
+[English](README.en-US.md)  
 
-**BitFlyerDotNet is NOT official library for bitFlyer Lightning APIs.**
+BitFlyerDotNet は、.NET Standard 2.0 向け [bitFlyer](https://bitflyer.com/en-jp/) [Lightning API](https://lightning.bitflyer.com/docs?lang=en) ラッパーおよび周辺ライブラリです。
 
-### Updates
-- [BitFlyerDotNet Site](https://scrapbox.io/BitFlyerDotNet/Updates)
+**BitFlyerDotNet は bitFlyer Lightning API の公式ライブラリではありません。**
 
-### Environment 
-- Solution and Projects are for Visual Studio 2022 and 2019 for Mac.
-- .NET Standard 2.0 for libraries.
-- .NET 6.0 for sample applications.
-- [Reactive Extensions (Rx.NET)](http://reactivex.io/)
-- [JSON.NET](https://www.newtonsoft.com/json)
-- Entity Framework Core and [SQLite](https://www.sqlite.org/index.html)
+**[BitFlyerDotNet日本語版解説サイト](https://scrapbox.io/BitFlyerDotNet/)**
 
-### BitFlyerDotNet.LightningAPI
-```
-PM> Install-Package BitFlyerDotNet.LightningApi
-```
-- bitFlyer Lightning API wrapper class library.
-- Supports all of Public/Private/Realtime APIs.
-- [Realtime APIs](https://scrapbox.io/BitFlyerDotNet/Realtime_APIs) are wrapped by Reactive Extensions.
-- All of Realtime API subscribers (include private) share single WebSocket channel.
-### BitFlyerDotNet.Trading
-- BitFlyerDotNet.Trading contains BitFlyer.DotNet.LightningAPI
-```
-PM> Install-Package BitFlyerDotNet.Trading
-```
-- Class library for trading applications.
-- Transaction based order management. 
-### BitFlyerDotNet.Historical
-- BitFlyerDotNet.Historical contains BitFlyer.DotNet.LightningAPI
-```
-PM> Install-Package BitFlyerDotNet.Historical
-```
-- Class library for charting applications
-- Smart cache mechanism with Reactive Extensions and Entity Framework Core
-- Realtime updating OHLC stream with execution cache
-- Supports Cryptowatch API with cache
-
-## Sample code
-
+## サンプルコード
 ### Realtime API Public Channels
 ```
-using BitFlyerDotNet.LightningApi;
-
-// Display realtime executions from WebSocket
+// WebSocketからリアルタイム執行情報を取得する。
 using (var factory = new RealtimeSourceFactory())
-using (var source = factory.GetExecutionSource(BfProductCode.FXBTCJPY))
+using (var source = factory.GetExecutionSource("FX_BTC_JPY"))
 {
     source.Subscribe(exec =>
     {
@@ -65,15 +29,9 @@ using (var source = factory.GetExecutionSource(BfProductCode.FXBTCJPY))
 ```
 ### Realtime API Private Channels
 ```
-using BitFlyerDotNet.LightningApi;
-
-// Input API key and secret
-Console.Write("Key:"); var key = Console.ReadLine();
-Console.Write("Secret:"); var secret = Console.ReadLine();
-
-// Display child order event from WebSocket
+// WebSocketからリアルタイム子注文イベント情報を取得する。
 using (var factory = new RealtimeSourceFactory(key, secret))
-using (var source = factory.GetChildOrderEventsSource(BfProductCode.FXBTCJPY))
+using (var source = factory.GetChildOrderEventsSource("FX_BTC_JPY"))
 {
     source.Subscribe(e =>
     {
@@ -84,46 +42,69 @@ using (var source = factory.GetChildOrderEventsSource(BfProductCode.FXBTCJPY))
 ```
 ### Public API
 ```
-using BitFlyerDotNet.LightningApi;
-
-// Get supported currency pairs and aliases
+// マーケット一覧を取得する。
 using (var client = new BitFlyerClient())
 {
-    var resp = client.GetMarkets();
-    if (resp.IsError)
+    foreach (var market in await client.GetMarketsAsync())
     {
-        Console.WriteLine("Error occured:{0}", resp.ErrorMessage);
-    }
-    else
-    {
-        foreach (var market in resp.GetMessage())
-        {
-            Console.WriteLine("{0} {1}", market.ProductCode, market.Alias);
-        }
+        Console.WriteLine("{0} {1}", market.ProductCode, market.Alias);
     }
 }
 ```
 ### Private API  
 ```
-using BitFlyerDotNet.LightningApi;
-
-// Buy order
-Console.Write("Key:"); var key = Console.ReadLine();
-Console.Write("Secret:"); var secret = Console.ReadLine();
-
+// 成行買注文を送信する。
 using (var client = new BitFlyerClient(key, secret))
 {
-    Console.Write("Price:"); var price = decimal.Parse(Console.ReadLine());
-    client.SendChildOrder(BfProductCode.FXBTCJPY, BfOrderType.Limit, BfTradeSide.Buy, price, 0.001);
+    client.SendChildOrder("FX_BTC_JPY", BfOrderType.Market, BfTradeSide.Buy, 0.001);
 }
 ```
-[More sample code from here ->](https://scrapbox.io/BitFlyerDotNet/Samples)
 
-## Known issues
-- 2020/07/27 GetParentOrders API is too slow or sometimes returns "Internal Server Error" if target period contains old order. Probably old parent orders are stored another slow database.
+### 更新履歴
+- [BitFlyerDotNetサイト](https://scrapbox.io/BitFlyerDotNet/更新履歴)
 
-Let me know if you have any questions or requests. We could accept English and Japanese.
+### 環境
+- Visual Studio 2022 / for Mac 2019 用ソリューション、プロジェクト
+- .NET Standard 2.0 (ライブラリで使用)
+- .NET 6.0 (サンプルで使用)
+- [Reactive Extensions (Rx.NET)](http://reactivex.io/)
+- [JSON.NET](https://www.newtonsoft.com/json)
+- Entity Framework Core and [SQLite](https://www.sqlite.org/index.html)
+
+### BitFlyerDotNet.LightningAPI
+```
+PM> Install-Package BitFlyerDotNet.LightningApi
+```
+- bitFlyer Lightning API ラッパ
+- Public/Private/Realtime 全 API をサポート
+- [Realtime APIs](https://scrapbox.io/BitFlyerDotNet/Realtime_APIs) は Reactive Extensions 形式
+### BitFlyerDotNet.Trading
+- BitFlyerDotNet.Trading は BitFlyer.DotNet.LightningAPI を含みます。
+```
+PM> Install-Package BitFlyerDotNet.Trading
+```
+- 取引アプリケーション構築用クラスライブラリ
+- トランザクションベースの取引管理
+### BitFlyerDotNet.Historical
+- BitFlyerDotNet.Historical は BitFlyer.DotNet.LightningAPI を含みます。
+```
+PM> Install-Package BitFlyerDotNet.Historical
+```
+- チャートアプリケーション構築用クラスライブラリ
+- Reactive Extensions と Entity Framework Core によるスマートキャッシュ
+- 四本値のリアルタイム更新とストリーミング
+- Cryptowatch API のサポート、キャッシュ
+
+[その他サンプルコードはこちら→](https://scrapbox.io/BitFlyerDotNet/Samples)
+
+
+## 既知の問題
+
+- 2020/07/27 GetParentOrders API が、取得対象に一定以上古いレコードを含む場合、"Internal Server Error" を返したり、情報取得までに10秒以上の時間がかかる場合が確認されています。
+
+質問やリクエストがあればお気軽にお知らせください。
 
 Fiats Inc.  
 <https://www.fiats.asia/>  
 Located in Tokyo, Japan.
+

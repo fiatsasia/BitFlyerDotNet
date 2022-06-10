@@ -77,6 +77,11 @@ namespace PrivateApiTests
             Console.WriteLine($"{order.PagingId} {order.ChildOrderDate} {order.ChildOrderType} {order.ChildOrderState}");
         }
 
+        void Dump(BfParentOrderStatus order)
+        {
+            Console.WriteLine($"{order.PagingId} {order.ParentOrderDate} {order.ParentOrderType} {order.ParentOrderState}");
+        }
+
         [TestMethod]
         public async Task CancelAllChildOrders()
         {
@@ -185,7 +190,7 @@ namespace PrivateApiTests
         {
             try
             {
-                var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 5, 0, 0, null, null, null, CancellationToken.None);
+                var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
@@ -196,7 +201,7 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetActiveChildOrders()
+        public async Task GetChildOrdersActive()
         {
             try
             {
@@ -211,7 +216,7 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetCompletedChildOrders()
+        public async Task GetChildOrdersCompleted()
         {
             try
             {
@@ -226,7 +231,7 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetCanceledChildOrders()
+        public async Task GetChildOrdersCanceled()
         {
             try
             {
@@ -241,7 +246,7 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetExpiredChildOrders()
+        public async Task GetChildOrdersExpired()
         {
             try
             {
@@ -256,7 +261,7 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetRejectedChildOrders()
+        public async Task GetChildOrdersRejected()
         {
             try
             {
@@ -271,11 +276,12 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetRecentChildOrders()
+        public async Task GetChildOrdersRecent()
         {
             try
             {
-                var orders = _client.GetChildOrdersAsync(_productCode, DateTime.UtcNow - TimeSpan.FromDays(60));
+                var after = DateTime.UtcNow - TimeSpan.FromDays(60);
+                var orders = _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0,  e => e.ChildOrderDate > after);
                 await foreach (var order in orders)
                 {
                     Dump(order);
@@ -394,8 +400,8 @@ namespace PrivateApiTests
         [TestMethod]
         public async Task GetParentOrderDetail()
         {
-            var order = (await _client.GetParentOrdersAsync(_productCode, BfOrderState.Completed, 1))[0];
-            var parentOrderId = order.ParentOrderId;
+            //var order = (await _client.GetParentOrdersAsync(_productCode, BfOrderState.Completed, 1))[0];
+            var parentOrderId = "JCP20201228-075130-698804"; //order.ParentOrderId;
 
             var resp = await _client.GetParentOrderAsync(_productCode, parentOrderId, null, CancellationToken.None);
             Assert.IsFalse(resp.IsUnauthorized, "Permission denied");
@@ -424,7 +430,7 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetActiveParentOrders()
+        public async Task GetParentOrdersActive()
         {
             try
             {
@@ -439,7 +445,7 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetCompletedParentOrders()
+        public async Task GetParentOrdersCompleted()
         {
             try
             {
@@ -455,7 +461,7 @@ namespace PrivateApiTests
 
         [TestMethod]
         [Timeout(30000)] // 30 seconds
-        public async Task GetCanceledParentOrders()
+        public async Task GetParentOrdersCanceled()
         {
             try
             {
@@ -470,7 +476,7 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetExpiredParentOrders()
+        public async Task GetParentOrdersExpired()
         {
             try
             {
@@ -485,7 +491,7 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetRejectedParentOrders()
+        public async Task GetParentOrdersRejected()
         {
             try
             {
@@ -493,6 +499,23 @@ namespace PrivateApiTests
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.GetContent();
+            }
+            catch (BitFlyerUnauthorizedException) // Should enable from settings
+            {
+            }
+        }
+
+        [TestMethod]
+        public async Task GetParentOrdersRecent()
+        {
+            try
+            {
+                var after = DateTime.UtcNow - TimeSpan.FromDays(60);
+                var orders = _client.GetParentOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, e => e.ParentOrderDate > after);
+                await foreach (var order in orders)
+                {
+                    Dump(order);
+                }
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {

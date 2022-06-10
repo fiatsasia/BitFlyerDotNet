@@ -73,12 +73,12 @@ namespace BitFlyerDotNet.LightningApi
     public partial class BitFlyerClient
     {
         /// <summary>
-        /// List Parent Orders
+        /// List parent orders with result
         /// <see href="https://scrapbox.io/BitFlyerDotNet/GetParentOrders">Online help</see>
         /// </summary>
         /// <param name="productCode"></param>
         /// <param name="orderState"></param>
-        /// <param name="count"></param>
+        /// <param name="count">Default is 100</param>
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
@@ -95,6 +95,15 @@ namespace BitFlyerDotNet.LightningApi
             return GetPrivateAsync<BfParentOrderStatus[]>(nameof(GetParentOrdersAsync), query, ct);
         }
 
+        /// <summary>
+        /// List parent orders
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="orderState"></param>
+        /// <param name="count"></param>
+        /// <param name="before"></param>
+        /// <param name="after"></param>
+        /// <returns></returns>
         public async Task<BfParentOrderStatus[]> GetParentOrdersAsync(
             string productCode,
             BfOrderState orderState = BfOrderState.Unknown,
@@ -103,11 +112,25 @@ namespace BitFlyerDotNet.LightningApi
             uint after = 0
         ) => (await GetParentOrdersAsync(productCode, orderState, count, before, after, CancellationToken.None)).GetContent();
 
-        public async IAsyncEnumerable<BfParentOrderStatus> GetParentOrdersAsync(string productCode, BfOrderState orderState, uint before, Func<BfParentOrderStatus, bool> predicate)
+        /// <summary>
+        /// List parent orders with query predicate
+        /// </summary>
+        /// <param name="productCode"></param>
+        /// <param name="orderState"></param>
+        /// <param name="count"></param>
+        /// <param name="before"></param>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        public async IAsyncEnumerable<BfParentOrderStatus> GetParentOrdersAsync(string productCode, BfOrderState orderState, int count, uint before, Func<BfParentOrderStatus, bool> predicate)
         {
+            var readCount = Math.Min(count, ReadCountMax);
+            if (count == 0)
+            {
+                count = int.MaxValue;
+            }
             while (true)
             {
-                var orders = await GetParentOrdersAsync(productCode, orderState, ReadCountMax, before: before);
+                var orders = await GetParentOrdersAsync(productCode, orderState, readCount, before: before);
                 if (orders.Length == 0)
                 {
                     break;
@@ -115,10 +138,16 @@ namespace BitFlyerDotNet.LightningApi
 
                 foreach (var order in orders)
                 {
+                    if (count-- == 0)
+                    {
+                        yield break;
+                    }
+
                     if (!predicate(order))
                     {
                         yield break;
                     }
+
                     yield return order;
                 }
 
@@ -126,11 +155,9 @@ namespace BitFlyerDotNet.LightningApi
                 {
                     break;
                 }
+
                 before = orders.Last().PagingId;
             }
         }
-
-        public IAsyncEnumerable<BfParentOrderStatus> GetParentOrdersAsync(string productCode, DateTime after)
-            => GetParentOrdersAsync(productCode, BfOrderState.Unknown, 0, e => e.ParentOrderDate >= after);
     }
 }

@@ -229,10 +229,7 @@ namespace BitFlyerDotNet.LightningApi
                 BfOrderType.IFD => 2,
                 BfOrderType.OCO => 2,
                 BfOrderType.Simple => 1,
-                BfOrderType.Stop => 1,
-                BfOrderType.StopLimit => 1,
-                BfOrderType.Trail => 1,
-                _ => 0
+                _ => throw new ArgumentException()
             };
         }
 
