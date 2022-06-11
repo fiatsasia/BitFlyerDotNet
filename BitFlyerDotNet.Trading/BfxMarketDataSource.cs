@@ -6,23 +6,11 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.Trading
+namespace BitFlyerDotNet.Trading;
+
+public class BfxMarketDataSource
 {
-    public enum BfxTransactionState
-    {
-        Idle,
-
-        SendingOrder,
-        WaitingOrderAccepted,
-
-        SendingCancel,
-        CancelAccepted,
-
-        Closed,
-    }
-
-    public enum BfxTransactionEventType
-    {
-
-    }
+    public decimal BestBid { get; }
+    public decimal BestAsk { get; }
+    public decimal LastTradedPrice { get; }
 }

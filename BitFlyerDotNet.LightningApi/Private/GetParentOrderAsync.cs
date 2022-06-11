@@ -22,16 +22,16 @@ public class BfParentOrderDetailStatusParameter
     public BfTradeSide Side { get; private set; }
 
     [JsonProperty(PropertyName = "price")]
-    public decimal? Price { get; private set; }
+    public decimal Price { get; private set; }         // value is 0 when not necessarily
 
     [JsonProperty(PropertyName = "size")]
     public decimal Size { get; private set; }
 
     [JsonProperty(PropertyName = "trigger_price")]
-    public decimal? TriggerPrice { get; private set; }
+    public decimal TriggerPrice { get; private set; }  // value is 0 when not necessarily
 
     [JsonProperty(PropertyName = "offset")]
-    public decimal? Offset { get; private set; }
+    public decimal Offset { get; private set; }        // value is 0 when not necessarily
 }
 
 public class BfParentOrderDetailStatus

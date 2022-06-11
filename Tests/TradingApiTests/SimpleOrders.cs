@@ -6,82 +6,76 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using System.Threading.Tasks;
-using BitFlyerDotNet.LightningApi;
-using BitFlyerDotNet.Trading;
+namespace TradingApiTests;
 
-namespace TradingApiTests
+partial class Program
 {
-    partial class Program
+    static async Task SimpleOrders()
     {
-        static async Task SimpleOrders(BfxApplication app)
+        var mds = await App.GetMarketDataSourceAsync(ProductCode);
+
+        while (true)
         {
-            var mds = await app.GetMarketDataSourceAsync(ProductCode);
+            Console.WriteLine("L)imit price order best ask/bid price");
+            Console.WriteLine("M)arket price order");
+            Console.WriteLine("T)railing");
+            Console.WriteLine("E)xpire test");
+            Console.WriteLine("F)OK");
+            Console.WriteLine("C)ancel last order");
+            Console.WriteLine("X) Close position");
+            Console.WriteLine();
+            Console.Write("Main/Simple Orders>");
 
-            while (true)
+            switch (GetCh())
             {
-                Console.WriteLine("L)imit price order best ask/bid price");
-                Console.WriteLine("M)arket price order");
-                Console.WriteLine("T)railing");
-                Console.WriteLine("E)xpire test");
-                Console.WriteLine("F)OK");
-                Console.WriteLine("C)ancel last order");
-                Console.WriteLine("X) Close position");
-                Console.WriteLine();
-                Console.Write("Main/Simple Orders>");
-
-                switch (GetCh())
-                {
-                    case 'L':
+                case 'L':
+                    {
+                        var side = SelectSide();
+                        if (side != BfTradeSide.Unknown)
                         {
-                            var side = SelectSide();
-                            if (side != BfTradeSide.Unknown)
-                            {
-                                await app.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, side, mds.LastTradedPrice, _orderSize));
-                            }
+                            await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, side, mds.LastTradedPrice, _orderSize));
                         }
-                        break;
+                    }
+                    break;
 
-                    case 'M':
+                case 'M':
+                    {
+                        var side = SelectSide();
+                        if (side != BfTradeSide.Unknown)
                         {
-                            var side = SelectSide();
-                            if (side != BfTradeSide.Unknown)
-                            {
-                                await app.PlaceOrderAsync(BfOrderFactory.Market(ProductCode, side, _orderSize));
-                            }
+                            await App.PlaceOrderAsync(BfOrderFactory.Market(ProductCode, side, _orderSize));
                         }
-                        break;
+                    }
+                    break;
 
-                    case 'T':
+                case 'T':
+                    {
+                        var side = SelectSide();
+                        if (side != BfTradeSide.Unknown)
                         {
-                            var side = SelectSide();
-                            if (side != BfTradeSide.Unknown)
-                            {
-                                await app.PlaceOrderAsync(BfOrderFactory.Trail(ProductCode, side, PnLGap * 2, _orderSize));
-                            }
+                            await App.PlaceOrderAsync(BfOrderFactory.Trail(ProductCode, side, PnLGap * 2, _orderSize));
                         }
-                        break;
+                    }
+                    break;
 
-                    case 'E':
-                        await app.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize, minuteToExpire: 1));
-                        break;
+                case 'E':
+                    await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize, minuteToExpire: 1));
+                    break;
 
-                    case 'F':
-                        await app.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize, timeInForce: BfTimeInForce.FOK));
-                        break;
+                case 'F':
+                    await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize, timeInForce: BfTimeInForce.FOK));
+                    break;
 
-                    case 'C':
-                        CancelOrder();
-                        break;
+                case 'C':
+                    CancelOrder();
+                    break;
 
-                    case 'X':
-                        ClosePositions(app);
-                        break;
+                case 'X':
+                    ClosePositions();
+                    break;
 
-                    case ESCAPE:
-                        return;
-                }
+                case ESCAPE:
+                    return;
             }
         }
     }

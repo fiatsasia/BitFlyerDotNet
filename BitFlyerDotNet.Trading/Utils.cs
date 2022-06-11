@@ -6,39 +6,33 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using System.Linq;
-using System.Reactive.Disposables;
-using BitFlyerDotNet.LightningApi;
+namespace BitFlyerDotNet.Trading;
 
-namespace BitFlyerDotNet.Trading
+internal static class RxExtensions
 {
-    internal static class RxExtensions
+    public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
     {
-        public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
-        {
-            disposable.Add(resource);
-            return resource;
-        }
-
-        public static void DisposeReverse(this CompositeDisposable disposable)
-        {
-            disposable.Reverse().ForEach(e => e.Dispose());
-        }
+        disposable.Add(resource);
+        return resource;
     }
 
-    internal static class BfOrderConvertExtension
+    public static void DisposeReverse(this CompositeDisposable disposable)
     {
-        public static BfParentOrderParameter ToParameter(this BfChildOrder child)
+        disposable.Reverse().ForEach(e => e.Dispose());
+    }
+}
+
+internal static class BfOrderConvertExtension
+{
+    public static BfParentOrderParameter ToParameter(this BfChildOrder child)
+    {
+        return new BfParentOrderParameter
         {
-            return new BfParentOrderParameter
-            {
-                ProductCode = child.ProductCode,
-                ConditionType = child.ChildOrderType,
-                Side = child.Side,
-                Size = child.Size,
-                Price = child.Price,
-            };
-        }
+            ProductCode = child.ProductCode,
+            ConditionType = child.ChildOrderType,
+            Side = child.Side,
+            Size = child.Size,
+            Price = child.Price,
+        };
     }
 }

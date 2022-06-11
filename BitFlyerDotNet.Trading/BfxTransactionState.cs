@@ -6,10 +6,22 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.Trading
+namespace BitFlyerDotNet.Trading;
+
+public enum BfxTransactionState
 {
-    public enum BfxPositionEventType
-    {
-        Unknown,
-    }
+    Idle,
+
+    SendingOrder,
+    WaitingOrderAccepted,
+
+    SendingCancel,
+    CancelAccepted,
+
+    Closed,
+}
+
+public enum BfxTransactionEventType
+{
+
 }
