@@ -89,7 +89,7 @@ partial class Program
                             break;
 
                         case 'O':
-                            await foreach (var order in App.GetRecentOrdersAsync(ProductCode, 10))
+                            await foreach (var order in App.GetRecentOrdersAsync(ProductCode, 5))
                             {
                                 PrintOrder(order);
                             }
@@ -231,6 +231,36 @@ partial class Program
 
     static void PrintOrder(BfxOrder order)
     {
+        var sb = new List<string>();
+        if (order.OrderDate.HasValue)
+        {
+            sb.Add(order.OrderDate.Value.ToString(TimeFormat));
+        }
+        else
+        {
+            sb.Add("Order not triggered");
+        }
+        sb.Add($"{order.ProductCode}");
+        sb.Add($"{order.OrderType}");
+        if (order.Side.HasValue)
+        {
+            sb.Add($"{order.Side}");
+        }
+        if (order.OrderPrice.HasValue)
+        {
+            sb.Add($"P:{order.OrderPrice}");
+        }
+        if (order.OrderSize.HasValue)
+        {
+            sb.Add($"S:{order.OrderSize}");
+        }
+        Console.WriteLine(string.Join(' ', sb));
+
+        for (int i = 0; i < order.Children.Count; i++)
+        {
+            Console.Write("    ");
+            PrintOrder(order.Children[i]);
+        }
     }
 
     static void DumpResponse(BitFlyerResponse resp)

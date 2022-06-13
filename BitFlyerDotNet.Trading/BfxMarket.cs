@@ -206,13 +206,13 @@ public class BfxMarket : IDisposable
         }
     }
 
-    public async IAsyncEnumerable<BfxTrade> GetTradesAsync(BfOrderState orderState, bool linkChildToParent, Func<BfxTrade, bool> predicate)
+    public async IAsyncEnumerable<BfxTrade> GetTradesAsync(BfOrderState orderState, int count, bool linkChildToParent, Func<BfxTrade, bool> predicate)
     {
 #pragma warning disable CS8604
         var trades = new Dictionary<string, BfxTrade>();
 
         // Get child orders
-        await foreach (var childOrder in _client.GetChildOrdersAsync(_productCode, orderState, 0, 0, e => true))
+        await foreach (var childOrder in _client.GetChildOrdersAsync(_productCode, orderState, count, 0, e => true))
         {
             var trade = new BfxTrade(_productCode);
             var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId);
@@ -225,7 +225,7 @@ public class BfxMarket : IDisposable
         }
 
         // Get parent orders
-        await foreach (var parentOrder in _client.GetParentOrdersAsync(_productCode, orderState, 0, 0, e => true))
+        await foreach (var parentOrder in _client.GetParentOrdersAsync(_productCode, orderState, count, 0, e => true))
         {
             var trade = new BfxTrade(_productCode);
             var parentOrderDetail = await _client.GetParentOrderAsync(_productCode, parentOrderId: parentOrder.ParentOrderId);

@@ -39,7 +39,7 @@ public class BfxTransaction
 
     internal BfxTransaction OnTriggerOrCompleteEvent(BfParentOrderEvent e)
     {
-        _trade.OnTriggerOrCompleteEvent(e);
+        _trade.OnTriggerOrCompleteEventForChildOrder(e);
         return this;
     }
 

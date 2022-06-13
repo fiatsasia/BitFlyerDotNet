@@ -143,7 +143,7 @@ public class BfxApplication : IDisposable
     public async IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(string productCode, int count)
     {
         var market = await GetMarketAsync(productCode);
-        await foreach (var trade in market.GetTradesAsync(BfOrderState.Unknown, true, e => count-- > 0))
+        await foreach (var trade in market.GetTradesAsync(BfOrderState.Unknown, count, true, e => true))
         {
             yield return new BfxOrder(trade);
         }

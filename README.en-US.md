@@ -93,9 +93,6 @@ PM> Install-Package BitFlyerDotNet.Historical
 - Realtime updating OHLC stream with execution cache
 - Supports Cryptowatch API with cache
 
-## Known issues
-- 2020/07/27 GetParentOrders API is too slow or sometimes returns "Internal Server Error" if target period contains old order. Probably old parent orders are stored another slow database.
-
 Let me know if you have any questions or requests. We could accept English and Japanese.
 
 Fiats Inc.  

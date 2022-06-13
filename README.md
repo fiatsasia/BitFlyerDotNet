@@ -98,13 +98,8 @@ PM> Install-Package BitFlyerDotNet.Historical
 [その他サンプルコードはこちら→](https://scrapbox.io/BitFlyerDotNet/Samples)
 
 
-## 既知の問題
-
-- 2020/07/27 GetParentOrders API が、取得対象に一定以上古いレコードを含む場合、"Internal Server Error" を返したり、情報取得までに10秒以上の時間がかかる場合が確認されています。
-
 質問やリクエストがあればお気軽にお知らせください。
 
 Fiats Inc.  
 <https://www.fiats.asia/>  
 Located in Tokyo, Japan.
-

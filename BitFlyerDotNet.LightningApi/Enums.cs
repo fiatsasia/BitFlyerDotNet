@@ -225,6 +225,11 @@ public static class BfOrderTypeExtension
             BfOrderType.IFD => 2,
             BfOrderType.OCO => 2,
             BfOrderType.Simple => 1,
+            BfOrderType.Stop => 0,
+            BfOrderType.StopLimit => 0,
+            BfOrderType.Trail => 0,
+            BfOrderType.Market => 0,
+            BfOrderType.Limit => 0,
             _ => throw new ArgumentException()
         };
     }

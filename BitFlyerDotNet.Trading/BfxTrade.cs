@@ -11,7 +11,7 @@ namespace BitFlyerDotNet.Trading;
 public class BfxTrade
 {
     #region Order informations
-    public string ProductCode { get; private set; }
+    public string ProductCode { get; }
     public BfOrderType OrderType { get; private set; }
     public BfTradeSide? Side { get; private set; }
     public decimal? OrderSize { get; private set; }
@@ -20,7 +20,7 @@ public class BfxTrade
     public decimal? TrailOffset { get; private set; }
     public int? MinuteToExpire { get; private set; }
     public BfTimeInForce? TimeInForce { get; private set; }
-    public ReadOnlyCollection<BfxTrade> Children { get; private set; }
+    public ReadOnlyCollection<BfxTrade> Children => Array.AsReadOnly(_children);
     #endregion Order informations
 
     #region Order management info
@@ -40,18 +40,11 @@ public class BfxTrade
     public decimal? TotalCommission { get; protected set; }
 
     ConcurrentDictionary<long, BfxExecution> _execs = new();
-
-    private BfxTrade() { }
+    BfxTrade[] _children = new BfxTrade[0];
 
     internal BfxTrade(string productCode)
     {
         ProductCode = productCode;
-        Children = new ReadOnlyCollection<BfxTrade>(new List<BfxTrade>(3)
-        {
-            new BfxTrade { ProductCode = productCode },
-            new BfxTrade { ProductCode = productCode },
-            new BfxTrade { ProductCode = productCode }
-        });
     }
 
 
@@ -65,39 +58,43 @@ public class BfxTrade
         ExpireDate = status.ExpireDate;
         OrderDate = status.ParentOrderDate;
         TotalCommission = status.TotalCommission;
-
         TimeInForce = detail.TimeInForce == BfTimeInForce.NotSpecified ? null : detail.TimeInForce;
 
-        if (detail.Parameters.Length == 1) // Stop/StopLimit
+        if (_children.Length < detail.Parameters.Length)
         {
-            Update(detail.Parameters[0]);
+            Array.Resize(ref _children, detail.Parameters.Length);
         }
-        else
+        for (int index = 0; index < detail.Parameters.Length; index++)
         {
-            for (int index = 0; index < detail.Parameters.Length; index++)
+            if (_children[index] == null)
             {
-                Children[index].Update(detail.Parameters[index]);
+                _children[index] = new BfxTrade(ProductCode);
             }
+            _children[index].Update(detail.Parameters[index]);
         }
     }
 
     internal void Update(BfParentOrder order)
     {
-        if (order.Parameters.Count == 1) // Stop/StopLimit
+        OrderType = order.OrderMethod;
+        MinuteToExpire = order.MinuteToExpire;
+        TimeInForce = order.TimeInForce;
+
+        if (_children.Length < order.Parameters.Count)
         {
-            Update(order.Parameters[0]);
+            Array.Resize(ref _children, order.Parameters.Count);
         }
-        else
+        for (int index = 0; index < order.Parameters.Count; index++)
         {
-            OrderType = order.OrderMethod;
-            for (int index = 0; index < order.Parameters.Count; index++)
+            if (_children[index] == null)
             {
-                Children[index].Update(order.Parameters[index]);
+                _children[index] = new BfxTrade(ProductCode);
             }
+            _children[index].Update(order.Parameters[index]);
         }
     }
 
-    internal void OnTriggerOrCompleteEvent(BfParentOrderEvent e)
+    internal void OnTriggerOrCompleteEventForChildOrder(BfParentOrderEvent e)
     {
         if (e.ChildOrderType.HasValue)
         {
@@ -112,16 +109,12 @@ public class BfxTrade
 
     internal void OnTriggerEvent(int childOrderIndex, BfParentOrderEvent e)
     {
-        if (childOrderIndex == 0 && (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit || OrderType == BfOrderType.Trail))
+        if (_children.Length <= childOrderIndex)
         {
-            OrderId = e.ParentOrderId;
-            OrderAcceptanceId = e.ParentOrderAcceptanceId;
-            Side = e.Side;
-            TriggerPrice = e.Price > decimal.Zero ? e.Price : null;
-            OrderSize = e.Size;
-            ExpireDate = e.ExpireDate;
+            Array.Resize(ref _children, childOrderIndex + 1);
+            _children[childOrderIndex] = new BfxTrade(ProductCode);
         }
-        Children[childOrderIndex].OnTriggerOrCompleteEvent(e);
+        _children[childOrderIndex].OnTriggerOrCompleteEventForChildOrder(e);
     }
 
     internal void OnParentOrdered(BfParentOrderEvent e)
@@ -149,11 +142,11 @@ public class BfxTrade
     {
         OrderType = order.ConditionType;
         Side = order.Side;
+        OrderSize = order.Size;
         if (OrderType == BfOrderType.Limit || OrderType == BfOrderType.StopLimit)
         {
             OrderPrice = order.Price;
         }
-        OrderSize = order.Size;
         if (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit)
         {
             TriggerPrice = order.TriggerPrice;
