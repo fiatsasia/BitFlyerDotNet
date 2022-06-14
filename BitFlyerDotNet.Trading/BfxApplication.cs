@@ -89,7 +89,7 @@ public class BfxApplication : IDisposable
         _rts.GetChildOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnChildOrderEvent(e)).AddTo(_disposables);
     }
 
-    public async Task InitializeAsync(string productCode)
+    public async Task<BfxMarket> InitializeAsync(string productCode)
     {
         if (!IsInitialized)
         {
@@ -107,6 +107,8 @@ public class BfxApplication : IDisposable
             _rts.GetTickerSource(productCode).Subscribe(ticker => { market.Ticker = ticker; });
             await market.InitializeAsync();
         }
+
+        return market;
     }
     #endregion Initialize and Finalize
 
@@ -122,7 +124,7 @@ public class BfxApplication : IDisposable
     {
         if (!_markets.TryGetValue(productCode, out var market))
         {
-            await InitializeAsync(productCode);
+            market = await InitializeAsync(productCode);
         }
         else if (!market.IsInitialized)
         {
@@ -142,6 +144,11 @@ public class BfxApplication : IDisposable
 
     public async IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(string productCode, int count)
     {
+        if (!_client.IsAuthenticated)
+        {
+            throw new BitFlyerUnauthorizedException();
+        }
+
         var market = await GetMarketAsync(productCode);
         await foreach (var trade in market.GetTradesAsync(BfOrderState.Unknown, count, true, e => true))
         {

@@ -28,6 +28,8 @@ public class BfxOrder
 
     public BfxOrder(BfxTrade trade)
     {
+        ProductCode = trade.ProductCode;
+
         switch (trade.OrderType)
         {
             case BfOrderType.Market:
@@ -61,7 +63,6 @@ public class BfxOrder
 
     void SetCommonPart(BfxTrade trade)
     {
-        ProductCode = trade.ProductCode;
         OrderType = trade.OrderType;
         OrderAcceptanceId = trade.OrderAcceptanceId;
         OrderId = trade.OrderId;

@@ -48,12 +48,9 @@ partial class Program
         var connStr = "data source=" + Path.Combine(Properties["CacheDirectoryPath"], OrderCacheFileName);
         using (App = new BfxApplication(key, secret))
         {
-            //Mds = await App.GetMarketDataSourceAsync(ProductCode);
             App.OrderChanged += OnOrderChanged;
             App.PositionChanged += OnPositionChanged;
             App.TradeChanged += OnTradeChanged;
-
-            await App.InitializeAsync(ProductCode);
 
             while (true)
             {
@@ -89,7 +86,7 @@ partial class Program
                             break;
 
                         case 'O':
-                            await foreach (var order in App.GetRecentOrdersAsync(ProductCode, 5))
+                            await foreach (var order in App.GetRecentOrdersAsync(ProductCode, 20))
                             {
                                 PrintOrder(order);
                             }

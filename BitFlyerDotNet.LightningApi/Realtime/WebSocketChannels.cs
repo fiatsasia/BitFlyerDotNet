@@ -71,7 +71,7 @@ class WebSocketChannels : IDisposable
             _istream = new WebSocketStream(_socket);
             _ostream = new WebSocketStream(_socket);
 
-            _reconnectionTimer = new Timer(OnReconnection);
+            _reconnectionTimer = new Timer(async e => { await OnReconnection(); });
 
             //_socket.DataReceived += OnDataReceived;
             //_socket.Error += OnError;
@@ -79,6 +79,7 @@ class WebSocketChannels : IDisposable
         catch (AggregateException)
         {
         }
+        Log.Trace($"Created");
     }
 
     public void Dispose()
@@ -227,6 +228,12 @@ class WebSocketChannels : IDisposable
 
         // Parse auth result
         var joResult = (JObject)JsonConvert.DeserializeObject(jsonResult);
+        var errorResult = joResult["error"];
+        if (errorResult != null)
+        {
+            Log.Warn($"WebSocket authenticate failed. result = {errorResult["message"].Value<string>()}");
+            return (errorResult["code"].Value<int>() == -32009);
+        }
 
         var authResult = joResult["result"].Value<bool>();
         Log.Info($"WebSocket authenticated. result = {authResult}");
@@ -241,13 +248,7 @@ class WebSocketChannels : IDisposable
         {
             if (_webSocketSources.Count > 0)
             {
-                if (IsPrivate)
-                {
-                    Authenticate(_apiKey, _apiSecret);
-                }
-
                 Resumed?.Invoke();
-
                 Log.Info("WebSocket recover subscriptions.");
                 _webSocketSources.Values.ForEach(source => { source.Subscribe(); }); // resubscribe
             }
@@ -286,7 +287,7 @@ class WebSocketChannels : IDisposable
         _reconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite);
     }
 
-    void OnReconnection(object _)
+    async Task OnReconnection()
     {
         _reconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
         Log.Info($"WebSocket is reopening connection... state={_socket.State}");
@@ -296,7 +297,11 @@ class WebSocketChannels : IDisposable
             case WebSocketState.Closed:
                 try
                 {
-                    _socket.ConnectAsync(new Uri(_uri), CancellationToken.None);
+                    await _socket.ConnectAsync(new Uri(_uri), CancellationToken.None);
+                    if (IsPrivate)
+                    {
+                        Authenticate(_apiKey, _apiSecret);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -307,8 +312,8 @@ class WebSocketChannels : IDisposable
 
             case WebSocketState.Aborted:
                 _ct.ThrowIfCancellationRequested();
-                _socket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
-                _ = TryOpenAsync();
+                await _socket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
+                await TryOpenAsync();
                 break;
 
             case WebSocketState.Open:
