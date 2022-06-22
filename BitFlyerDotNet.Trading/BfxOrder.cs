@@ -22,6 +22,7 @@ public class BfxOrder
     public DateTime? OrderDate { get; private set; }
     public DateTime? ExpireDate { get; private set; }
     public BfOrderState? OrderState { get; private set; }
+    public decimal? ExecutedSize { get; private set; }
     public ReadOnlyCollection<BfxOrder> Children => Array.AsReadOnly(_children);
 
     BfxOrder[] _children;
@@ -73,35 +74,29 @@ public class BfxOrder
 
     void SetIndividualPart(BfxTrade trade)
     {
+        Side = trade.Side;
+        OrderSize = trade.OrderSize;
+        ExecutedSize = trade.ExecutedSize;
+
         switch (OrderType)
         {
             case BfOrderType.Market:
-                Side = trade.Side;
-                OrderSize = trade.OrderSize;
                 break;
 
             case BfOrderType.Limit:
-                Side = trade.Side;
-                OrderSize = trade.OrderSize;
                 OrderPrice = trade.OrderPrice;
                 break;
 
             case BfOrderType.Stop:
-                Side = trade.Side;
-                OrderSize = trade.OrderSize;
                 TriggerPrice = trade.TriggerPrice;
                 break;
 
             case BfOrderType.StopLimit:
-                Side = trade.Side;
-                OrderSize = trade.OrderSize;
                 OrderPrice = trade.OrderPrice;
                 TriggerPrice = trade.TriggerPrice;
                 break;
 
             case BfOrderType.Trail:
-                Side = trade.Side;
-                OrderSize = trade.OrderSize;
                 TrailOffset = trade.TrailOffset;
                 break;
 

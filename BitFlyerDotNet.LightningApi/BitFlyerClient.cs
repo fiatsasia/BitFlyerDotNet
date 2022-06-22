@@ -220,6 +220,7 @@ public partial class BitFlyerClient : IDisposable
     internal async Task<BitFlyerResponse<T>> GetAsync<T>(string callerName, string queryParameters, CancellationToken ct)
     {
         var apiName = callerName.Replace("Async", "").ToLower();
+        Log.Trace($"{apiName}");
         var path = PublicBasePath + apiName;
         if (!string.IsNullOrEmpty(queryParameters))
         {
@@ -303,6 +304,7 @@ public partial class BitFlyerClient : IDisposable
         }
 
         var apiName = callerName.Replace("Async", "").ToLower();
+        Log.Trace($"{apiName}");
         var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ff");
         var path = PrivateBasePath + apiName;
         if (!string.IsNullOrEmpty(queryParameters))
@@ -397,6 +399,7 @@ public partial class BitFlyerClient : IDisposable
         }
 
         var apiName = callerName.Replace("Async", "").ToLower();
+        Log.Trace($"{apiName}");
         var body = JsonConvert.SerializeObject(requestObject, JsonSerializeSettings);
         if (!ConfirmCallback(apiName, body))
         {

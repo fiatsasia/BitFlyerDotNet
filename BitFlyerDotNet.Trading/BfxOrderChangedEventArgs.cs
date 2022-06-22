@@ -30,6 +30,8 @@ public class BfxOrderChangedEventArgs : EventArgs
     public decimal Commission { get; }          // Total commission in order
     public decimal SwapForDifference { get; }   // Total SFD in order
 
+    public string AcceptanceId { get; }
+
     public BfxOrderChangedEventArgs(BfChildOrderEvent e, BfxTrade trade)
     {
         OrderDate = trade.OrderDate;
@@ -44,6 +46,8 @@ public class BfxOrderChangedEventArgs : EventArgs
         EventDate = e.EventDate;
         EventType = e.EventType;
         OrderFailedReason = e.OrderFailedReason;
+
+        AcceptanceId = e.ChildOrderAcceptanceId;
     }
 
     public BfxOrderChangedEventArgs(BfParentOrderEvent e, BfxTrade trade)

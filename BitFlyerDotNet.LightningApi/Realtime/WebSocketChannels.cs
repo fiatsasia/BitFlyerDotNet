@@ -214,7 +214,7 @@ class WebSocketChannels : IDisposable
         var resultReceived = new AutoResetEvent(false);
         void OnAuthenticateResultReceived(string json)
         {
-            Log.Trace($"WebSocket authention result received. '{json}'");
+            Log.Trace($"WebSocket authentication result received. '{json}'");
             jsonResult = json;
             resultReceived.Set();
         }
