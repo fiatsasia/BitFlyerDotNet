@@ -11,7 +11,6 @@ namespace BitFlyerDotNet.Trading;
 public class BfxMarket : IDisposable
 {
     public bool IsInitialized { get; private set; }
-    public BfTicker Ticker { get; internal set; }
 
     public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged
     {
@@ -42,7 +41,7 @@ public class BfxMarket : IDisposable
     {
         if (!_client.IsAuthenticated)
         {
-            throw new InvalidOperationException($"Client is not authenticated. To Authenticate first.");
+            throw new InvalidOperationException($"Client is not authorized. To Authenticate first.");
         }
 
         IsInitialized = true;
@@ -125,7 +124,6 @@ public class BfxMarket : IDisposable
     public async Task<BfxTransaction> PlaceOrderAsync(BfChildOrder order)
     {
         // Sometimes child order event arraives before send order process completes.
-        VerifyOrder(order);
         var tx = new BfxTransaction(_client, _productCode, _config);
         tx.TransactionChanged += OnTransactionChanged;
         var id = await tx.PlaceOrderAsync(order);
@@ -135,68 +133,10 @@ public class BfxMarket : IDisposable
     public async Task<BfxTransaction> PlaceOrderAsync(BfParentOrder order)
     {
         // Sometimes parent order event arraives before send order process completes.
-        VerifyOrder(order);
         var tx = new BfxTransaction(_client, _productCode, _config);
         tx.TransactionChanged += OnTransactionChanged;
         var id = await tx.PlaceOrdertAsync(order);
         return _orderTransactions.AddOrUpdate(id, _ => tx, (_, tx) => tx.Update(order));
-    }
-
-    void VerifyOrder(BfChildOrder order)
-    {
-        if (order.Size > _config.OrderSizeMax[order.ProductCode])
-        {
-            throw new ArgumentException("Order size exceeds the maximum size.");
-        }
-
-        if (_config.OrderPriceLimitter && order.ChildOrderType == BfOrderType.Limit)
-        {
-#pragma warning disable CS8629
-            if (order.Side == BfTradeSide.Buy && order.Price.Value > Ticker.BestAsk)
-            {
-                throw new ArgumentException("Buy order price is above best ask price.");
-            }
-            else if (order.Side == BfTradeSide.Sell && order.Price.Value < Ticker.BestBid)
-            {
-                throw new ArgumentException("Sell order price is below best bid price.");
-            }
-#pragma warning restore CS8629
-        }
-    }
-
-    void VerifyOrder(BfParentOrder order)
-    {
-        foreach (var child in order.Parameters)
-        {
-            if (child.Size > _config.OrderSizeMax[_productCode])
-            {
-                throw new ArgumentException("Order size exceeds the maximum size.");
-            }
-        }
-
-        var children = order.OrderMethod switch
-        {
-            BfOrderType.IFD => order.Parameters.Take(1),
-            BfOrderType.OCO => order.Parameters.Take(2),
-            BfOrderType.IFDOCO => order.Parameters.Take(1),
-            _ => throw new ArgumentException()
-        };
-        foreach (var child in children)
-        {
-            if (_config.OrderPriceLimitter && child.ConditionType == BfOrderType.Limit)
-            {
-#pragma warning disable CS8629
-                if (child.Side == BfTradeSide.Buy && child.Price.Value > Ticker.BestAsk)
-                {
-                    throw new ArgumentException("Buy order price is above best ask price.");
-                }
-                else if (child.Side == BfTradeSide.Sell && child.Price.Value < Ticker.BestBid)
-                {
-                    throw new ArgumentException("Sell order price is below best bid price.");
-                }
-#pragma warning restore CS8629
-            }
-        }
     }
 
     private void OnTransactionChanged(object sender, BfxTransactionChangedEventArgs e)
@@ -204,57 +144,5 @@ public class BfxMarket : IDisposable
         switch (e.EvenetType)
         {
         }
-    }
-
-    public async IAsyncEnumerable<BfxTrade> GetTradesAsync(BfOrderState orderState, int count, bool linkChildToParent, Func<BfxTrade, bool> predicate)
-    {
-#pragma warning disable CS8604
-        var trades = new Dictionary<string, BfxTrade>();
-
-        // Get child orders
-        await foreach (var childOrder in _client.GetChildOrdersAsync(_productCode, orderState, count, 0, e => true))
-        {
-            var trade = new BfxTrade(_productCode);
-            var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId);
-            trade.Update(childOrder, execs);
-            if (!predicate(trade))
-            {
-                break;
-            }
-            trades.Add(trade.OrderAcceptanceId, trade);
-        }
-
-        // Get parent orders
-        await foreach (var parentOrder in _client.GetParentOrdersAsync(_productCode, orderState, count, 0, e => true))
-        {
-            var trade = new BfxTrade(_productCode);
-            var parentOrderDetail = await _client.GetParentOrderAsync(_productCode, parentOrderId: parentOrder.ParentOrderId);
-            trade.Update(parentOrder, parentOrderDetail);
-            if (!predicate(trade))
-            {
-                break;
-            }
-            trades.Add(trade.OrderAcceptanceId, trade);
-        }
-
-        // Link child to parent
-        if (linkChildToParent)
-        {
-            foreach (var parentOrder in trades.Values.Where(e => (e.OrderType != BfOrderType.Market && e.OrderType != BfOrderType.Limit)))
-            {
-                foreach (var childOrder in await _client.GetChildOrdersAsync(_productCode, parentOrderId: parentOrder.OrderId))
-                {
-                    var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId);
-                    trades[parentOrder.OrderAcceptanceId].UpdateChild(childOrder, execs);
-                    trades.Remove(childOrder.ChildOrderAcceptanceId);
-                }
-            }
-        }
-
-        foreach (var trade in trades.Values)
-        {
-            yield return trade;
-        }
-#pragma warning restore CS8604
     }
 }

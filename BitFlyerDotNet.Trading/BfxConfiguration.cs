@@ -10,6 +10,8 @@ namespace BitFlyerDotNet.Trading;
 
 public class BfxConfiguration
 {
+    public string DefaultProductCode { get; set; } = BfProductCode.FX_BTC_JPY;
+
     public TimeSpan PositionUpdateInterval { get; set; } = TimeSpan.FromSeconds(3);
     public int OrderRetryMax { get; set; } = 3;
     public TimeSpan OrderRetryInterval { get; set; } = TimeSpan.FromSeconds(3);

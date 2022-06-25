@@ -26,56 +26,63 @@ partial class Program
             Console.WriteLine();
             Console.Write("Main/Simple Orders>");
 
-            switch (GetCh())
+            try
             {
-                case 'L':
-                    {
-                        var side = SelectSide();
-                        if (side != BfTradeSide.Unknown)
+                switch (GetCh())
+                {
+                    case 'L':
                         {
-                            await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, side, mds.LastTradedPrice, _orderSize));
+                            var side = SelectSide();
+                            if (side != BfTradeSide.Unknown)
+                            {
+                                await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, side, mds.Ticker.LastTradedPrice, _orderSize));
+                            }
                         }
-                    }
-                    break;
+                        break;
 
-                case 'M':
-                    {
-                        var side = SelectSide();
-                        if (side != BfTradeSide.Unknown)
+                    case 'M':
                         {
-                            await App.PlaceOrderAsync(BfOrderFactory.Market(ProductCode, side, _orderSize));
+                            var side = SelectSide();
+                            if (side != BfTradeSide.Unknown)
+                            {
+                                await App.PlaceOrderAsync(BfOrderFactory.Market(ProductCode, side, _orderSize));
+                            }
                         }
-                    }
-                    break;
+                        break;
 
-                case 'T':
-                    {
-                        var side = SelectSide();
-                        if (side != BfTradeSide.Unknown)
+                    case 'T':
                         {
-                            await App.PlaceOrderAsync(BfOrderFactory.Trail(ProductCode, side, PnLGap * 2, _orderSize));
+                            var side = SelectSide();
+                            if (side != BfTradeSide.Unknown)
+                            {
+                                await App.PlaceOrderAsync(BfOrderFactory.Trail(ProductCode, side, PnLGap * 2, _orderSize));
+                            }
                         }
-                    }
-                    break;
+                        break;
 
-                case 'E':
-                    await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize, minuteToExpire: 1));
-                    break;
+                    case 'E':
+                        await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.Ticker.BestBid - UnexecutableGap, _orderSize, minuteToExpire: 1));
+                        break;
 
-                case 'F':
-                    await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.BestBid - UnexecutableGap, _orderSize, timeInForce: BfTimeInForce.FOK));
-                    break;
+                    case 'F':
+                        await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.Ticker.BestBid - UnexecutableGap, _orderSize, timeInForce: BfTimeInForce.FOK));
+                        break;
 
-                case 'C':
-                    CancelOrder();
-                    break;
+                    case 'C':
+                        CancelOrder();
+                        break;
 
-                case 'X':
-                    ClosePositions();
-                    break;
+                    case 'X':
+                        ClosePositions();
+                        break;
 
-                case ESCAPE:
-                    return;
+                    case ESCAPE:
+                        return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
             }
         }
     }

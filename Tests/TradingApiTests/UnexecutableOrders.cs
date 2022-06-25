@@ -28,35 +28,35 @@ partial class Program
             switch (GetCh())
             {
                 case 'L':
-                    await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.BestBid - UnexecutableGap, _orderSize));
+                    await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.Ticker.BestBid - UnexecutableGap, _orderSize));
                     break;
 
                 case 'S': // Stop sell
-                    await App.PlaceOrderAsync(BfOrderFactory.Stop(ProductCode, BfTradeSide.Sell, Mds.BestAsk - UnexecutableGap, _orderSize));
+                    await App.PlaceOrderAsync(BfOrderFactory.Stop(ProductCode, BfTradeSide.Sell, Mds.Ticker.BestAsk - UnexecutableGap, _orderSize));
                     break;
 
                 case 'I':
                     await App.PlaceOrderAsync(BfOrderFactory.IFD(
-                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.BestBid - UnexecutableGap, _orderSize),
-                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, Mds.BestAsk + UnexecutableGap, _orderSize)
+                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.Ticker.BestBid - UnexecutableGap, _orderSize),
+                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, Mds.Ticker.BestAsk + UnexecutableGap, _orderSize)
                     ));
                     break;
 
                 case 'O':
                     await App.PlaceOrderAsync(BfOrderFactory.OCO(
-                        BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Sell, Mds.LastTradedPrice + UnexecutableGap, Mds.BestAsk + UnexecutableGap, _orderSize),
-                        BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Buy, Mds.LastTradedPrice - UnexecutableGap, Mds.BestBid -UnexecutableGap, _orderSize)
+                        BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Sell, Mds.Ticker.LastTradedPrice + UnexecutableGap, Mds.Ticker.BestAsk + UnexecutableGap, _orderSize),
+                        BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Buy, Mds.Ticker.LastTradedPrice - UnexecutableGap, Mds.Ticker.BestBid -UnexecutableGap, _orderSize)
                     ));
                     break;
 
                 case '3':
                     await App.PlaceOrderAsync(BfOrderFactory.OCO(
-                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.BestBid - UnexecutableGap, _orderSize),
-                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, Mds.BestAsk + UnexecutableGap, _orderSize)));
+                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.Ticker.BestBid - UnexecutableGap, _orderSize),
+                        BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, Mds.Ticker.BestAsk + UnexecutableGap, _orderSize)));
                     break;
 
                 case '1':
-                    await App.PlaceOrderAsync(BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Sell, Mds.BestAsk - UnexecutableGap, Mds.BestAsk - UnexecutableGap, _orderSize));
+                    await App.PlaceOrderAsync(BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Sell, Mds.Ticker.BestAsk - UnexecutableGap, Mds.Ticker.BestAsk - UnexecutableGap, _orderSize));
                     break;
 
                 case 'C': CancelOrder(); break;

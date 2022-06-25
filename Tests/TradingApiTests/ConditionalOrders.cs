@@ -34,17 +34,17 @@ partial class Program
                     {
                         case BfTradeSide.Buy:
                             await App.PlaceOrderAsync(BfOrderFactory.IFDOCO(
-                                BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.BestBid, _orderSize),
+                                BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.Ticker.BestBid, _orderSize),
                                 BfOrderFactory.Trail(ProductCode, BfTradeSide.Sell, TrailingOffset, _orderSize),
-                                BfOrderFactory.Stop(ProductCode, BfTradeSide.Sell, Mds.BestAsk - PnLGap, _orderSize)
+                                BfOrderFactory.Stop(ProductCode, BfTradeSide.Sell, Mds.Ticker.BestAsk - PnLGap, _orderSize)
                             ));
                             break;
 
                         case BfTradeSide.Sell:
                             await App.PlaceOrderAsync(BfOrderFactory.IFDOCO(
-                                BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, Mds.BestAsk, _orderSize),
+                                BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, Mds.Ticker.BestAsk, _orderSize),
                                 BfOrderFactory.Trail(ProductCode, BfTradeSide.Buy, TrailingOffset, _orderSize),
-                                BfOrderFactory.Stop(ProductCode, BfTradeSide.Buy, Mds.BestBid + PnLGap, _orderSize)
+                                BfOrderFactory.Stop(ProductCode, BfTradeSide.Buy, Mds.Ticker.BestBid + PnLGap, _orderSize)
                             ));
                             break;
                     }
@@ -55,7 +55,7 @@ partial class Program
                     {
                         case BfTradeSide.Buy:
                             {
-                                var buyPrice = Mds.BestBid; // to prevent get difference price
+                                var buyPrice = Mds.Ticker.BestBid; // to prevent get difference price
                                 await App.PlaceOrderAsync(BfOrderFactory.IFDOCO(
                                     BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, buyPrice, _orderSize),
                                     BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Sell, buyPrice - PnLGap, buyPrice - PnLGap, _orderSize),
@@ -66,7 +66,7 @@ partial class Program
 
                         case BfTradeSide.Sell:
                             {
-                                var sellPrice = Mds.BestAsk;
+                                var sellPrice = Mds.Ticker.BestAsk;
                                 await App.PlaceOrderAsync(BfOrderFactory.IFDOCO(
                                     BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, sellPrice, _orderSize),
                                     BfOrderFactory.StopLimit(ProductCode, BfTradeSide.Buy, sellPrice + PnLGap, sellPrice + PnLGap, _orderSize),
@@ -82,7 +82,7 @@ partial class Program
                     {
                         case BfTradeSide.Buy:
                             {
-                                var buyPrice = Mds.BestBid;
+                                var buyPrice = Mds.Ticker.BestBid;
                                 await App.PlaceOrderAsync(BfOrderFactory.IFDOCO(
                                     BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, buyPrice, _orderSize),
                                     BfOrderFactory.Trail(ProductCode, BfTradeSide.Sell, PnLGap, _orderSize),
@@ -93,7 +93,7 @@ partial class Program
 
                         case BfTradeSide.Sell:
                             {
-                                var sellPrice = Mds.BestAsk;
+                                var sellPrice = Mds.Ticker.BestAsk;
                                 await App.PlaceOrderAsync(BfOrderFactory.IFDOCO(
                                     BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, sellPrice, _orderSize),
                                     BfOrderFactory.Trail(ProductCode, BfTradeSide.Buy, PnLGap, _orderSize),
@@ -107,8 +107,8 @@ partial class Program
                 case 'E':
                     {
                         var order = BfOrderFactory.OCO(
-                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, Mds.BestAsk + UnexecutableGap, _orderSize),
-                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.BestBid - UnexecutableGap, _orderSize)
+                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, Mds.Ticker.BestAsk + UnexecutableGap, _orderSize),
+                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.Ticker.BestBid - UnexecutableGap, _orderSize)
                         );
                         order.MinuteToExpire = 1;
                         await App.PlaceOrderAsync(order);
@@ -118,8 +118,8 @@ partial class Program
                 case 'F':
                     {
                         var order = BfOrderFactory.OCO(
-                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, Mds.BestAsk + UnexecutableGap, _orderSize),
-                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.BestBid - UnexecutableGap, _orderSize)
+                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, Mds.Ticker.BestAsk + UnexecutableGap, _orderSize),
+                            BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.Ticker.BestBid - UnexecutableGap, _orderSize)
                         );
                         order.TimeInForce = BfTimeInForce.FOK;
                         await App.PlaceOrderAsync(order);

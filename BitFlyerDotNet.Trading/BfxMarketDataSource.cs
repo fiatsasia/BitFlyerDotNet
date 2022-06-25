@@ -8,9 +8,32 @@
 
 namespace BitFlyerDotNet.Trading;
 
-public class BfxMarketDataSource
+#pragma warning disable CS8618
+
+public class BfxMarketDataSource : IDisposable
 {
-    public decimal BestBid { get; }
-    public decimal BestAsk { get; }
-    public decimal LastTradedPrice { get; }
+    public BfTicker Ticker { get; private set; }
+
+    string _productCode;
+    BitFlyerClient _client;
+    RealtimeSourceFactory _rts;
+    CompositeDisposable _disposables = new();
+
+    public BfxMarketDataSource(string productCode, BitFlyerClient client, RealtimeSourceFactory rts)
+    {
+        _productCode = productCode;
+        _client = client;
+        _rts = rts;
+    }
+
+    public void Dispose()
+    {
+        _disposables.Dispose();
+    }
+
+    public async Task InitializeAsync()
+    {
+        Ticker = await _client.GetTickerAsync(_productCode);
+        _rts.GetTickerSource(_productCode).Subscribe(ticker => { Ticker = ticker; }).AddTo(_disposables);
+    }
 }
