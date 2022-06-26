@@ -160,11 +160,11 @@ namespace BitFlyerDotNet.Historical
                 return;
             }
 
-            Log.Trace($"HistoricalCache committing executions... {_manageRec.StartExecutedTime.ToLocalTime()} - {_manageRec.EndExecutedTime.ToLocalTime()}");
+            Log.Debug($"HistoricalCache committing executions... {_manageRec.StartExecutedTime.ToLocalTime()} - {_manageRec.EndExecutedTime.ToLocalTime()}");
             _dbctx.Add(_manageRec);
             _dbctx.SaveChanges();
             _manageRec = null;
-            Log.Trace("HistoricalCache committed.");
+            Log.Debug("HistoricalCache committed.");
         }
 
         public void InsertGap(long before, long after)
@@ -173,7 +173,7 @@ namespace BitFlyerDotNet.Historical
             {
                 throw new ArgumentException();
             }
-            Log.Trace("HistoricalCache committing executions...");
+            Log.Debug("HistoricalCache committing executions...");
 
             var blockRow = new DbManageRecord();
             blockRow.StartExecutionId = after + 1;
@@ -183,7 +183,7 @@ namespace BitFlyerDotNet.Historical
             _dbctx.Add(blockRow);
             _dbctx.SaveChanges();
 
-            Log.Trace("HistoricalCache committed.");
+            Log.Debug("HistoricalCache committed.");
         }
     }
 }

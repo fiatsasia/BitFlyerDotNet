@@ -84,9 +84,9 @@ public class RealtimeSourceFactory : IDisposable
 
     public void Dispose()
     {
-        Log.Trace($"{nameof(RealtimeSourceFactory)} disposing...");
+        Log.Debug($"{nameof(RealtimeSourceFactory)} disposing...");
         _disposables.Dispose();
-        Log.Trace($"{nameof(RealtimeSourceFactory)} diposed");
+        Log.Debug($"{nameof(RealtimeSourceFactory)} diposed");
     }
 
     bool _opened = false;

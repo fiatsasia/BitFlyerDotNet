@@ -8,7 +8,6 @@
 
 global using System;
 global using System.Linq;
-global using System.Collections.Concurrent;
 global using System.Collections.Generic;
 global using System.IO;
 global using System.Xml.Linq;
@@ -48,6 +47,8 @@ partial class Program
         var connStr = "data source=" + Path.Combine(Properties["CacheDirectoryPath"], OrderCacheFileName);
         using (App = new BfxApplication(key, secret))
         {
+            App.AddTraceLoggingService(NLog.LogManager.GetLogger("debugOutput"));
+
             App.OrderChanged += OnOrderChanged;
             App.PositionChanged += OnPositionChanged;
             App.TradeChanged += OnTradeChanged;

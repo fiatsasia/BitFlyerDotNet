@@ -40,7 +40,6 @@ class WebSocketChannels : IDisposable
     {
         _isWasm = RuntimeInformation.OSArchitecture == /*Architecture.Wasm*/(Architecture)4; // implemented .NET5 or later
         _uri = uri;
-        CreateWebSocket();
     }
 
     public WebSocketChannels(string uri, string apiKey, string apiSecret)
@@ -52,7 +51,7 @@ class WebSocketChannels : IDisposable
 
     void CreateWebSocket()
     {
-        Log.Trace($"Creating WebSocket...");
+        Log.Debug($"Creating WebSocket...");
         _socket?.Dispose();
 
         try
@@ -79,12 +78,12 @@ class WebSocketChannels : IDisposable
         catch (AggregateException)
         {
         }
-        Log.Trace($"Created");
+        Log.Debug($"Created WebSocket");
     }
 
     public void Dispose()
     {
-        Log.Trace($"{nameof(WebSocketChannels)} disposing...");
+        Log.Debug($"{nameof(WebSocketChannels)} disposing...");
         _ct.ThrowIfCancellationRequested();
         if (_socket.State == WebSocketState.Open)
         {
@@ -94,7 +93,7 @@ class WebSocketChannels : IDisposable
         Opened = null;
         MessageSent = null;
         MessageReceived = null;
-        Log.Trace($"{nameof(WebSocketChannels)} disposed");
+        Log.Debug($"{nameof(WebSocketChannels)} disposed");
     }
 
     public async Task<bool> TryOpenAsync()
@@ -104,9 +103,11 @@ class WebSocketChannels : IDisposable
             return false;
         }
 
-        Log.Trace("Opening WebSocket...");
         try
         {
+            CreateWebSocket();
+
+            Log.Debug("Opening WebSocket...");
             await _socket.ConnectAsync(new Uri(_uri), CancellationToken.None);
             if (_isWasm)
             {
@@ -130,7 +131,7 @@ class WebSocketChannels : IDisposable
             var wsEx = ex.InnerExceptions.FirstOrDefault() as WebSocketException;
             if (wsEx != null)
             {
-                Log.Warn($"WebSocket failed to connect to server. {wsEx.Message}");
+                Log.Error($"WebSocket failed to connect to server. {wsEx.Message}");
             }
             throw;
         }
@@ -144,7 +145,7 @@ class WebSocketChannels : IDisposable
     event Action<string> WsReceived;
     internal async void ReaderThread()
     {
-        Log.Trace("Start reader thread loop");
+        Log.Debug("Start reader thread loop");
         _ct = new();
         var json = string.Empty;
         while (true)
@@ -154,7 +155,7 @@ class WebSocketChannels : IDisposable
                 var length = await _istream.ReadAsync(buffer, 0, buffer.Length, _ct);
                 if (length == 0)
                 {
-                    Log.Info("WebSocket ReadAsync respond empty. Disconnected from client or probably disconnected from the server.");
+                    Log.Warn("WebSocket ReadAsync respond empty. Disconnected from client or probably disconnected from the server.");
                     OnClosed();
                     return; // Thread will be restarted.
                 }
@@ -169,7 +170,7 @@ class WebSocketChannels : IDisposable
             }
             catch (Exception ex)
             {
-                Log.Warn($"WebSocket ReaderThread caused exception: {ex.Message} '{json}'");
+                Log.Error($"WebSocket ReaderThread caused exception: {ex.Message} '{json}'");
             }
         }
     }
@@ -184,13 +185,13 @@ class WebSocketChannels : IDisposable
         var jsonBytes = Encoding.UTF8.GetBytes(json);
         _ = _ostream.WriteAsync(jsonBytes, 0, jsonBytes.Length);
         _ = _ostream.FlushAsync(CancellationToken.None);
-        Log.Trace($"WebSocket sent: {json}");
+        Log.Debug($"WebSocket sent: {json}");
         MessageSent?.Invoke(json);
     }
 
     public bool Authenticate(string apiKey, string apiSecret)
     {
-        Log.Trace("WebSocket start authentication.");
+        Log.Debug("WebSocket start authentication.");
         _apiKey = apiKey;
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var nonce = Guid.NewGuid().ToString("N");
@@ -214,15 +215,15 @@ class WebSocketChannels : IDisposable
         var resultReceived = new AutoResetEvent(false);
         void OnAuthenticateResultReceived(string json)
         {
-            Log.Trace($"WebSocket authentication result received. '{json}'");
+            Log.Debug($"WebSocket authentication result received. '{json}'");
             jsonResult = json;
             resultReceived.Set();
         }
 
         WsReceived += OnAuthenticateResultReceived;
-        Log.Trace("WebSocket sending authentication message..");
+        Log.Debug("WebSocket sending authentication message..");
         Send(authCommand);
-        Log.Trace("WebSocket sent authentication message.");
+        Log.Debug("WebSocket sent authentication message.");
         resultReceived.WaitOne();
         WsReceived -= OnAuthenticateResultReceived;
 
@@ -231,18 +232,18 @@ class WebSocketChannels : IDisposable
         var errorResult = joResult["error"];
         if (errorResult != null)
         {
-            Log.Warn($"WebSocket authenticate failed. result = {errorResult["message"].Value<string>()}");
+            Log.Error($"WebSocket authenticate failed. result = {errorResult["message"].Value<string>()}");
             return (errorResult["code"].Value<int>() == -32009);
         }
 
         var authResult = joResult["result"].Value<bool>();
-        Log.Info($"WebSocket authenticated. result = {authResult}");
+        Log.Debug($"WebSocket authenticated. result = {authResult}");
         return authResult;
     }
 
     void OnOpened()
     {
-        Log.Trace("WebSocket opened.");
+        Log.Debug("WebSocket opened.");
         _reconnectionTimer.Change(Timeout.Infinite, Timeout.Infinite); // stop
         Task.Run(() =>
         {
@@ -261,7 +262,7 @@ class WebSocketChannels : IDisposable
 
     void OnMessageReceived(string json)
     {
-        //Log.Trace($"Socket message received : {json}");
+        Log.TraceJson("Socket message received", json);
         TotalReceivedMessageChars += json.Length;
         var subscriptionResult = JObject.Parse(json)["params"];
         if (subscriptionResult != null)
@@ -282,7 +283,7 @@ class WebSocketChannels : IDisposable
             return;
         }
 
-        Log.Error("WebSocket connection closed. Will be reopening...");
+        Log.Info("WebSocket connection closed. Will be reopening...");
         Task.Run(() => { Suspended?.Invoke(); });
         _reconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite);
     }

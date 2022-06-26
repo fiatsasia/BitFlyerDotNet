@@ -205,10 +205,10 @@ public partial class BitFlyerClient : IDisposable
 
     public void Dispose()
     {
-        Log.Trace($"{nameof(BitFlyerClient)} disposing...");
+        Log.Debug($"{nameof(BitFlyerClient)} disposing...");
         _client?.Dispose();
         _hash?.Dispose();
-        Log.Trace($"{nameof(BitFlyerClient)} disposed.");
+        Log.Debug($"{nameof(BitFlyerClient)} disposed.");
     }
 
     public void Authenticate(string apiKey, string apiSecret)
@@ -304,7 +304,7 @@ public partial class BitFlyerClient : IDisposable
         }
 
         var apiName = callerName.Replace("Async", "").ToLower();
-        Log.Trace($"{apiName}");
+        Log.Debug($"{apiName}");
         var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ff");
         var path = PrivateBasePath + apiName;
         if (!string.IsNullOrEmpty(queryParameters))

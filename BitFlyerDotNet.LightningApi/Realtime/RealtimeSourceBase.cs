@@ -47,7 +47,7 @@ abstract class RealtimeSourceBase<TSource> : IRealtimeSource, IObservable<TSourc
 
     protected object DispatchMessage(JToken token)
     {
-        //Log.Trace($"RealtimeSourceBase.{nameof(DispatchMessage)} observer is {_observer != null}");
+        Log.Enter($"observer is {_observer != null}");
         var message = token.ToObject<TSource>();
         _observer?.OnNext(message);
         return message;

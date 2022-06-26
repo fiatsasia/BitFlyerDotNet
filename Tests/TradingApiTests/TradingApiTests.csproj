@@ -6,8 +6,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NLog" Version="5.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\BitFlyerDotNet.Historical\BitFlyerDotNet.Historical.csproj" />
     <ProjectReference Include="..\..\BitFlyerDotNet.Trading\BitFlyerDotNet.Trading.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="NLog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

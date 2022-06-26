@@ -290,7 +290,7 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         public void OpenParentOrder(BfParentOrder req, BfParentOrderResponse resp) => _procQ.Add(() =>
         {
-            Log.Trace("OpenParentOrder");
+            Log.Enter();
             _ctx.Insert(_productCode, req, resp);
             _ctx.SaveChanges();
             return true;
@@ -299,13 +299,13 @@ namespace BitFlyerDotNet.Historical
         public void RegisterParentOrderEvent(BfParentOrderEvent poe) => _procQ.Add(() => _registerEvent(poe));
         bool _registerEvent(BfParentOrderEvent poe)
         {
-            Log.Trace("RegisterParentOrderEvent");
+            Log.Enter();
 
             // Somtimes event arrives before order opened.
             var parent = _ctx.FindParentOrder(_productCode, poe.ParentOrderAcceptanceId); // Find by key
             if (parent == default)
             {
-                Log.Trace("Parent order not found. POE queued.");
+                Log.Debug("Parent order not found. POE queued.");
                 _pendQ.Enqueue(() => _registerEvent(poe)); // pending process
                 return false;
             }
@@ -337,7 +337,7 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         public void OpenChildOrder(BfChildOrder req, BfChildOrderResponse resp) => _procQ.Add(() =>
         {
-            Log.Trace("OpenChildOrder");
+            Log.Enter();
             _ctx.Insert(req, resp);
             _ctx.SaveChanges();
             return true;
@@ -346,7 +346,7 @@ namespace BitFlyerDotNet.Historical
         public void RegisterChildOrderEvent(BfChildOrderEvent coe) => _procQ.Add(() => _registerEvent(coe));
         bool _registerEvent(BfChildOrderEvent coe)
         {
-            Log.Trace("RegisterChildOrderEvent");
+            Log.Enter();
             // Somtimes event arrives before order opened.
             var child = _ctx.FindChildOrder(_productCode, coe.ChildOrderAcceptanceId);
             if (child == default)
@@ -362,7 +362,7 @@ namespace BitFlyerDotNet.Historical
                         var me = _ctx.GetChildOrders().Where(e => e.ParentOrderAcceptanceId == sibling.ParentOrderAcceptanceId && e.AcceptanceId == default).FirstOrDefault();
                         if (me != default)
                         {
-                            Log.Trace($"Cancel faile which child order acceptance ID not matched but found parent. COAID:{coe.ChildOrderAcceptanceId}");
+                            Log.Warn($"Cancel faile which child order acceptance ID not matched but found parent. COAID:{coe.ChildOrderAcceptanceId}");
                             me.Update(coe);
                             me.ParentOrderId = sibling.ParentOrderId;
                             _ctx.SaveChanges();
@@ -370,11 +370,11 @@ namespace BitFlyerDotNet.Historical
                         }
                     }
 
-                    Log.Trace($"Parent order not found. CancelFailed ignored. COAID:{coe.ChildOrderAcceptanceId}");
+                    Log.Warn($"Parent order not found. CancelFailed ignored. COAID:{coe.ChildOrderAcceptanceId}");
                     return true;
                 }
 
-                Log.Trace($"Parent order not found. COE queued. COAID:{coe.ChildOrderAcceptanceId}");
+                Log.Debug($"Parent order not found. COE queued. COAID:{coe.ChildOrderAcceptanceId}");
                 _pendQ.Enqueue(() => _registerEvent(coe)); // pending process
                 return false;
             }

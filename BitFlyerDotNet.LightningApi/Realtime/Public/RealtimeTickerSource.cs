@@ -28,7 +28,7 @@ class RealtimeTickerSource : RealtimeSourceBase<BfTicker>
 
     public override object OnMessageReceived(JToken token)
     {
-        //Log.Trace($"{nameof(RealtimeTickerSource)}.{nameof(OnMessageReceived)}");
+        Log.Enter();
         return DispatchMessage(token);
     }
 }
