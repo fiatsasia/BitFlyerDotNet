@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-class WebSocketChannels : IDisposable
+public class WebSocketChannel : IDisposable
 {
     public static int WebSocketReconnectionIntervalMs { get; set; } = 3000;
     public long TotalReceivedMessageChars { get; private set; }
@@ -18,82 +18,69 @@ class WebSocketChannels : IDisposable
     public event Action Opened;
     public event Action Suspended;
     public event Action Resumed;
-    public Action<string> MessageSent;
-    public Action<string, object> MessageReceived;
+    public event Action<string> MessageSent;
+    public event Action<object> MessageReceived;
 
-    ClientWebSocket _socket;
+    ClientWebSocket _socket = new();
     WebSocketStream _istream;
     WebSocketStream _ostream;
-    Thread _receiver;
     Task _receiveTask;
 
     Timer _reconnectionTimer;
     AutoResetEvent _openedEvent = new (false);
     ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new();
-    CancellationToken _ct;
+    CancellationToken _ct = new();
     string _uri;
     string _apiKey;
     string _apiSecret;
-    bool _isWasm;
 
-    public WebSocketChannels(string uri)
+    public WebSocketChannel(string uri)
     {
-        _isWasm = RuntimeInformation.OSArchitecture == /*Architecture.Wasm*/(Architecture)4; // implemented .NET5 or later
         _uri = uri;
+        System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
+        //==================================================
+        // Below option must be needed. If omit, serever will disconnect connection but not supported Blazer WebAssembly. 
+        // Feb/2022
+        if (RuntimeInformation.OSArchitecture != /*Architecture.Wasm*/(Architecture)4) // implemented .NET5 or later
+        {
+            _socket.Options.KeepAliveInterval = TimeSpan.Zero;
+        }
+
+        _istream = new WebSocketStream(_socket);
+        _ostream = new WebSocketStream(_socket);
+
+        _reconnectionTimer = new Timer(async e => { await OnReconnection(); });
+
+        //_socket.DataReceived += OnDataReceived;
+        //_socket.Error += OnError;
     }
 
-    public WebSocketChannels(string uri, string apiKey, string apiSecret)
+    public WebSocketChannel(string uri, string apiKey, string apiSecret)
         : this(uri)
     {
         _apiKey = apiKey;
         _apiSecret = apiSecret;
     }
 
-    void CreateWebSocket()
-    {
-        Log.Debug($"Creating WebSocket...");
-        _socket?.Dispose();
-
-        try
-        {
-            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
-            _socket = new();
-
-            //==================================================
-            // Below option must be needed. If omit, serever will disconnect connection but not supported Blazer WebAssembly. 
-            // Feb/2022
-            if (!_isWasm) // implemented .NET5 or later
-            {
-                _socket.Options.KeepAliveInterval = TimeSpan.Zero;
-            }
-
-            _istream = new WebSocketStream(_socket);
-            _ostream = new WebSocketStream(_socket);
-
-            _reconnectionTimer = new Timer(async e => { await OnReconnection(); });
-
-            //_socket.DataReceived += OnDataReceived;
-            //_socket.Error += OnError;
-        }
-        catch (AggregateException)
-        {
-        }
-        Log.Debug($"Created WebSocket");
-    }
-
     public void Dispose()
     {
-        Log.Debug($"{nameof(WebSocketChannels)} disposing...");
+        Log.Debug($"{nameof(WebSocketChannel)} disposing...");
         _ct.ThrowIfCancellationRequested();
+        if (_receiveTask != null)
+        {
+            Task.WaitAll(_receiveTask);
+        }
         if (_socket.State == WebSocketState.Open)
         {
             _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
         }
-        //_socket.Dispose();
+
+        _socket.Dispose();
         Opened = null;
         MessageSent = null;
         MessageReceived = null;
-        Log.Debug($"{nameof(WebSocketChannels)} disposed");
+        Log.Debug($"{nameof(WebSocketChannel)} disposed");
     }
 
     public async Task<bool> TryOpenAsync()
@@ -105,19 +92,9 @@ class WebSocketChannels : IDisposable
 
         try
         {
-            CreateWebSocket();
-
             Log.Debug("Opening WebSocket...");
             await _socket.ConnectAsync(new Uri(_uri), CancellationToken.None);
-            if (_isWasm)
-            {
-                _receiveTask = Task.Run(ReaderThread); // WASM does not support Thread.Start()
-            }
-            else
-            {
-                _receiver = new Thread(ReaderThread) { IsBackground = true };
-                _receiver.Start();
-            }
+            _receiveTask = Task.Run(ReaderThread); // WASM does not support Thread.Start()
 
             if (IsPrivate)
             {
@@ -131,7 +108,7 @@ class WebSocketChannels : IDisposable
             var wsEx = ex.InnerExceptions.FirstOrDefault() as WebSocketException;
             if (wsEx != null)
             {
-                Log.Error($"WebSocket failed to connect to server. {wsEx.Message}");
+                Log.Error("WebSocket failed to connect to server.", wsEx);
             }
             throw;
         }
@@ -146,8 +123,7 @@ class WebSocketChannels : IDisposable
     internal async void ReaderThread()
     {
         Log.Debug("Start reader thread loop");
-        _ct = new();
-        var json = string.Empty;
+        string json;
         while (true)
         {
             try
@@ -160,17 +136,30 @@ class WebSocketChannels : IDisposable
                     return; // Thread will be restarted.
                 }
 
+                if (_ct.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 json = Encoding.UTF8.GetString(buffer, 0, length);
+                Log.TraceJson("WebSocket message received", json);
                 OnMessageReceived(json);
                 WsReceived?.Invoke(json);
             }
-            catch (OperationCanceledException)
+            catch (WebSocketException ex)
             {
-                return;
+                var ie = ex.InnerException?.InnerException;
+                if (ie != null && ie is SocketException se && se.ErrorCode == 995)
+                {
+                    Log.Debug("Reader thread completed");
+                    return;
+                }
+                throw;
             }
             catch (Exception ex)
             {
-                Log.Error($"WebSocket ReaderThread caused exception: {ex.Message} '{json}'");
+                Log.Error("WebSocket ReaderThread caused exception", ex);
+                throw;
             }
         }
     }
@@ -185,7 +174,6 @@ class WebSocketChannels : IDisposable
         var jsonBytes = Encoding.UTF8.GetBytes(json);
         _ = _ostream.WriteAsync(jsonBytes, 0, jsonBytes.Length);
         _ = _ostream.FlushAsync(CancellationToken.None);
-        Log.Debug($"WebSocket sent: {json}");
         MessageSent?.Invoke(json);
     }
 
@@ -215,7 +203,7 @@ class WebSocketChannels : IDisposable
         var resultReceived = new AutoResetEvent(false);
         void OnAuthenticateResultReceived(string json)
         {
-            Log.Debug($"WebSocket authentication result received. '{json}'");
+            Log.Trace($"WebSocket authentication result received. '{json}'");
             jsonResult = json;
             resultReceived.Set();
         }
@@ -262,14 +250,13 @@ class WebSocketChannels : IDisposable
 
     void OnMessageReceived(string json)
     {
-        Log.TraceJson("Socket message received", json);
         TotalReceivedMessageChars += json.Length;
         var subscriptionResult = JObject.Parse(json)["params"];
         if (subscriptionResult != null)
         {
             var channel = subscriptionResult["channel"].Value<string>();
             var message = _webSocketSources[channel].OnMessageReceived(subscriptionResult["message"]);
-            MessageReceived?.Invoke(json, message);
+            MessageReceived?.Invoke(message);
         }
         //else (on receive auth result message)
     }
@@ -306,7 +293,7 @@ class WebSocketChannels : IDisposable
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.Message);
+                    Log.Error("Reconnect WebSocket failed", ex);
                     _reconnectionTimer.Change(WebSocketReconnectionIntervalMs, Timeout.Infinite); // restart
                 }
                 break;

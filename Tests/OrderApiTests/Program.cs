@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using System.Xml.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
-using Newtonsoft.Json;
 using BitFlyerDotNet.LightningApi;
 
 namespace OrderApiTests
@@ -42,7 +41,7 @@ namespace OrderApiTests
             _client = new BitFlyerClient(key, secret);
 
             _factory = new RealtimeSourceFactory(key, secret);
-            _factory.MessageReceived += OnRealtimeMessageReceived;
+            _factory.Channel.MessageReceived += OnRealtimeMessageReceived;
             _factory.Error += (error) => Console.WriteLine("Error: {0} Socket Error = {1}", error.Message, error.SocketError);
             _factory.GetTickerSource(ProductCode).Subscribe(ticker =>
             {
@@ -86,7 +85,7 @@ namespace OrderApiTests
             Properties = xml.Element("RunSettings").Element("TestRunParameters").Elements("Parameter").ToDictionary(e => e.Attribute("name").Value, e => e.Attribute("value").Value);
         }
 
-        static void OnRealtimeMessageReceived(string json, object message)
+        static void OnRealtimeMessageReceived(object message)
         {
             switch (message)
             {
@@ -101,9 +100,6 @@ namespace OrderApiTests
                 default:
                     return;
             }
-
-            var jobject = JsonConvert.DeserializeObject(json);
-            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
         static void OnChildOrderEvent(BfChildOrderEvent coe)

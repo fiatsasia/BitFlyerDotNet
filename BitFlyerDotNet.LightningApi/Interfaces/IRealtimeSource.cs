@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-interface IRealtimeSource
+public interface IRealtimeSource
 {
     string ChannelName { get; }
     object OnMessageReceived(JToken token);

@@ -20,12 +20,13 @@ public static class NLogServices
         }
 
         public override void Trace(string message) => _logger.Trace(message);
+        public override void Debug(string message) => _logger.Debug(message);
         public override void Info(string message) => _logger.Info(message);
         public override void Warn(string message) => _logger.Warn(message);
         public override void Error(string message) => _logger.Error(message);
         public override void Error(Exception ex) => _logger.Error(ex);
+        public override void Error(string message, Exception ex) => _logger.Error(ex, message);
         public override void Fatal(string message) => _logger.Fatal(message);
-        public override void Debug(string message) => _logger.Debug(message);
     }
 
     public static BfxApplication AddTraceLoggingService(this BfxApplication app, NLog.Logger logger)

@@ -12,16 +12,13 @@ class RealtimeChildOrderEventsSource : RealtimeSourceBase<BfChildOrderEvent>
 {
     Action<RealtimeChildOrderEventsSource> _dispose;
 
-    public RealtimeChildOrderEventsSource(WebSocketChannels channels, Action<RealtimeChildOrderEventsSource> dispose)
+    public RealtimeChildOrderEventsSource(WebSocketChannel channels, Action<RealtimeChildOrderEventsSource> dispose)
         : base(channels, "child_order_events")
     {
         _dispose = dispose;
     }
 
-    public override object OnMessageReceived(JToken token)
-    {
-        return DispatchArrayMessage(token); // Channel returns array format
-    }
+    public override object OnMessageReceived(JToken token) => DispatchArrayMessage(token); // Channel returns array format
 
     protected override void OnDispose()
     {

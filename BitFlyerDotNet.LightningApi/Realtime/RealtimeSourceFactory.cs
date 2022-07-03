@@ -19,38 +19,33 @@ public class RealtimeSourceFactory : IDisposable
     const string EndpointUrl = "wss://ws.lightstream.bitflyer.com/json-rpc";
     public static int WebSocketReconnectionIntervalMs
     {
-        get { return WebSocketChannels.WebSocketReconnectionIntervalMs; }
-        set { WebSocketChannels.WebSocketReconnectionIntervalMs = value; }
+        get { return WebSocketChannel.WebSocketReconnectionIntervalMs; }
+        set { WebSocketChannel.WebSocketReconnectionIntervalMs = value; }
     }
 
-    public long TotalReceivedMessageChars => Channels.TotalReceivedMessageChars;
+    public long TotalReceivedMessageChars => Channel.TotalReceivedMessageChars;
 
     public event Action<WebSocketErrorStatus> Error
     {
-        add { Channels.Error += value; }
-        remove { Channels.Error -= value; }
+        add { Channel.Error += value; }
+        remove { Channel.Error -= value; }
     }
 
     public event Action ConnectionSuspended
     {
-        add { Channels.Suspended += value; }
-        remove { Channels.Suspended -= value; }
+        add { Channel.Suspended += value; }
+        remove { Channel.Suspended -= value; }
     }
 
     public event Action ConnectionResumed
     {
-        add { Channels.Resumed += value; }
-        remove { Channels.Resumed -= value; }
+        add { Channel.Resumed += value; }
+        remove { Channel.Resumed -= value; }
     }
 
     public static System.Reactive.Concurrency.IScheduler Scheduler { get; set; } = System.Reactive.Concurrency.Scheduler.Default;
 
-    internal WebSocketChannels Channels { get; private set; }
-    public event Action<string> MessageSent;
-    public event Action<string, object> MessageReceived;
-
-    void OnMessageSent(string json) => MessageSent?.Invoke(json);
-    void OnMessageReceived(string json, object message) => MessageReceived?.Invoke(json, message);
+    public WebSocketChannel Channel { get; private set; }
 
     CompositeDisposable _disposables = new ();
     public static RealtimeSourceFactory Singleton { get; } = new();
@@ -60,9 +55,7 @@ public class RealtimeSourceFactory : IDisposable
     /// </summary>
     public RealtimeSourceFactory()
     {
-        Channels = new WebSocketChannels(EndpointUrl).AddTo(_disposables);
-        Channels.MessageSent = OnMessageSent;
-        Channels.MessageReceived = OnMessageReceived;
+        Channel = new WebSocketChannel(EndpointUrl).AddTo(_disposables);
     }
 
     /// <summary>
@@ -72,14 +65,12 @@ public class RealtimeSourceFactory : IDisposable
     /// <param name="apiSecret"></param>
     public RealtimeSourceFactory(string apiKey, string apiSecret)
     {
-        Channels = new WebSocketChannels(EndpointUrl, apiKey, apiSecret).AddTo(_disposables);
-        Channels.MessageSent = OnMessageSent;
-        Channels.MessageReceived = OnMessageReceived;
+        Channel = new WebSocketChannel(EndpointUrl, apiKey, apiSecret).AddTo(_disposables);
     }
 
     public bool Authenticate(string apiKey, string apiSecret)
     {
-        return Channels.Authenticate(apiKey, apiSecret);
+        return Channel.Authenticate(apiKey, apiSecret);
     }
 
     public void Dispose()
@@ -89,16 +80,16 @@ public class RealtimeSourceFactory : IDisposable
         Log.Debug($"{nameof(RealtimeSourceFactory)} diposed");
     }
 
-    bool _opened = false;
+    public bool IsOpened { get; private set; }
     public async Task<bool> TryOpenAsync()
     {
-        if (_opened)
+        if (IsOpened)
         {
             return false;
         }
 
-        await Channels.TryOpenAsync();
-        _opened = true;
+        await Channel.TryOpenAsync();
+        IsOpened = true;
         return true;
     }
 
@@ -131,12 +122,12 @@ public class RealtimeSourceFactory : IDisposable
     {
         var result = _executionSources.GetOrAdd(productCode, _ =>
         {
-            var source = new RealtimeExecutionSource(Channels, productCode, s =>
+            var source = new RealtimeExecutionSource(Channel, productCode, s =>
             {
                 _executionSources.TryRemove(s.ProductCode, out var _);
                 OnSourceClosed();
             });
-            Channels.RegisterSource(source);
+            Channel.RegisterSource(source);
             if (startPending)
             {
                 return source.ObserveOn(Scheduler).SkipWhile(tick => tick.ExecutionId == 0).Publish();
@@ -177,12 +168,12 @@ public class RealtimeSourceFactory : IDisposable
     {
         return _tickSources.GetOrAdd(productCode, _ => // Cause ArgumentException if key not found.
         {
-            var source = new RealtimeTickerSource(Channels, productCode, s =>
+            var source = new RealtimeTickerSource(Channel, productCode, s =>
             {
                 _tickSources.TryRemove(s.ProductCode, out var _);
                 OnSourceClosed();
             });
-            Channels.RegisterSource(source);
+            Channel.RegisterSource(source);
             return source.ObserveOn(Scheduler).Publish().RefCount();
         });
     }
@@ -192,10 +183,10 @@ public class RealtimeSourceFactory : IDisposable
     {
         return _orderBookSnapshotSources.GetOrAdd(productCode, _ => // Cause ArgumentException if key not found.
         {
-            var snapshot = new RealtimeBoardSnapshotSource(Channels, productCode);
-            var update = new RealtimeBoardSource(Channels, productCode);
-            Channels.RegisterSource(snapshot);
-            Channels.RegisterSource(update);
+            var snapshot = new RealtimeBoardSnapshotSource(Channel, productCode);
+            var update = new RealtimeBoardSource(Channel, productCode);
+            Channel.RegisterSource(snapshot);
+            Channel.RegisterSource(update);
             var source = new BfOrderBookStream(productCode, snapshot, update, s =>
             {
                 _orderBookSnapshotSources.TryRemove(s.ProductCode, out var _);
@@ -218,11 +209,11 @@ public class RealtimeSourceFactory : IDisposable
             return _childOrderEventSource;
         }
 
-        var source = new RealtimeChildOrderEventsSource(Channels, s=>
+        var source = new RealtimeChildOrderEventsSource(Channel, s=>
         {    _childOrderEventSource = null;
             OnSourceClosed();
         });
-        Channels.RegisterSource(source);
+        Channel.RegisterSource(source);
         _childOrderEventSource = source.ObserveOn(Scheduler).Publish().RefCount();
         return _childOrderEventSource;
     }
@@ -240,12 +231,12 @@ public class RealtimeSourceFactory : IDisposable
             return _parentOrderEventSource;
         }
 
-        var source = new RealtimeParentOrderEventsSource(Channels, s =>
+        var source = new RealtimeParentOrderEventsSource(Channel, s =>
         {
             _parentOrderEventSource = null;
             OnSourceClosed();
         });
-        Channels.RegisterSource(source);
+        Channel.RegisterSource(source);
         _parentOrderEventSource = source.ObserveOn(Scheduler).Publish().RefCount();
         return _parentOrderEventSource;
     }

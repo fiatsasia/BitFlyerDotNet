@@ -13,7 +13,7 @@ class RealtimeTickerSource : RealtimeSourceBase<BfTicker>
     public readonly string ProductCode;
     Action<RealtimeTickerSource> _dispose;
 
-    internal RealtimeTickerSource(WebSocketChannels channels, string productCode, Action<RealtimeTickerSource> dispose)
+    internal RealtimeTickerSource(WebSocketChannel channels, string productCode, Action<RealtimeTickerSource> dispose)
         : base(channels, $"lightning_ticker_{productCode}")
     {
         ProductCode = productCode;
@@ -26,9 +26,5 @@ class RealtimeTickerSource : RealtimeSourceBase<BfTicker>
         _dispose(this);
     }
 
-    public override object OnMessageReceived(JToken token)
-    {
-        Log.Enter();
-        return DispatchMessage(token);
-    }
+    public override object OnMessageReceived(JToken token) => DispatchMessage(token);
 }

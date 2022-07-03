@@ -49,8 +49,8 @@ namespace RealtimeApiTests
             {
                 _factory = new RealtimeSourceFactory();
             }
-            _factory.MessageSent += OnRealtimeMessageSent;
-            _factory.MessageReceived += OnRealtimeMessageReceived;
+            _factory.Channel.MessageSent += OnRealtimeMessageSent;
+            _factory.Channel.MessageReceived += OnRealtimeMessageReceived;
             _factory.Error += (error) => Console.WriteLine("Error: {0} Socket Error = {1}", error.Message, error.SocketError);
             _ = _factory.TryOpenAsync();
 
@@ -128,7 +128,7 @@ namespace RealtimeApiTests
             Console.WriteLine($"Message sent: {json}");
         }
 
-        static void OnRealtimeMessageReceived(string json, object message)
+        static void OnRealtimeMessageReceived(object message)
         {
             if (_disposables.Count == 0)
             {
@@ -165,9 +165,6 @@ namespace RealtimeApiTests
             {
                 return;
             }
-
-            var jobject = JsonConvert.DeserializeObject(json);
-            Console.WriteLine(JsonConvert.SerializeObject(jobject, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
         }
 
         // Somtimes stopped feed without any errors.

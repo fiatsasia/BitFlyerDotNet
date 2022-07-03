@@ -220,7 +220,7 @@ public partial class BitFlyerClient : IDisposable
     internal async Task<BitFlyerResponse<T>> GetAsync<T>(string callerName, string queryParameters, CancellationToken ct)
     {
         var apiName = callerName.Replace("Async", "").ToLower();
-        Log.Trace($"{apiName}");
+        Log.Debug($"{apiName}?{queryParameters}");
         var path = PublicBasePath + apiName;
         if (!string.IsNullOrEmpty(queryParameters))
         {
@@ -304,7 +304,7 @@ public partial class BitFlyerClient : IDisposable
         }
 
         var apiName = callerName.Replace("Async", "").ToLower();
-        Log.Debug($"{apiName}");
+        Log.Debug($"{apiName}?{queryParameters}");
         var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ff");
         var path = PrivateBasePath + apiName;
         if (!string.IsNullOrEmpty(queryParameters))
@@ -330,6 +330,7 @@ public partial class BitFlyerClient : IDisposable
                 switch (responseObject.StatusCode)
                 {
                     case HttpStatusCode.OK:
+                        Log.TraceJson("HTTP get response", responseObject.Json);
                         break;
 
                     case HttpStatusCode.Unauthorized:
@@ -399,8 +400,8 @@ public partial class BitFlyerClient : IDisposable
         }
 
         var apiName = callerName.Replace("Async", "").ToLower();
-        Log.Trace($"{apiName}");
         var body = JsonConvert.SerializeObject(requestObject, JsonSerializeSettings);
+        Log.Debug($"{apiName}:{body}");
         if (!ConfirmCallback(apiName, body))
         {
             return new BitFlyerResponse<T>();
@@ -456,7 +457,7 @@ public partial class BitFlyerClient : IDisposable
                     {
                         responseObject.ErrorMessage = ((WebException)ex.InnerException).Status.ToString();
                         responseObject.StatusCode = HttpStatusCode.InternalServerError;
-                        Log.Error($"BitFlyerlient: Internal Server Error {responseObject.ErrorMessage}");
+                        Log.Error($"BitFlyerlient: Internal Server Error {responseObject.ErrorMessage}", ex.InnerException);
                     }
                 }
                 else if (ex is WebException)
@@ -471,11 +472,11 @@ public partial class BitFlyerClient : IDisposable
                     {
                         responseObject.StatusCode = HttpStatusCode.NoContent;
                     }
-                    Log.Error($"BitFlyerlient: WebException {responseObject.StatusCode}");
+                    Log.Error($"BitFlyerlient: WebException {responseObject.StatusCode}", we);
                 }
                 else
                 {
-                    Log.Error($"BitFlyerlient: Unexpected exception {ex.Message}");
+                    Log.Error($"BitFlyerlient: Unexpected exception", ex);
                     throw ex;
                 }
                 return responseObject;

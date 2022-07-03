@@ -10,6 +10,7 @@ namespace BitFlyerDotNet.Trading;
 
 public class BfxApplication : IDisposable
 {
+    public RealtimeSourceFactory RealtimeSource => _rts;
     public BfxConfiguration Config { get; }
     public bool IsInitialized => _markets.Count() > 0;
 
@@ -31,14 +32,14 @@ public class BfxApplication : IDisposable
     {
         Config = new BfxConfiguration();
         _client = new BitFlyerClient(key, secret).AddTo(_disposables);
-        _rts = new RealtimeSourceFactory(key, secret);
+        _rts = new RealtimeSourceFactory(key, secret).AddTo(_disposables);
     }
 
     public BfxApplication(BfxConfiguration config, string key, string secret)
     {
         Config = config;
         _client = new BitFlyerClient(key, secret).AddTo(_disposables);
-        _rts = new RealtimeSourceFactory(key, secret);
+        _rts = new RealtimeSourceFactory(key, secret).AddTo(_disposables);
     }
 
     public void Dispose()

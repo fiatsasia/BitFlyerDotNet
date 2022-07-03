@@ -34,6 +34,10 @@ public class BfxMarketDataSource : IDisposable
     public async Task InitializeAsync()
     {
         Ticker = await _client.GetTickerAsync(_productCode);
+        if (!_rts.IsOpened)
+        {
+            await _rts.TryOpenAsync();
+        }
         _rts.GetTickerSource(_productCode).Subscribe(ticker => { Ticker = ticker; }).AddTo(_disposables);
     }
 }

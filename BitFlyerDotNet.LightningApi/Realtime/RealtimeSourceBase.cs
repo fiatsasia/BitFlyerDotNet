@@ -10,12 +10,12 @@ namespace BitFlyerDotNet.LightningApi;
 
 abstract class RealtimeSourceBase<TSource> : IRealtimeSource, IObservable<TSource> where TSource : class
 {
-    WebSocketChannels _channels;
+    WebSocketChannel _channels;
 
     public string ChannelName { get; private set; }
     IObserver<TSource> _observer;
 
-    public RealtimeSourceBase(WebSocketChannels channels, string channelName)
+    public RealtimeSourceBase(WebSocketChannel channels, string channelName)
     {
         _channels = channels;
         ChannelName = channelName;
@@ -23,7 +23,10 @@ abstract class RealtimeSourceBase<TSource> : IRealtimeSource, IObservable<TSourc
 
     public void Subscribe()
     {
-        _channels.Send(JsonConvert.SerializeObject(new { method = "subscribe", @params = new { channel = ChannelName } }));
+        var json = JsonConvert.SerializeObject(new { method = "subscribe", @params = new { channel = ChannelName } });
+        Log.Debug("Sending subscribe message...");
+        _channels.Send(json);
+        Log.Debug($"Sent subscribe message: {json}");
     }
 
     public IDisposable Subscribe(IObserver<TSource> observer)
@@ -37,7 +40,10 @@ abstract class RealtimeSourceBase<TSource> : IRealtimeSource, IObservable<TSourc
     {
         if (_channels.IsOpened)
         {
-            _channels.Send(JsonConvert.SerializeObject(new { method = "unsubscribe", @params = new { channel = ChannelName } }));
+            var json = JsonConvert.SerializeObject(new { method = "unsubscribe", @params = new { channel = ChannelName } });
+            Log.Debug("Sending unsubscribe message...");
+            _channels.Send(json);
+            Log.Debug($"Sent unsubscribe message: {json}");
         }
         _observer?.OnCompleted();
         _observer = null;
@@ -47,7 +53,6 @@ abstract class RealtimeSourceBase<TSource> : IRealtimeSource, IObservable<TSourc
 
     protected object DispatchMessage(JToken token)
     {
-        Log.Enter($"observer is {_observer != null}");
         var message = token.ToObject<TSource>();
         _observer?.OnNext(message);
         return message;

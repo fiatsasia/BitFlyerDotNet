@@ -53,6 +53,9 @@ partial class Program
             App.PositionChanged += OnPositionChanged;
             App.TradeChanged += OnTradeChanged;
 
+            App.RealtimeSource.Channel.MessageSent += json => Console.WriteLine($"Socket message sent: {json}");
+            App.RealtimeSource.Channel.MessageReceived += message => OnRealtimeMessageReceived(message);
+
             while (true)
             {
                 Console.WriteLine("===================================================================");
@@ -258,6 +261,35 @@ partial class Program
         {
             Console.Write("    ");
             PrintOrder(order.Children[i]);
+        }
+    }
+
+    static void OnRealtimeMessageReceived(object message)
+    {
+        switch (message)
+        {
+            case BfExecution[] execs:
+                Console.WriteLine($"BfExecution[{execs.Length}]:");
+                break;
+
+            case BfTicker ticker:
+                break;
+
+            case BfBoard board: // OrderBook
+                Console.WriteLine($"BfOrderBook Asks:{board.Asks.Length} Bids:{board.Bids.Length}:");
+                break;
+
+            case BfChildOrderEvent[] coe:
+                Console.WriteLine($"BfChildOrderEvent[{coe.Length}]:");
+                break;
+
+            case BfParentOrderEvent[] poe:
+                Console.WriteLine($"BfParentOrderEvent[{poe.Length}]:");
+                break;
+
+            default:
+                Console.WriteLine($"{message.GetType().Name}:");
+                break;
         }
     }
 
