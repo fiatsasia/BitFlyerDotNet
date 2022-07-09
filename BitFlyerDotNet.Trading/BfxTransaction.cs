@@ -10,54 +10,54 @@ namespace BitFlyerDotNet.Trading;
 
 public class BfxTransaction
 {
-    public BfxTransactionState State { get; private set; }
-    public event EventHandler<BfxTransactionChangedEventArgs>? TransactionChanged;
+    public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
 
     BitFlyerClient _client;
     CancellationTokenSource _cts = new CancellationTokenSource();
-    BfxTrade _trade;
+    BfxOrderStatus _os;
     BfxConfiguration _config;
 
     internal BfxTransaction(BitFlyerClient client, string productCode, BfxConfiguration config)
     {
         _client = client;
         _config = config;
-        _trade = new BfxTrade(productCode);
+        _os = new BfxOrderStatus(productCode);
     }
 
     #region Child order
     internal BfxTransaction Update(BfChildOrder order)
     {
-        _trade.Update(order);
+        _os.Update(order);
         return this;
     }
     public BfxTransaction Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
     {
-        _trade.Update(status, execs);
-        return this;
-    }
-
-    internal BfxTransaction OnTriggerOrCompleteEvent(BfParentOrderEvent e)
-    {
-        _trade.OnTriggerOrCompleteEventForChildOrder(e);
+        _os.Update(status, execs);
         return this;
     }
 
     internal BfxTransaction OnChildOrderEvent(BfChildOrderEvent e)
     {
-        switch (e.EventType)
+        _os.Update(e);
+        var et = e.EventType switch
         {
-            case BfOrderEventType.Order:
-            case BfOrderEventType.Execution:
-                _trade.Update(e);
-                break;
-        }
+            BfOrderEventType.Order => BfxOrderEventType.OrderAccepted,
+            BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
+            BfOrderEventType.Cancel => BfxOrderEventType.Canceled,
+            BfOrderEventType.CancelFailed => BfxOrderEventType.CancelFailed,
+            BfOrderEventType.Execution => (_os.OrderSize > _os.ExecutedSize)
+                ? BfxOrderEventType.PartiallyExecuted
+                : BfxOrderEventType.Executed,
+            BfOrderEventType.Expire => BfxOrderEventType.Expired,
+            _ => throw new ArgumentException()
+        };
+        OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(et, _os));
         return this;
     }
 
     public async Task<string> PlaceOrderAsync(BfChildOrder order)
     {
-        _trade.Update(order);
+        _os.Update(order);
         for (var retry = 0; retry <= _config.OrderRetryMax; retry++)
         {
             _cts.Token.ThrowIfCancellationRequested();
@@ -65,49 +65,51 @@ public class BfxTransaction
             if (!resp.IsError)
             {
                 var id = resp.GetContent().ChildOrderAcceptanceId;
-                _trade.OrderAcceptanceId = id;
+                _os.OrderAcceptanceId = id;
+                OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.OrderAccepted, _os));
                 return id;
             }
 
             Log.Warn($"SendChildOrder failed: {resp.StatusCode} {resp.ErrorMessage}");
             _cts.Token.ThrowIfCancellationRequested();
             Log.Info("Trying retry...");
+            OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.RetryingOrder, _os));
             await Task.Delay(_config.OrderRetryInterval);
         }
 
         Log.Error("SendOrderRequest - Retried out");
-        throw new BitFlyerDotNetException();
+        OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.RetriedOut, _os));
+        return string.Empty;
     }
     #endregion Child order
 
     #region Parent order
     internal BfxTransaction Update(BfParentOrder order)
     {
-        _trade.Update(order);
+        _os.Update(order);
         return this;
     }
     internal BfxTransaction Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
     {
-        _trade.Update(status, detail);
+        _os.Update(status, detail);
         return this;
     }
 
 #pragma warning disable CS8629
     internal BfxTransaction OnParentOrderEvent(BfParentOrderEvent e)
     {
-        switch (e.EventType)
+        _os.Update(e);
+        var et = e.EventType switch
         {
-            case BfOrderEventType.Order:
-                _trade.OnParentOrdered(e);
-                break;
-
-            case BfOrderEventType.Trigger:
-                _trade.OnTriggerEvent(e.ChildOrderIndex.Value - 1, e);
-                break;
-
-            case BfOrderEventType.Complete:
-                break;
-        }
+            BfOrderEventType.Order => BfxOrderEventType.OrderAccepted,
+            BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
+            BfOrderEventType.Cancel => BfxOrderEventType.Canceled,
+            BfOrderEventType.Trigger => BfxOrderEventType.ChildOrderChanged,
+            BfOrderEventType.Complete => BfxOrderEventType.ChildOrderChanged,
+            BfOrderEventType.Expire => BfxOrderEventType.Expired,
+            _ => throw new ArgumentException()
+        };
+        OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(et, _os));
         return this;
     }
 #pragma warning restore CS8629
@@ -115,7 +117,7 @@ public class BfxTransaction
     // - 経過時間でリトライ終了のオプション
     public async Task<string> PlaceOrdertAsync(BfParentOrder order)
     {
-        _trade.Update(order);
+        _os.Update(order);
         for (var retry = 0; retry <= _config.OrderRetryMax; retry++)
         {
             _cts.Token.ThrowIfCancellationRequested();
@@ -123,17 +125,20 @@ public class BfxTransaction
             if (!resp.IsError)
             {
                 var id = resp.GetContent().ParentOrderAcceptanceId;
-                _trade.OrderAcceptanceId = id;
+                _os.OrderAcceptanceId = id;
+                OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.OrderAccepted, _os));
                 return id;
             }
 
             _cts.Token.ThrowIfCancellationRequested();
             Log.Info("Trying retry...");
+            OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.RetryingOrder, _os));
             await Task.Delay(_config.OrderRetryInterval);
         }
 
         Log.Error("SendOrderRequest - Retried out");
-        throw new BitFlyerDotNetException();
+        OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.RetriedOut, _os));
+        return string.Empty;
     }
     #endregion Parent order
 
@@ -141,14 +146,14 @@ public class BfxTransaction
     {
         //protected void CancelTransaction() => _cts.Cancel();
 
-        if (State == BfxTransactionState.SendingOrder)
+        if (_os.OrderState == BfOrderState.Active)
         {
             _cts.Token.ThrowIfCancellationRequested();
         }
 
         try
         {
-            var resp = await _client.CancelParentOrderAsync(_trade.ProductCode, string.Empty, _trade.OrderAcceptanceId, _cts.Token);
+            var resp = await _client.CancelParentOrderAsync(_os.ProductCode, string.Empty, _os.OrderAcceptanceId, _cts.Token);
             if (!resp.IsError)
             {
             }

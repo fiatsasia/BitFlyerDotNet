@@ -10,37 +10,40 @@ namespace BitFlyerDotNet.Trading;
 
 public class BfxApplication : IDisposable
 {
+    #region Properties and fields
     public RealtimeSourceFactory RealtimeSource => _rts;
     public BfxConfiguration Config { get; }
     public bool IsInitialized => _markets.Count() > 0;
 
     CompositeDisposable _disposables = new();
-    Dictionary<string, BfxMarket> _markets = new();
     BitFlyerClient _client;
     RealtimeSourceFactory _rts;
-    Dictionary<string, BfxMarketDataSource> _mdss = new();
+    Dictionary<string, BfxMarket> _markets = new();
+    Dictionary<string, BfxMarketDataSource> _mds = new();
+    BfxPositionManager _positions = new();
+    #endregion Properties and fields
 
     #region Initialize and Finalize
-    public BfxApplication()
-    {
-        Config = new BfxConfiguration();
-        _client = new BitFlyerClient().AddTo(_disposables);
-        _rts = new RealtimeSourceFactory();
-    }
-
-    public BfxApplication(string key, string secret)
-    {
-        Config = new BfxConfiguration();
-        _client = new BitFlyerClient(key, secret).AddTo(_disposables);
-        _rts = new RealtimeSourceFactory(key, secret).AddTo(_disposables);
-    }
-
     public BfxApplication(BfxConfiguration config, string key, string secret)
     {
         Config = config;
-        _client = new BitFlyerClient(key, secret).AddTo(_disposables);
-        _rts = new RealtimeSourceFactory(key, secret).AddTo(_disposables);
+        if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(secret))
+        {
+            _client = new BitFlyerClient(key, secret).AddTo(_disposables);
+            _rts = new RealtimeSourceFactory(key, secret).AddTo(_disposables);
+        }
+        else
+        {
+            _client = new BitFlyerClient().AddTo(_disposables);
+            _rts = new RealtimeSourceFactory();
+        }
+        VerifyChildOrder = VerifyOrder;
+        VerifyParentOrder = VerifyOrder;
     }
+
+    public BfxApplication() : this(new BfxConfiguration(), string.Empty, string.Empty) { }
+
+    public BfxApplication(string key, string secret) : this(new BfxConfiguration(), key, secret) { }
 
     public void Dispose()
     {
@@ -60,14 +63,24 @@ public class BfxApplication : IDisposable
         foreach (var productCode in availableMarkets.Select(e => !string.IsNullOrEmpty(e.Alias) ? e.Alias : e.ProductCode))
         {
             var market = new BfxMarket(_client, productCode, Config);
-            market.TradeChanged += OnTradeChanged;
-            _markets.Add(productCode, market);
+            market.OrderChanged += (sender, e) => OrderChanged?.Invoke(sender, e);
+            _markets[productCode] = market;
+            _mds[productCode] = new BfxMarketDataSource(productCode, _client, _rts);
         }
 
         if (_client.IsAuthenticated)
         {
             _rts.GetParentOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnParentOrderEvent(e)).AddTo(_disposables);
-            _rts.GetChildOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnChildOrderEvent(e)).AddTo(_disposables);
+            _positions.Update(await _client.GetPositionsAsync(BfProductCode.FX_BTC_JPY));
+            _rts.GetChildOrderEventsSource().Subscribe(e =>
+            {
+                _markets[e.ProductCode].OnChildOrderEvent(e);
+                if (e.ProductCode == BfProductCode.FX_BTC_JPY && e.EventType == BfOrderEventType.Execution)
+                {
+                    // child order subscription is scheduled on Rx default thread queueing scheduler
+                    _positions.Update(e).ForEach(pos => PositionChanged?.Invoke(this, new BfxPositionChangedEventArgs(pos)));
+                }
+            }).AddTo(_disposables);
         }
     }
 
@@ -90,57 +103,50 @@ public class BfxApplication : IDisposable
         _rts.GetChildOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnChildOrderEvent(e)).AddTo(_disposables);
     }
 
-    public async Task<BfxMarket> InitializeAsync(string productCode)
+    public bool IsMarketInitialized(string productCode) => IsInitialized ? _markets[productCode].IsInitialized : false;
+
+    public async Task InitializeMarketAsync(string productCode)
     {
         if (!IsInitialized)
         {
             await InitializeAsync();
         }
 
-        if (!_markets.TryGetValue(productCode, out var market))
+        if (!_markets[productCode].IsInitialized)
         {
-            throw new ArgumentException();
+            await _markets[productCode].InitializeAsync();
+        }
+    }
+
+    public bool IsMarketDataSourceInitialized(string productCode) => IsInitialized ? _mds[productCode].IsInitialized : false;
+
+    public async Task InitializeMarketDataSourceAsync(string productCode)
+    {
+        if (!IsInitialized)
+        {
+            await InitializeAsync();
         }
 
-        if (!market.IsInitialized)
+        if (!_mds[productCode].IsInitialized)
         {
-            await market.InitializeAsync();
+            await _mds[productCode].InitializeAsync();
         }
-
-        return market;
     }
     #endregion Initialize and Finalize
 
     #region Events
     public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
     public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;
-    public event EventHandler<BfxTradeChangedEventArgs>? TradeChanged;
-
-    private void OnTradeChanged(object sender, BfxTradeChangedEventArgs e) => TradeChanged?.Invoke(sender, e);
     #endregion Events
 
-    public async Task<BfxMarket> GetMarketAsync(string productCode)
-    {
-        if (!_markets.TryGetValue(productCode, out var market))
-        {
-            market = await InitializeAsync(productCode);
-        }
-        else if (!market.IsInitialized)
-        {
-            await market.InitializeAsync();
-        }
-
-        return market;
-    }
-
-    async Task VerifyOrder(BfChildOrder order)
+    public void VerifyOrder(BfChildOrder order)
     {
         if (order.Size > Config.OrderSizeMax[order.ProductCode])
         {
             throw new ArgumentException("Order size exceeds the maximum size.");
         }
 
-        var mds = await GetMarketDataSourceAsync(order.ProductCode);
+        var mds = _mds[order.ProductCode];
         if (Config.OrderPriceLimitter && order.ChildOrderType == BfOrderType.Limit)
         {
 #pragma warning disable CS8629
@@ -156,7 +162,7 @@ public class BfxApplication : IDisposable
         }
     }
 
-    async Task VerifyOrder(BfParentOrder order)
+    public void VerifyOrder(BfParentOrder order)
     {
         foreach (var child in order.Parameters)
         {
@@ -174,7 +180,7 @@ public class BfxApplication : IDisposable
             _ => throw new ArgumentException()
         };
 
-        var mds = await GetMarketDataSourceAsync(order.Parameters[0].ProductCode);
+        var mds = _mds[order.Parameters[0].ProductCode];
         foreach (var child in children)
         {
             if (Config.OrderPriceLimitter && child.ConditionType == BfOrderType.Limit)
@@ -193,38 +199,62 @@ public class BfxApplication : IDisposable
         }
     }
 
-    public async Task<BfxTransaction> PlaceOrderAsync(BfChildOrder order)
+    #region Ordering
+    public Action<BfChildOrder> VerifyChildOrder { get; set; }
+    public Action<BfParentOrder> VerifyParentOrder { get; set; }
+
+    public async Task<BfxTransaction?> PlaceOrderAsync(BfChildOrder order)
     {
-        await VerifyOrder(order);
-        return await (await GetMarketAsync(order.ProductCode)).PlaceOrderAsync(order);
+        if (!IsMarketInitialized(order.ProductCode))
+        {
+            await InitializeMarketAsync(order.ProductCode);
+        }
+
+        if (!IsMarketDataSourceInitialized(order.ProductCode))
+        {
+            await InitializeMarketDataSourceAsync(order.ProductCode);
+        }
+
+        VerifyChildOrder.Invoke(order);
+        return await _markets[order.ProductCode].PlaceOrderAsync(order);
     }
 
-    public async Task<BfxTransaction> PlaceOrderAsync(BfParentOrder order)
+    public async Task<BfxTransaction?> PlaceOrderAsync(BfParentOrder order)
     {
-        await VerifyOrder(order);
-        return await (await GetMarketAsync(order.Parameters[0].ProductCode)).PlaceOrderAsync(order);
+        if (!IsMarketInitialized(order.Parameters[0].ProductCode))
+        {
+            await InitializeMarketAsync(order.Parameters[0].ProductCode);
+        }
+
+        if (!IsMarketDataSourceInitialized(order.Parameters[0].ProductCode))
+        {
+            await InitializeMarketDataSourceAsync(order.Parameters[0].ProductCode);
+        }
+
+        VerifyParentOrder.Invoke(order);
+        return await _markets[order.Parameters[0].ProductCode].PlaceOrderAsync(order);
     }
+    #endregion Ordering
 
     public async Task<BfxMarketDataSource> GetMarketDataSourceAsync(string productCode)
     {
-        if (!_mdss.TryGetValue(productCode, out var mds))
+        if (!IsMarketDataSourceInitialized(productCode))
         {
-            mds = new BfxMarketDataSource(productCode, _client, _rts);
-            _mdss.Add(productCode, mds);
-            await mds.InitializeAsync();
+            await InitializeMarketDataSourceAsync(productCode);
         }
-        return mds;
+
+        return _mds[productCode];
     }
 
-    private async IAsyncEnumerable<BfxTrade> GetTradesAsync(string productCode, BfOrderState orderState, int count, bool linkChildToParent, Func<BfxTrade, bool> predicate)
+    private async IAsyncEnumerable<BfxOrderStatus> GetTradesAsync(string productCode, BfOrderState orderState, int count, bool linkChildToParent, Func<BfxOrderStatus, bool> predicate)
     {
 #pragma warning disable CS8604
-        var trades = new Dictionary<string, BfxTrade>();
+        var trades = new Dictionary<string, BfxOrderStatus>();
 
         // Get child orders
         await foreach (var childOrder in _client.GetChildOrdersAsync(productCode, orderState, count, 0, e => true))
         {
-            var trade = new BfxTrade(productCode);
+            var trade = new BfxOrderStatus(productCode);
             var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: childOrder.ChildOrderId);
             trade.Update(childOrder, execs);
             if (!predicate(trade))
@@ -237,7 +267,7 @@ public class BfxApplication : IDisposable
         // Get parent orders
         await foreach (var parentOrder in _client.GetParentOrdersAsync(productCode, orderState, count, 0, e => true))
         {
-            var trade = new BfxTrade(productCode);
+            var trade = new BfxOrderStatus(productCode);
             var parentOrderDetail = await _client.GetParentOrderAsync(productCode, parentOrderId: parentOrder.ParentOrderId);
             trade.Update(parentOrder, parentOrderDetail);
             if (!predicate(trade))

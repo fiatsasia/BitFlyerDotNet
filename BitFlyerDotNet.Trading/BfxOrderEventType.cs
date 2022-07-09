@@ -11,27 +11,15 @@ namespace BitFlyerDotNet.Trading;
 public enum BfxOrderEventType
 {
     Unknown,
-
-    OrderSending,
-    OrderSent,
-    OrderSendFailed,
-    OrderSendCanceled,
-    Ordered,
-    OrderFailed,
-
+    OrderAccepted,
+    RetryingOrder,
+    RetriedOut,
+    OrderConfirmed,
     PartiallyExecuted,
     Executed,
-    Triggered,
-    Completed,
-
-    CancelSending,
-    CancelSent,
-    CancelSendFailed,
-    CancelSendCanceled,
+    OrderFailed,
     Canceled,
     CancelFailed,
-
     Expired,
-
-    ChildOrderEvent,
+    ChildOrderChanged,
 }

@@ -22,61 +22,63 @@ public class BfxOrder
     public DateTime? OrderDate { get; private set; }
     public DateTime? ExpireDate { get; private set; }
     public BfOrderState? OrderState { get; private set; }
+    public decimal? ExecutedPrice { get; private set; }
     public decimal? ExecutedSize { get; private set; }
     public ReadOnlyCollection<BfxOrder> Children => Array.AsReadOnly(_children);
 
     BfxOrder[] _children;
 
-    public BfxOrder(BfxTrade trade)
+    public BfxOrder(BfxOrderStatus os)
     {
-        ProductCode = trade.ProductCode;
+        ProductCode = os.ProductCode;
 
-        switch (trade.OrderType)
+        switch (os.OrderType)
         {
             case BfOrderType.Market:
             case BfOrderType.Limit:
             case BfOrderType.Stop:
             case BfOrderType.StopLimit:
             case BfOrderType.Trail:
-                SetCommonPart(trade);
-                SetIndividualPart(trade);
+                SetCommonPart(os);
+                SetIndividualPart(os);
                 break;
 
             case BfOrderType.Simple:
-                SetCommonPart(trade);
-                SetIndividualPart(trade.Children[0]);
-                OrderType = trade.Children[0].OrderType;
+                SetCommonPart(os);
+                SetIndividualPart(os.Children[0]);
+                OrderType = os.Children[0].OrderType;
                 break;
 
             case BfOrderType.IFD:
             case BfOrderType.OCO:
             case BfOrderType.IFDOCO:
-                SetCommonPart(trade);
+                SetCommonPart(os);
                 break;
         }
 
-        _children = new BfxOrder[trade.OrderType.GetChildCount()];
+        _children = new BfxOrder[os.OrderType.GetChildCount()];
         for (int i = 0; i < _children.Length; i++)
         {
-            _children[i] = new(trade.Children[i]);
+            _children[i] = new(os.Children[i]);
         }
     }
 
-    void SetCommonPart(BfxTrade trade)
+    void SetCommonPart(BfxOrderStatus os)
     {
-        OrderType = trade.OrderType;
-        OrderAcceptanceId = trade.OrderAcceptanceId;
-        OrderId = trade.OrderId;
-        OrderDate = trade.OrderDate;
-        ExpireDate = trade.ExpireDate;
-        OrderState = trade.OrderState;
+        OrderType = os.OrderType;
+        OrderAcceptanceId = os.OrderAcceptanceId;
+        OrderId = os.OrderId;
+        OrderDate = os.OrderDate;
+        ExpireDate = os.ExpireDate;
+        OrderState = os.OrderState;
     }
 
-    void SetIndividualPart(BfxTrade trade)
+    void SetIndividualPart(BfxOrderStatus os)
     {
-        Side = trade.Side;
-        OrderSize = trade.OrderSize;
-        ExecutedSize = trade.ExecutedSize;
+        Side = os.Side;
+        OrderSize = os.OrderSize;
+        ExecutedPrice = os.ExecutedPrice;
+        ExecutedSize = os.ExecutedSize;
 
         switch (OrderType)
         {
@@ -84,20 +86,20 @@ public class BfxOrder
                 break;
 
             case BfOrderType.Limit:
-                OrderPrice = trade.OrderPrice;
+                OrderPrice = os.OrderPrice;
                 break;
 
             case BfOrderType.Stop:
-                TriggerPrice = trade.TriggerPrice;
+                TriggerPrice = os.TriggerPrice;
                 break;
 
             case BfOrderType.StopLimit:
-                OrderPrice = trade.OrderPrice;
-                TriggerPrice = trade.TriggerPrice;
+                OrderPrice = os.OrderPrice;
+                TriggerPrice = os.TriggerPrice;
                 break;
 
             case BfOrderType.Trail:
-                TrailOffset = trade.TrailOffset;
+                TrailOffset = os.TrailOffset;
                 break;
 
             case BfOrderType.IFD:

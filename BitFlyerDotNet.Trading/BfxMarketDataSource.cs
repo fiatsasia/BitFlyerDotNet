@@ -31,13 +31,17 @@ public class BfxMarketDataSource : IDisposable
         _disposables.Dispose();
     }
 
+    public bool IsInitialized => _rts.IsOpened;
+
     public async Task InitializeAsync()
     {
-        Ticker = await _client.GetTickerAsync(_productCode);
-        if (!_rts.IsOpened)
+        if (IsInitialized)
         {
-            await _rts.TryOpenAsync();
+            return;
         }
+
+        Ticker = await _client.GetTickerAsync(_productCode);
+        await _rts.TryOpenAsync();
         _rts.GetTickerSource(_productCode).Subscribe(ticker => { Ticker = ticker; }).AddTo(_disposables);
     }
 }

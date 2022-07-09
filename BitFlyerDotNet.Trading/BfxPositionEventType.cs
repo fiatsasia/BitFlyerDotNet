@@ -11,4 +11,6 @@ namespace BitFlyerDotNet.Trading;
 public enum BfxPositionEventType
 {
     Unknown,
+    Opened,
+    Closed,
 }

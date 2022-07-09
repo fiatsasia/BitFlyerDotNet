@@ -48,11 +48,8 @@ partial class Program
         using (App = new BfxApplication(key, secret))
         {
             App.AddTraceLoggingService(NLog.LogManager.GetLogger("debugOutput"));
-
-            App.OrderChanged += OnOrderChanged;
             App.PositionChanged += OnPositionChanged;
-            App.TradeChanged += OnTradeChanged;
-
+            App.OrderChanged += OnOrderChanged;
             App.RealtimeSource.Channel.MessageSent += json => Console.WriteLine($"Socket message sent: {json}");
             App.RealtimeSource.Channel.MessageReceived += message => OnRealtimeMessageReceived(message);
 
@@ -169,28 +166,23 @@ partial class Program
         DumpResponse(_account.Client.GetPositions(ProductCode));*/
     }
 
-    static void OnOrderChanged(object sender, BfxOrderChangedEventArgs e)
-    {
-
-    }
-
     static void OnPositionChanged(object sender, BfxPositionChangedEventArgs e)
     {
         PrintPosition(e.Position);
     }
 
-    private static void OnTradeChanged(object sender, BfxTradeChangedEventArgs e)
+    private static void OnOrderChanged(object sender, BfxOrderChangedEventArgs e)
     {
         var sb = new List<string>();
         sb.Add(e.Time.ToString(TimeFormat));
 
-        if (e.EventType != BfxOrderEventType.ChildOrderEvent)
+        if (e.EventType != BfxOrderEventType.ChildOrderChanged)
         {
             sb.Add(e.EventType.ToString());
         }
         else
         {
-            sb.Add(e.ChildEventType.ToString());
+            sb.Add(e.EventType.ToString());
         }
 
         sb.Add($"{e.Order.ProductCode}");
