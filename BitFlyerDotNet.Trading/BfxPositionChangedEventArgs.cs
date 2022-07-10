@@ -10,11 +10,12 @@ namespace BitFlyerDotNet.Trading;
 
 public class BfxPositionChangedEventArgs : EventArgs
 {
-    public BfxPositionEventType EventType { get; internal set; }
-    public DateTime Time { get; internal set; }
-    public BfxPosition Position { get; internal set; }
+    public BfxPositionEventType EventType { get; }
+    public DateTime Time { get; }
+    public BfxPosition Position { get; }
+    public decimal TotalSize { get; }
 
-    public BfxPositionChangedEventArgs(BfxPosition pos)
+    public BfxPositionChangedEventArgs(BfxPosition pos, decimal totalSize)
     {
         if (pos.IsOpened)
         {
@@ -30,5 +31,6 @@ public class BfxPositionChangedEventArgs : EventArgs
         }
 
         Position = pos;
+        TotalSize = totalSize;
     }
 }

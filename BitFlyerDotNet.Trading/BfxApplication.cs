@@ -71,17 +71,23 @@ public class BfxApplication : IDisposable
         if (_client.IsAuthenticated)
         {
             _rts.GetParentOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnParentOrderEvent(e)).AddTo(_disposables);
-            _positions.Update(await _client.GetPositionsAsync(BfProductCode.FX_BTC_JPY));
+            _positions = new(await _client.GetPositionsAsync(BfProductCode.FX_BTC_JPY));
             _rts.GetChildOrderEventsSource().Subscribe(e =>
             {
                 _markets[e.ProductCode].OnChildOrderEvent(e);
                 if (e.ProductCode == BfProductCode.FX_BTC_JPY && e.EventType == BfOrderEventType.Execution)
                 {
                     // child order subscription is scheduled on Rx default thread queueing scheduler
-                    _positions.Update(e).ForEach(pos => PositionChanged?.Invoke(this, new BfxPositionChangedEventArgs(pos)));
+                    _positions.Update(e).ForEach(pos => PositionChanged?.Invoke(this, new BfxPositionChangedEventArgs(pos, _positions.TotalSize)));
                 }
             }).AddTo(_disposables);
         }
+    }
+
+    // This will be called when suspended WebSocket
+    public Task RefreshAsync()
+    {
+        throw new NotImplementedException();
     }
 
     public async Task AuthenticateAsync(string key, string secret)
@@ -139,6 +145,7 @@ public class BfxApplication : IDisposable
     public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;
     #endregion Events
 
+    #region Ordering
     public void VerifyOrder(BfChildOrder order)
     {
         if (order.Size > Config.OrderSizeMax[order.ProductCode])
@@ -199,7 +206,6 @@ public class BfxApplication : IDisposable
         }
     }
 
-    #region Ordering
     public Action<BfChildOrder> VerifyChildOrder { get; set; }
     public Action<BfParentOrder> VerifyParentOrder { get; set; }
 
@@ -246,7 +252,7 @@ public class BfxApplication : IDisposable
         return _mds[productCode];
     }
 
-    private async IAsyncEnumerable<BfxOrderStatus> GetTradesAsync(string productCode, BfOrderState orderState, int count, bool linkChildToParent, Func<BfxOrderStatus, bool> predicate)
+    private async IAsyncEnumerable<BfxOrderStatus> GetOrdersAsync(string productCode, BfOrderState orderState, int count, bool linkChildToParent, Func<BfxOrderStatus, bool> predicate)
     {
 #pragma warning disable CS8604
         var trades = new Dictionary<string, BfxOrderStatus>();
@@ -305,11 +311,13 @@ public class BfxApplication : IDisposable
             throw new BitFlyerUnauthorizedException();
         }
 
-        await foreach (var trade in GetTradesAsync(productCode, BfOrderState.Unknown, count, true, e => true))
+        await foreach (var trade in GetOrdersAsync(productCode, BfOrderState.Unknown, count, true, e => true))
         {
             yield return new BfxOrder(trade);
         }
     }
 
     public IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(int count) => GetRecentOrdersAsync(Config.DefaultProductCode, count);
+
+    public IEnumerable<BfxPosition> GetActivePositions() => _positions.GetActivePositions();
 }

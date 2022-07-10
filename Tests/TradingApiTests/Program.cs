@@ -60,6 +60,7 @@ partial class Program
                 Console.WriteLine("C)onditional orders");
                 Console.WriteLine("U)nexecutable orders");
                 Console.WriteLine("");
+                Console.WriteLine("R)ecent orders");
                 Console.WriteLine("Active O)rders");
                 Console.WriteLine("T)oday's Profit");
                 Console.WriteLine("Active P)ositions");
@@ -86,7 +87,7 @@ partial class Program
                             GetActivePositions();
                             break;
 
-                        case 'O':
+                        case 'R':
                             await foreach (var order in App.GetRecentOrdersAsync(ProductCode, 20))
                             {
                                 PrintOrder(order);
@@ -160,15 +161,27 @@ partial class Program
         }*/
     }
 
+    static string ToDisplayString(BfxPosition pos)
+    {
+        if (pos.IsOpened)
+        {
+            return $"{pos.OpenTime.ToString(TimeFormat)} Position opened {pos.Side} P:{pos.OpenPrice} S:{pos.Size}";
+        }
+        else // Closed
+        {
+            return $"{pos.CloseTime.Value.ToString(TimeFormat)} Position closed {pos.Side} P:{pos.ClosePrice} S:{pos.Size} PT:{pos.Profit}";
+        }
+    }
+
     static void GetActivePositions()
     {
-        /*_account.Positions.GetActivePositions().ForEach(e => PrintPosition(e));
-        DumpResponse(_account.Client.GetPositions(ProductCode));*/
+        App.GetActivePositions().ForEach(e => Console.WriteLine(ToDisplayString(e)));
     }
 
     static void OnPositionChanged(object sender, BfxPositionChangedEventArgs e)
     {
-        PrintPosition(e.Position);
+        var pos = e.Position;
+        Console.WriteLine($"{ToDisplayString(pos)} TS:{e.TotalSize}");
     }
 
     private static void OnOrderChanged(object sender, BfxOrderChangedEventArgs e)
@@ -208,18 +221,6 @@ partial class Program
             sb.Add($"ES:{e.Order.ExecutedSize}");
         }
         Console.WriteLine(string.Join(' ', sb));
-    }
-
-    static void PrintPosition(BfxPosition pos)
-    {
-        /*if (pos.IsOpened)
-        {
-            Console.WriteLine($"{pos.Open.ToString(TimeFormat)} Position opened {pos.Side} P:{pos.OpenPrice} S:{pos.Size} TS:{_account.Positions.TotalSize}");
-        }
-        else // Closed
-        {
-            Console.WriteLine($"{pos.Close.Value.ToString(TimeFormat)} Position closed {pos.Side} P:{pos.ClosePrice} S:{pos.Size} TS:{_account.Positions.TotalSize} PT:{pos.Profit}");
-        }*/
     }
 
     static void PrintOrder(BfxOrder order)
@@ -283,11 +284,5 @@ partial class Program
                 Console.WriteLine($"{message.GetType().Name}:");
                 break;
         }
-    }
-
-    static void DumpResponse(BitFlyerResponse resp)
-    {
-        var jObj = JsonConvert.DeserializeObject(resp.Json);
-        Console.WriteLine(JsonConvert.SerializeObject(jObj, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
     }
 }

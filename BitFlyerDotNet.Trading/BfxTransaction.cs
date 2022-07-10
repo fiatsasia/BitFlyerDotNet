@@ -39,19 +39,7 @@ public class BfxTransaction
     internal BfxTransaction OnChildOrderEvent(BfChildOrderEvent e)
     {
         _os.Update(e);
-        var et = e.EventType switch
-        {
-            BfOrderEventType.Order => BfxOrderEventType.OrderAccepted,
-            BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
-            BfOrderEventType.Cancel => BfxOrderEventType.Canceled,
-            BfOrderEventType.CancelFailed => BfxOrderEventType.CancelFailed,
-            BfOrderEventType.Execution => (_os.OrderSize > _os.ExecutedSize)
-                ? BfxOrderEventType.PartiallyExecuted
-                : BfxOrderEventType.Executed,
-            BfOrderEventType.Expire => BfxOrderEventType.Expired,
-            _ => throw new ArgumentException()
-        };
-        OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(et, _os));
+        OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(e, _os));
         return this;
     }
 
@@ -99,17 +87,7 @@ public class BfxTransaction
     internal BfxTransaction OnParentOrderEvent(BfParentOrderEvent e)
     {
         _os.Update(e);
-        var et = e.EventType switch
-        {
-            BfOrderEventType.Order => BfxOrderEventType.OrderAccepted,
-            BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
-            BfOrderEventType.Cancel => BfxOrderEventType.Canceled,
-            BfOrderEventType.Trigger => BfxOrderEventType.ChildOrderChanged,
-            BfOrderEventType.Complete => BfxOrderEventType.ChildOrderChanged,
-            BfOrderEventType.Expire => BfxOrderEventType.Expired,
-            _ => throw new ArgumentException()
-        };
-        OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(et, _os));
+        OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(e, _os));
         return this;
     }
 #pragma warning restore CS8629
