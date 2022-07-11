@@ -13,7 +13,6 @@ global using System.IO;
 global using System.Xml.Linq;
 global using System.Threading.Tasks;
 global using System.Reactive.Linq;
-global using Newtonsoft.Json;
 global using BitFlyerDotNet.LightningApi;
 global using BitFlyerDotNet.Trading;
 
@@ -25,7 +24,6 @@ partial class Program
     const decimal UnexecutableGap = 50000m;
     const string TimeFormat = "yyyy/MM/dd HH:mm:ss.ffff";
     const string OrderCacheFileName = "TradingApiTests.db3";
-    const string TabString = "    ";
 
     static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
     const char ESCAPE = (char)0x1b;
@@ -48,10 +46,13 @@ partial class Program
         using (App = new BfxApplication(key, secret))
         {
             App.AddTraceLoggingService(NLog.LogManager.GetLogger("debugOutput"));
+            // App.AddDataSource(new BitFlyerDotNet.DataSource.SQLite());
             App.PositionChanged += OnPositionChanged;
             App.OrderChanged += OnOrderChanged;
             App.RealtimeSource.Channel.MessageSent += json => Console.WriteLine($"Socket message sent: {json}");
             App.RealtimeSource.Channel.MessageReceived += message => OnRealtimeMessageReceived(message);
+
+            var pds = App.GetPrivateDataSource();
 
             while (true)
             {
@@ -88,7 +89,7 @@ partial class Program
                             break;
 
                         case 'R':
-                            await foreach (var order in App.GetRecentOrdersAsync(ProductCode, 20))
+                            await foreach (var order in pds.GetRecentOrdersAsync(ProductCode, 20))
                             {
                                 PrintOrder(order);
                             }

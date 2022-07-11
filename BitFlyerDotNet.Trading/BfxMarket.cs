@@ -15,14 +15,16 @@ public class BfxMarket : IDisposable
 
     BitFlyerClient _client;
     string _productCode;
+    BfxPrivateDataSource _pds;
     BfxConfiguration _config;
 
-    ConcurrentDictionary<string, BfxTransaction> _orderTransactions = new();
+    ConcurrentDictionary<string, BfxTransaction> _tx = new();
 
-    public BfxMarket(BitFlyerClient client, string productCode, BfxConfiguration config)
+    public BfxMarket(BitFlyerClient client, string productCode, BfxPrivateDataSource pds, BfxConfiguration config)
     {
         _client = client;
         _productCode = productCode;
+        _pds = pds;
         _config = config;
     }
 
@@ -39,76 +41,86 @@ public class BfxMarket : IDisposable
 
         IsInitialized = true;
 
-        // Load active child orders and their executions
-        var childOrders = await _client.GetChildOrdersAsync(_productCode, orderState: BfOrderState.Active);
-        foreach (var childOrder in childOrders)
+        await foreach (var ctx in _pds.GetActiveOrders(_productCode))
         {
-            var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId);
-            _orderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
-                _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.OrderChanged += OnOrderChanged; return tx.Update(childOrder, execs); },
-                (_, tx) => tx.Update(childOrder, execs)
-            );
+            _tx.TryAdd(ctx.OrderAcceptanceId, new BfxTransaction(_client, ctx, _config));
+        }
+    }
+
+    internal void OnChildOrderEvent(BfChildOrderEvent e)
+    {
+        var tx = _tx.AddOrUpdate(e.ChildOrderAcceptanceId,
+            id =>
+            {
+                var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, id).Update(e), _config);
+                tx.OrderChanged += OnOrderChanged;
+                return tx.OnChildOrderEvent(e);
+            },
+            (_, tx) =>
+            {
+                tx.GetOrderContext().Update(e);
+                return tx.OnChildOrderEvent(e);
+            }
+        );
+
+        if (_pds.FindParent(e.ChildOrderAcceptanceId, out var parent))
+        {
+            parent.UpdateChild(e);
         }
 
-        // Load active parent orders, their children and executions.
-        await foreach (var parentOrder in _client.GetParentOrdersAsync(_productCode, BfOrderState.Active, 0, 0, e => true))
+        if (tx.GetOrderContext().OrderState != BfOrderState.Active)
         {
-            var parentOrderDetail = await _client.GetParentOrderAsync(_productCode, parentOrderId: parentOrder.ParentOrderId);
-            _orderTransactions.AddOrUpdate(parentOrder.ParentOrderAcceptanceId,
-                _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.OrderChanged += OnOrderChanged; return tx.Update(parentOrder, parentOrderDetail); },
-                (_, tx) => tx.Update(parentOrder, parentOrderDetail)
-            );
-
-            foreach (var childOrder in await _client.GetChildOrdersAsync(_productCode, parentOrderId: parentOrder.ParentOrderId))
-            {
-                var execs = await _client.GetPrivateExecutionsAsync(_productCode, childOrderId: childOrder.ChildOrderId);
-                _orderTransactions.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
-                    _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.OrderChanged += OnOrderChanged; return tx.Update(childOrder, execs); },
-                    (_, tx) => tx.Update(childOrder, execs)
-                );
-            }
+            _tx.TryRemove(e.ChildOrderAcceptanceId, out tx);
+            Log.Debug($"Transaction cid:{e.ChildOrderAcceptanceId} closed");
         }
     }
 
     internal void OnParentOrderEvent(BfParentOrderEvent e)
     {
-        _orderTransactions.AddOrUpdate(e.ParentOrderAcceptanceId,
-            _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.OrderChanged += OnOrderChanged; return tx.OnParentOrderEvent(e); },
-            (_, tx) => tx.OnParentOrderEvent(e)
+        var tx = _tx.AddOrUpdate(e.ParentOrderAcceptanceId,
+            id =>
+            {
+                var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, id).Update(e), _config);
+                tx.OrderChanged += OnOrderChanged;
+                return tx.OnParentOrderEvent(e);
+            },
+            (_, tx) =>
+            {
+                tx.GetOrderContext().Update(e);
+                return tx.OnParentOrderEvent(e);
+            }
         );
-    }
-
-    internal void OnChildOrderEvent(BfChildOrderEvent e)
-    {
-        _orderTransactions.AddOrUpdate(e.ChildOrderAcceptanceId,
-            _ => { var tx = new BfxTransaction(_client, _productCode, _config); tx.OrderChanged += OnOrderChanged; return tx.OnChildOrderEvent(e); },
-            (_, tx) => tx.OnChildOrderEvent(e));
+        if (tx.GetOrderContext().OrderState != BfOrderState.Active)
+        {
+            _tx.TryRemove(e.ParentOrderAcceptanceId, out tx);
+            Log.Debug($"Transaction pid:{e.ParentOrderAcceptanceId} closed");
+        }
     }
 
     public async Task<BfxTransaction?> PlaceOrderAsync(BfChildOrder order)
     {
         // Sometimes child order event arraives before send order process completes.
-        var tx = new BfxTransaction(_client, _productCode, _config);
+        var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode).Update(order), _config);
         tx.OrderChanged += OnOrderChanged;
         var id = await tx.PlaceOrderAsync(order);
         if (string.IsNullOrEmpty(id))
         {
             return default;
         }
-        return _orderTransactions.AddOrUpdate(id, _ => tx, (_, tx) => tx.Update(order));
+        return _tx.AddOrUpdate(id, _ => tx, (_, tx) => { tx.GetOrderContext().Update(order); return tx; }); // Sometimes order event arrives first
     }
 
     public async Task<BfxTransaction?> PlaceOrderAsync(BfParentOrder order)
     {
         // Sometimes parent order event arraives before send order process completes.
-        var tx = new BfxTransaction(_client, _productCode, _config);
+        var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode).Update(order), _config);
         tx.OrderChanged += OnOrderChanged;
         var id = await tx.PlaceOrdertAsync(order);
         if (string.IsNullOrEmpty(id))
         {
             return default;
         }
-        return _orderTransactions.AddOrUpdate(id, _ => tx, (_, tx) => tx.Update(order));
+        return _tx.AddOrUpdate(id, _ => tx, (_, tx) => { tx.GetOrderContext().Update(order); return tx; }); // Sometimes order event arrives first
     }
 
     void OnOrderChanged(object sender, BfxOrderChangedEventArgs e) => OrderChanged?.Invoke(sender, e);

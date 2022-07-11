@@ -34,6 +34,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TradingApiTests", "Tests\Tr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RealtimeApiTests", "Tests\RealtimeApiTests\RealtimeApiTests.csproj", "{305664A6-4343-44AF-B9D9-15A700D6DFD6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BitFlyerDotNet.DataSource", "BitFlyerDotNet.DataSource", "{D1BF4DCA-E4C9-4660-8586-66A3AB0F0F4F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Ad-Hoc|Any CPU = Ad-Hoc|Any CPU

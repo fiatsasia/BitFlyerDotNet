@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.Trading;
 
-public class BfxOrderStatus
+public class BfxOrderContext
 {
     #region Order informations
     public string ProductCode { get; }
@@ -20,11 +20,11 @@ public class BfxOrderStatus
     public decimal? TrailOffset { get; private set; }
     public int? MinuteToExpire { get; private set; }
     public BfTimeInForce? TimeInForce { get; private set; }
-    public ReadOnlyCollection<BfxOrderStatus> Children => Array.AsReadOnly(_children);
+    public ReadOnlyCollection<BfxOrderContext> Children => Array.AsReadOnly(_children);
     #endregion Order informations
 
     #region Order management info
-    public string? OrderAcceptanceId { get; internal set; }
+    public string? OrderAcceptanceId { get; private set; }
     public string? OrderId { get; private set; }
     public DateTime? OrderDate { get; private set; }
     public DateTime? ExpireDate { get; private set; }
@@ -41,14 +41,40 @@ public class BfxOrderStatus
     public string? OrderFailedReason { get; protected set; }       // EventType = OrderFailed
 
     ConcurrentDictionary<long, BfxExecution> _execs = new();
-    BfxOrderStatus[] _children = new BfxOrderStatus[0];
+    BfxOrderContext[] _children = new BfxOrderContext[0];
 
-    internal BfxOrderStatus(string productCode)
+    public BfxOrderContext(string productCode)
     {
         ProductCode = productCode;
     }
 
-    internal void Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
+    public BfxOrderContext OrderAccepted(string acceptanceId)
+    {
+        OrderAcceptanceId = acceptanceId;
+        return this;
+    }
+
+    BfxOrderContext Update(BfParentOrderDetailStatusParameter order)
+    {
+        OrderType = order.ConditionType;
+        Side = order.Side;
+        OrderSize = order.Size;
+        if (OrderType == BfOrderType.Limit || OrderType == BfOrderType.StopLimit)
+        {
+            OrderPrice = order.Price;
+        }
+        if (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit)
+        {
+            TriggerPrice = order.TriggerPrice;
+        }
+        if (OrderType == BfOrderType.Trail)
+        {
+            TrailOffset = order.Offset;
+        }
+        return this;
+    }
+
+    public BfxOrderContext Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
     {
         OrderAcceptanceId = status.ParentOrderAcceptanceId;
         PagingId = status.PagingId;
@@ -68,13 +94,26 @@ public class BfxOrderStatus
         {
             if (_children[index] == null)
             {
-                _children[index] = new BfxOrderStatus(ProductCode);
+                _children[index] = new BfxOrderContext(ProductCode);
             }
             _children[index].Update(detail.Parameters[index]);
         }
+
+        return this;
     }
 
-    internal void Update(BfParentOrder order)
+    BfxOrderContext Update(BfParentOrderParameter order)
+    {
+        OrderType = order.ConditionType;
+        Side = order.Side;
+        OrderPrice = order.Price;
+        OrderSize = order.Size;
+        TriggerPrice = order.TriggerPrice;
+        TrailOffset = order.Offset;
+        return this;
+    }
+
+    public BfxOrderContext Update(BfParentOrder order)
     {
         OrderType = order.OrderMethod;
         MinuteToExpire = order.MinuteToExpire;
@@ -88,18 +127,17 @@ public class BfxOrderStatus
         {
             if (_children[index] == null)
             {
-                _children[index] = new BfxOrderStatus(ProductCode);
+                _children[index] = new BfxOrderContext(ProductCode);
             }
             _children[index].Update(order.Parameters[index]);
         }
+        return this;
     }
 
-    internal void Update(BfParentOrderEvent e)
+    public BfxOrderContext Update(BfParentOrderEvent e)
     {
         OrderId = e.ParentOrderId;
         OrderAcceptanceId = e.ParentOrderAcceptanceId;
-
-        OrderState = BfOrderState.Active;
 
         switch (e.EventType)
         {
@@ -123,7 +161,7 @@ public class BfxOrderStatus
                     if (_children.Length <= e.ChildOrderIndex)
                     {
                         Array.Resize(ref _children, e.ChildOrderIndex.Value + 1);
-                        _children[e.ChildOrderIndex.Value] = new BfxOrderStatus(ProductCode);
+                        _children[e.ChildOrderIndex.Value] = new BfxOrderContext(ProductCode);
                     }
                     var child = _children[e.ChildOrderIndex.Value];
                     child.OrderType = e.ChildOrderType.Value;
@@ -141,6 +179,10 @@ public class BfxOrderStatus
                     var child = _children[e.ChildOrderIndex.Value];
                     child.OrderAcceptanceId = e.ChildOrderAcceptanceId;
                     child.OrderState = BfOrderState.Completed;
+                    if (_children.All(c => c.OrderState == BfOrderState.Completed))
+                    {
+                        OrderState = BfOrderState.Completed;
+                    }
                 }
                 break;
 
@@ -151,52 +193,22 @@ public class BfxOrderStatus
             default:
                 throw new ArgumentException();
         }
+
+        return this;
     }
 
-    internal void Update(BfParentOrderParameter order)
+    public BfxOrderContext Update(BfChildOrder order)
     {
-        OrderType = order.ConditionType;
+        OrderType = order.ChildOrderType;
         Side = order.Side;
         OrderPrice = order.Price;
         OrderSize = order.Size;
-        TriggerPrice = order.TriggerPrice;
-        TrailOffset = order.Offset;
+        MinuteToExpire = order.MinuteToExpire;
+        TimeInForce = order.TimeInForce;
+        return this;
     }
 
-    internal void Update(BfParentOrderDetailStatusParameter order)
-    {
-        OrderType = order.ConditionType;
-        Side = order.Side;
-        OrderSize = order.Size;
-        if (OrderType == BfOrderType.Limit || OrderType == BfOrderType.StopLimit)
-        {
-            OrderPrice = order.Price;
-        }
-        if (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit)
-        {
-            TriggerPrice = order.TriggerPrice;
-        }
-        if (OrderType == BfOrderType.Trail)
-        {
-            TrailOffset = order.Offset;
-        }
-    }
-
-    internal void UpdateChild(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
-    {
-        var child = Children.FirstOrDefault(e => (
-            e.OrderType == status.ChildOrderType &&
-            e.Side == status.Side &&
-            e.OrderSize == status.Size &&
-            e.OrderPrice == status.Price
-        ));
-        if (child != null)
-        {
-            child.Update(status, execs);
-        }
-    }
-
-    public void Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+    public BfxOrderContext Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
     {
         OrderAcceptanceId = status.ChildOrderAcceptanceId;
         PagingId = status.PagingId;
@@ -218,9 +230,26 @@ public class BfxOrderStatus
         {
             _execs.GetOrAdd(exec.ExecutionId, _ => new BfxExecution(exec));
         }
+
+        return this;
     }
 
-    public void Update(BfChildOrderEvent e)
+    public BfxOrderContext UpdateChild(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+    {
+        var index = Array.FindIndex(_children, e => e.OrderAcceptanceId == status.ChildOrderAcceptanceId);
+        if (index == -1)
+        {
+            index = Array.FindIndex(_children, e => (e.OrderType == status.ChildOrderType && e.Side == status.Side && e.OrderSize == status.Size && e.OrderPrice == status.Price));
+        }
+
+        if (index >= 0)
+        {
+            _children[index].Update(status, execs);
+        }
+        return this;
+    }
+
+    public BfxOrderContext Update(BfChildOrderEvent e)
     {
         OrderAcceptanceId = e.ChildOrderAcceptanceId;
         OrderId = e.ChildOrderId;
@@ -264,5 +293,22 @@ public class BfxOrderStatus
             default:
                 throw new ArgumentException();
         };
+
+        return this;
+    }
+
+    public BfxOrderContext UpdateChild(BfChildOrderEvent e)
+    {
+        var index = Array.FindIndex(_children, c => c.OrderAcceptanceId == e.ChildOrderAcceptanceId);
+        if (index == -1)
+        {
+            index = Array.FindIndex(_children, c => (c.OrderType == e.ChildOrderType && c.Side == e.Side && c.OrderSize == e.Size && c.OrderPrice == e.Price));
+        }
+
+        if (index >= 0)
+        {
+            _children[index].Update(e);
+        }
+        return this;
     }
 }

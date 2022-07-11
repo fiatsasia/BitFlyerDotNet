@@ -28,7 +28,7 @@ public class BfxOrder
 
     BfxOrder[] _children;
 
-    public BfxOrder(BfxOrderStatus os)
+    public BfxOrder(BfxOrderContext os)
     {
         ProductCode = os.ProductCode;
 
@@ -63,7 +63,7 @@ public class BfxOrder
         }
     }
 
-    void SetCommonPart(BfxOrderStatus os)
+    void SetCommonPart(BfxOrderContext os)
     {
         OrderType = os.OrderType;
         OrderAcceptanceId = os.OrderAcceptanceId;
@@ -73,7 +73,7 @@ public class BfxOrder
         OrderState = os.OrderState;
     }
 
-    void SetIndividualPart(BfxOrderStatus os)
+    void SetIndividualPart(BfxOrderContext os)
     {
         Side = os.Side;
         OrderSize = os.OrderSize;

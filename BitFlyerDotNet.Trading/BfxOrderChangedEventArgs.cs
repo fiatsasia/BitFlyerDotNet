@@ -14,13 +14,13 @@ public class BfxOrderChangedEventArgs : EventArgs
     public DateTime Time { get; internal set; }
     public BfxOrder Order { get; }
 
-    public BfxOrderChangedEventArgs(BfxOrderEventType eventType, BfxOrderStatus status)
+    public BfxOrderChangedEventArgs(BfxOrderEventType eventType, BfxOrderContext status)
     {
         EventType = eventType;
         Order = new BfxOrder(status);
     }
 
-    public BfxOrderChangedEventArgs(BfChildOrderEvent e, BfxOrderStatus status)
+    public BfxOrderChangedEventArgs(BfChildOrderEvent e, BfxOrderContext status)
     {
         EventType = e.EventType switch
         {
@@ -38,7 +38,7 @@ public class BfxOrderChangedEventArgs : EventArgs
         Order = new BfxOrder(status);
     }
 
-    public BfxOrderChangedEventArgs(BfParentOrderEvent e, BfxOrderStatus status)
+    public BfxOrderChangedEventArgs(BfParentOrderEvent e, BfxOrderContext status)
     {
         EventType = e.EventType switch
         {

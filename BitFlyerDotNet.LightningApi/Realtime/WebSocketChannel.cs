@@ -29,7 +29,7 @@ public class WebSocketChannel : IDisposable
     Timer _reconnectionTimer;
     AutoResetEvent _openedEvent = new (false);
     ConcurrentDictionary<string, IRealtimeSource> _webSocketSources = new();
-    CancellationToken _ct = new();
+    CancellationTokenSource _cts = new();
     string _uri;
     string _apiKey;
     string _apiSecret;
@@ -66,7 +66,7 @@ public class WebSocketChannel : IDisposable
     public void Dispose()
     {
         Log.Debug($"{nameof(WebSocketChannel)} disposing...");
-        _ct.ThrowIfCancellationRequested();
+        _cts.Cancel();
         if (_receiveTask != null)
         {
             Task.WaitAll(_receiveTask);
@@ -128,7 +128,7 @@ public class WebSocketChannel : IDisposable
         {
             try
             {
-                var length = await _istream.ReadAsync(buffer, 0, buffer.Length, _ct);
+                var length = await _istream.ReadAsync(buffer, 0, buffer.Length, _cts.Token);
                 if (length == 0)
                 {
                     Log.Warn("WebSocket ReadAsync respond empty. Disconnected from client or probably disconnected from the server.");
@@ -136,7 +136,7 @@ public class WebSocketChannel : IDisposable
                     return; // Thread will be restarted.
                 }
 
-                if (_ct.IsCancellationRequested)
+                if (_cts.IsCancellationRequested)
                 {
                     return;
                 }
@@ -299,7 +299,7 @@ public class WebSocketChannel : IDisposable
                 break;
 
             case WebSocketState.Aborted:
-                _ct.ThrowIfCancellationRequested();
+                _cts.Cancel();
                 await _socket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
                 await TryOpenAsync();
                 break;

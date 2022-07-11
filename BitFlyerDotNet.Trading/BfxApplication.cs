@@ -20,6 +20,7 @@ public class BfxApplication : IDisposable
     RealtimeSourceFactory _rts;
     Dictionary<string, BfxMarket> _markets = new();
     Dictionary<string, BfxMarketDataSource> _mds = new();
+    BfxPrivateDataSource _pds;
     BfxPositionManager _positions = new();
     #endregion Properties and fields
 
@@ -37,6 +38,7 @@ public class BfxApplication : IDisposable
             _client = new BitFlyerClient().AddTo(_disposables);
             _rts = new RealtimeSourceFactory();
         }
+        _pds = new(_client);
         VerifyChildOrder = VerifyOrder;
         VerifyParentOrder = VerifyOrder;
     }
@@ -62,7 +64,7 @@ public class BfxApplication : IDisposable
 
         foreach (var productCode in availableMarkets.Select(e => !string.IsNullOrEmpty(e.Alias) ? e.Alias : e.ProductCode))
         {
-            var market = new BfxMarket(_client, productCode, Config);
+            var market = new BfxMarket(_client, productCode, _pds, Config);
             market.OrderChanged += (sender, e) => OrderChanged?.Invoke(sender, e);
             _markets[productCode] = market;
             _mds[productCode] = new BfxMarketDataSource(productCode, _client, _rts);
@@ -222,7 +224,8 @@ public class BfxApplication : IDisposable
         }
 
         VerifyChildOrder.Invoke(order);
-        return await _markets[order.ProductCode].PlaceOrderAsync(order);
+        var tx = await _markets[order.ProductCode].PlaceOrderAsync(order);
+        return tx;
     }
 
     public async Task<BfxTransaction?> PlaceOrderAsync(BfParentOrder order)
@@ -251,73 +254,6 @@ public class BfxApplication : IDisposable
 
         return _mds[productCode];
     }
-
-    private async IAsyncEnumerable<BfxOrderStatus> GetOrdersAsync(string productCode, BfOrderState orderState, int count, bool linkChildToParent, Func<BfxOrderStatus, bool> predicate)
-    {
-#pragma warning disable CS8604
-        var trades = new Dictionary<string, BfxOrderStatus>();
-
-        // Get child orders
-        await foreach (var childOrder in _client.GetChildOrdersAsync(productCode, orderState, count, 0, e => true))
-        {
-            var trade = new BfxOrderStatus(productCode);
-            var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: childOrder.ChildOrderId);
-            trade.Update(childOrder, execs);
-            if (!predicate(trade))
-            {
-                break;
-            }
-            trades.Add(trade.OrderAcceptanceId, trade);
-        }
-
-        // Get parent orders
-        await foreach (var parentOrder in _client.GetParentOrdersAsync(productCode, orderState, count, 0, e => true))
-        {
-            var trade = new BfxOrderStatus(productCode);
-            var parentOrderDetail = await _client.GetParentOrderAsync(productCode, parentOrderId: parentOrder.ParentOrderId);
-            trade.Update(parentOrder, parentOrderDetail);
-            if (!predicate(trade))
-            {
-                break;
-            }
-            trades.Add(trade.OrderAcceptanceId, trade);
-        }
-
-        // Link child to parent
-        if (linkChildToParent)
-        {
-            foreach (var parentOrder in trades.Values.Where(e => (e.OrderType != BfOrderType.Market && e.OrderType != BfOrderType.Limit)))
-            {
-                foreach (var childOrder in await _client.GetChildOrdersAsync(productCode, parentOrderId: parentOrder.OrderId))
-                {
-                    var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: childOrder.ChildOrderId);
-                    trades[parentOrder.OrderAcceptanceId].UpdateChild(childOrder, execs);
-                    trades.Remove(childOrder.ChildOrderAcceptanceId);
-                }
-            }
-        }
-
-        foreach (var trade in trades.Values)
-        {
-            yield return trade;
-        }
-#pragma warning restore CS8604
-    }
-
-    public async IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(string productCode, int count)
-    {
-        if (!_client.IsAuthenticated)
-        {
-            throw new BitFlyerUnauthorizedException();
-        }
-
-        await foreach (var trade in GetOrdersAsync(productCode, BfOrderState.Unknown, count, true, e => true))
-        {
-            yield return new BfxOrder(trade);
-        }
-    }
-
-    public IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(int count) => GetRecentOrdersAsync(Config.DefaultProductCode, count);
-
+    public BfxPrivateDataSource GetPrivateDataSource() => _pds;
     public IEnumerable<BfxPosition> GetActivePositions() => _positions.GetActivePositions();
 }
