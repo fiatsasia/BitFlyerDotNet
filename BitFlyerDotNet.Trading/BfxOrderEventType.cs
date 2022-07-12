@@ -22,4 +22,7 @@ public enum BfxOrderEventType
     CancelFailed,
     Expired,
     ChildOrderChanged,
+    CancelAccepted,
+    CancelRejected,
+    CancelIgnored,
 }

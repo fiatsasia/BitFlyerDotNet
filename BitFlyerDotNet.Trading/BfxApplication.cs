@@ -211,7 +211,7 @@ public class BfxApplication : IDisposable
     public Action<BfChildOrder> VerifyChildOrder { get; set; }
     public Action<BfParentOrder> VerifyParentOrder { get; set; }
 
-    public async Task<BfxTransaction?> PlaceOrderAsync(BfChildOrder order)
+    public async Task<string> PlaceOrderAsync(BfChildOrder order, CancellationTokenSource cts = default)
     {
         if (!IsMarketInitialized(order.ProductCode))
         {
@@ -224,11 +224,10 @@ public class BfxApplication : IDisposable
         }
 
         VerifyChildOrder.Invoke(order);
-        var tx = await _markets[order.ProductCode].PlaceOrderAsync(order);
-        return tx;
+        return await _markets[order.ProductCode].PlaceOrderAsync(order, cts);
     }
 
-    public async Task<BfxTransaction?> PlaceOrderAsync(BfParentOrder order)
+    public async Task<string> PlaceOrderAsync(BfParentOrder order, CancellationTokenSource cts = default)
     {
         if (!IsMarketInitialized(order.Parameters[0].ProductCode))
         {
@@ -241,7 +240,22 @@ public class BfxApplication : IDisposable
         }
 
         VerifyParentOrder.Invoke(order);
-        return await _markets[order.Parameters[0].ProductCode].PlaceOrderAsync(order);
+        return await _markets[order.Parameters[0].ProductCode].PlaceOrderAsync(order, cts);
+    }
+
+    public async Task CancelOrderAsync(string productCode, string acceptanceId, CancellationTokenSource cts = default)
+    {
+        if (!IsMarketInitialized(productCode))
+        {
+            await InitializeMarketAsync(productCode);
+        }
+
+        if (!IsMarketDataSourceInitialized(productCode))
+        {
+            await InitializeMarketDataSourceAsync(productCode); // To subscribe order events
+        }
+
+        await _markets[productCode].CancelOrderAsync(acceptanceId, cts);
     }
     #endregion Ordering
 

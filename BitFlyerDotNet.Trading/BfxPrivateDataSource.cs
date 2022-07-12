@@ -32,7 +32,7 @@ public class BfxPrivateDataSource
     {
         foreach (var ctx in _ctx.Values.ToArray())
         {
-            if (ctx.Children.Count == 0)
+            if (!ctx.HasChildren)
             {
                 continue;
             }

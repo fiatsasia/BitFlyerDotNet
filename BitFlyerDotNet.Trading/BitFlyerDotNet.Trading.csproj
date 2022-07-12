@@ -48,4 +48,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Ulid" Version="1.2.6" />
+  </ItemGroup>
+
 </Project>

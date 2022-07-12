@@ -40,6 +40,8 @@ public class BfxOrderContext
     public decimal? TotalCommission { get; protected set; }
     public string? OrderFailedReason { get; protected set; }       // EventType = OrderFailed
 
+    public bool HasChildren => _children.Length > 0;
+
     ConcurrentDictionary<long, BfxExecution> _execs = new();
     BfxOrderContext[] _children = new BfxOrderContext[0];
 

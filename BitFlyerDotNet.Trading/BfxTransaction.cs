@@ -8,13 +8,14 @@
 
 namespace BitFlyerDotNet.Trading;
 
-public class BfxTransaction
+class BfxTransaction
 {
+    public Ulid Id { get; } = Ulid.NewUlid();
     public BfxOrderContext GetOrderContext() => _ctx;
     public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
 
     BitFlyerClient _client;
-    CancellationTokenSource _cts = new CancellationTokenSource();
+    CancellationTokenSource _ctsOrder;
     BfxOrderContext _ctx;
     BfxConfiguration _config;
 
@@ -26,16 +27,17 @@ public class BfxTransaction
     }
 
     #region Child order
-    public async Task<string> PlaceOrderAsync(BfChildOrder order)
+    public async Task<string> PlaceOrderAsync(BfChildOrder order, CancellationTokenSource cts)
     {
+        _ctsOrder = (cts != default) ? cts : new CancellationTokenSource();
         for (var retry = 0; retry <= _config.OrderRetryMax; retry++)
         {
-            if (_cts.IsCancellationRequested)
+            if (_ctsOrder.IsCancellationRequested)
             {
                 Log.Debug("SendChildOrder - canceled");
                 return string.Empty;
             }
-            var resp = await _client.SendChildOrderAsync(order, _cts.Token);
+            var resp = await _client.SendChildOrderAsync(order, _ctsOrder.Token);
             if (!resp.IsError)
             {
                 var id = resp.GetContent().ChildOrderAcceptanceId;
@@ -45,7 +47,7 @@ public class BfxTransaction
             }
 
             Log.Warn($"SendChildOrder failed: {resp.StatusCode} {resp.ErrorMessage}");
-            if (_cts.IsCancellationRequested)
+            if (_ctsOrder.IsCancellationRequested)
             {
                 Log.Debug("SendChildOrder - canceled");
                 return string.Empty;
@@ -60,6 +62,27 @@ public class BfxTransaction
         return string.Empty;
     }
 
+    public async Task CancelChildOrderAsync(CancellationTokenSource cts)
+    {
+        _ctsOrder.Cancel();
+        if (string.IsNullOrEmpty(_ctx.OrderAcceptanceId) || _ctx.OrderState != BfOrderState.Active)
+        {
+            Log.Debug("Cancel order requested but not active");
+            OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.CancelIgnored, _ctx));
+            return;
+        }
+
+        var resp = await _client.CancelChildOrderAsync(_ctx.ProductCode, string.Empty, _ctx.OrderAcceptanceId, cts?.Token ?? CancellationToken.None);
+        if (resp.IsError)
+        {
+            OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.CancelAccepted, _ctx));
+        }
+        else
+        {
+            OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.CancelRejected, _ctx));
+        }
+    }
+
     internal BfxTransaction OnChildOrderEvent(BfChildOrderEvent e)
     {
         OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(e, _ctx));
@@ -69,16 +92,17 @@ public class BfxTransaction
 
     #region Parent order
     // - 経過時間でリトライ終了のオプション
-    public async Task<string> PlaceOrdertAsync(BfParentOrder order)
+    public async Task<string> PlaceOrdertAsync(BfParentOrder order, CancellationTokenSource cts)
     {
+        _ctsOrder = (cts != default) ? cts : new CancellationTokenSource();
         for (var retry = 0; retry <= _config.OrderRetryMax; retry++)
         {
-            if (_cts.IsCancellationRequested)
+            if (_ctsOrder.IsCancellationRequested)
             {
                 Log.Debug("SendParentOrder - canceled");
                 return string.Empty;
             }
-            var resp = await _client.SendParentOrderAsync(order, _cts.Token);
+            var resp = await _client.SendParentOrderAsync(order, _ctsOrder.Token);
             if (!resp.IsError)
             {
                 var id = resp.GetContent().ParentOrderAcceptanceId;
@@ -88,7 +112,7 @@ public class BfxTransaction
             }
 
             Log.Warn($"SendParentOrder failed: {resp.StatusCode} {resp.ErrorMessage}");
-            if (_cts.IsCancellationRequested)
+            if (_ctsOrder.IsCancellationRequested)
             {
                 Log.Debug("SendParentOrder - canceled");
                 return string.Empty;
@@ -103,34 +127,31 @@ public class BfxTransaction
         return string.Empty;
     }
 
+    public async Task CancelParentOrderAsync(CancellationTokenSource cts)
+    {
+        _ctsOrder.Cancel();
+        if (string.IsNullOrEmpty(_ctx.OrderAcceptanceId) || _ctx.OrderState != BfOrderState.Active)
+        {
+            Log.Debug("Cancel order requested but not active");
+            OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.CancelIgnored, _ctx));
+            return;
+        }
+
+        var resp = await _client.CancelParentOrderAsync(_ctx.ProductCode, string.Empty, _ctx.OrderAcceptanceId, cts?.Token ?? CancellationToken.None);
+        if (resp.IsError)
+        {
+            OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.CancelAccepted, _ctx));
+        }
+        else
+        {
+            OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.CancelRejected, _ctx));
+        }
+    }
+
     internal BfxTransaction OnParentOrderEvent(BfParentOrderEvent e)
     {
         OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(e, _ctx));
         return this;
     }
     #endregion Parent order
-
-    protected async Task CancelOrderAsync()
-    {
-        _cts.Cancel();
-
-        if (_ctx.OrderState == BfOrderState.Active)
-        {
-            _cts.Token.ThrowIfCancellationRequested();
-        }
-
-        try
-        {
-            var resp = await _client.CancelParentOrderAsync(_ctx.ProductCode, string.Empty, _ctx.OrderAcceptanceId, _cts.Token);
-            if (!resp.IsError)
-            {
-            }
-            else
-            {
-            }
-        }
-        catch (OperationCanceledException ex)
-        {
-        }
-    }
 }

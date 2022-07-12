@@ -18,7 +18,8 @@ public class BfxMarket : IDisposable
     BfxPrivateDataSource _pds;
     BfxConfiguration _config;
 
-    ConcurrentDictionary<string, BfxTransaction> _tx = new();
+    ConcurrentDictionary<Ulid, BfxTransaction> _tx = new();
+    ConcurrentDictionary<string, Ulid> _oid2tid = new();
 
     public BfxMarket(BitFlyerClient client, string productCode, BfxPrivateDataSource pds, BfxConfiguration config)
     {
@@ -43,25 +44,23 @@ public class BfxMarket : IDisposable
 
         await foreach (var ctx in _pds.GetActiveOrders(_productCode))
         {
-            _tx.TryAdd(ctx.OrderAcceptanceId, new BfxTransaction(_client, ctx, _config));
+            var tx = new BfxTransaction(_client, ctx, _config);
+            _oid2tid[ctx.OrderAcceptanceId] = tx.Id;
+            _tx.TryAdd(tx.Id, tx);
         }
     }
 
     internal void OnChildOrderEvent(BfChildOrderEvent e)
     {
-        var tx = _tx.AddOrUpdate(e.ChildOrderAcceptanceId,
-            id =>
-            {
-                var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, id).Update(e), _config);
-                tx.OrderChanged += OnOrderChanged;
-                return tx.OnChildOrderEvent(e);
-            },
-            (_, tx) =>
-            {
-                tx.GetOrderContext().Update(e);
-                return tx.OnChildOrderEvent(e);
-            }
-        );
+        var tid = _oid2tid.GetOrAdd(e.ChildOrderAcceptanceId, _ =>
+        {
+            var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, e.ChildOrderAcceptanceId), _config);
+            tx.OrderChanged += OnOrderChanged;
+            return tx.Id;
+        });
+        var tx = _tx[tid];
+        tx.GetOrderContext().Update(e);
+        tx.OnChildOrderEvent(e);
 
         if (_pds.FindParent(e.ChildOrderAcceptanceId, out var parent))
         {
@@ -70,57 +69,73 @@ public class BfxMarket : IDisposable
 
         if (tx.GetOrderContext().OrderState != BfOrderState.Active)
         {
-            _tx.TryRemove(e.ChildOrderAcceptanceId, out tx);
+            _oid2tid.TryRemove(e.ChildOrderAcceptanceId, out _);
+            _tx.TryRemove(tid, out tx);
             Log.Debug($"Transaction cid:{e.ChildOrderAcceptanceId} closed");
         }
     }
 
     internal void OnParentOrderEvent(BfParentOrderEvent e)
     {
-        var tx = _tx.AddOrUpdate(e.ParentOrderAcceptanceId,
-            id =>
-            {
-                var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, id).Update(e), _config);
-                tx.OrderChanged += OnOrderChanged;
-                return tx.OnParentOrderEvent(e);
-            },
-            (_, tx) =>
-            {
-                tx.GetOrderContext().Update(e);
-                return tx.OnParentOrderEvent(e);
-            }
-        );
+        var tid = _oid2tid.GetOrAdd(e.ParentOrderAcceptanceId, _ =>
+        {
+            var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, e.ParentOrderAcceptanceId), _config);
+            tx.OrderChanged += OnOrderChanged;
+            return tx.Id;
+        });
+        var tx = _tx[tid];
+        tx.GetOrderContext().Update(e);
+        tx.OnParentOrderEvent(e);
+
         if (tx.GetOrderContext().OrderState != BfOrderState.Active)
         {
-            _tx.TryRemove(e.ParentOrderAcceptanceId, out tx);
+            _oid2tid.TryRemove(e.ParentOrderAcceptanceId, out _);
+            _tx.TryRemove(tid, out tx);
             Log.Debug($"Transaction pid:{e.ParentOrderAcceptanceId} closed");
         }
     }
 
-    public async Task<BfxTransaction?> PlaceOrderAsync(BfChildOrder order)
+    public async Task<string> PlaceOrderAsync(BfChildOrder order, CancellationTokenSource cts)
     {
         // Sometimes child order event arraives before send order process completes.
         var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode).Update(order), _config);
         tx.OrderChanged += OnOrderChanged;
-        var id = await tx.PlaceOrderAsync(order);
-        if (string.IsNullOrEmpty(id))
+        var oid = await tx.PlaceOrderAsync(order, cts);
+        if (string.IsNullOrEmpty(oid))
         {
             return default;
         }
-        return _tx.AddOrUpdate(id, _ => tx, (_, tx) => { tx.GetOrderContext().Update(order); return tx; }); // Sometimes order event arrives first
+        var tid = _oid2tid.GetOrAdd(oid, _ => { _tx.TryAdd(tx.Id, tx); return tx.Id; });
+        _tx[tid].GetOrderContext().Update(order);
+        return oid;
     }
 
-    public async Task<BfxTransaction?> PlaceOrderAsync(BfParentOrder order)
+    public async Task<string> PlaceOrderAsync(BfParentOrder order, CancellationTokenSource cts)
     {
         // Sometimes parent order event arraives before send order process completes.
         var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode).Update(order), _config);
         tx.OrderChanged += OnOrderChanged;
-        var id = await tx.PlaceOrdertAsync(order);
-        if (string.IsNullOrEmpty(id))
+        var oid = await tx.PlaceOrdertAsync(order, cts);
+        if (string.IsNullOrEmpty(oid))
         {
             return default;
         }
-        return _tx.AddOrUpdate(id, _ => tx, (_, tx) => { tx.GetOrderContext().Update(order); return tx; }); // Sometimes order event arrives first
+        var tid = _oid2tid.GetOrAdd(oid, _ => { _tx.TryAdd(tx.Id, tx); return tx.Id; });
+        _tx[tid].GetOrderContext().Update(order);
+        return oid;
+    }
+
+    public async Task CancelOrderAsync(string acceptanceId, CancellationTokenSource cts)
+    {
+        var tx = _tx[_oid2tid[acceptanceId]];
+        if (tx.GetOrderContext().HasChildren)
+        {
+            await tx.CancelParentOrderAsync(cts);
+        }
+        else
+        {
+            await tx.CancelChildOrderAsync(cts);
+        }
     }
 
     void OnOrderChanged(object sender, BfxOrderChangedEventArgs e) => OrderChanged?.Invoke(sender, e);
