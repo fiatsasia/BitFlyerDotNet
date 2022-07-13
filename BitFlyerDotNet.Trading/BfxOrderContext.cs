@@ -40,7 +40,11 @@ public class BfxOrderContext
     public decimal? TotalCommission { get; protected set; }
     public string? OrderFailedReason { get; protected set; }       // EventType = OrderFailed
 
+    public string? ParentOrderAcceptanceId { get; protected set; }
+
     public bool HasChildren => _children.Length > 0;
+    public bool HasParent => !string.IsNullOrEmpty(ParentOrderAcceptanceId);
+    public bool IsActive => !string.IsNullOrEmpty(OrderAcceptanceId) && OrderState.HasValue && OrderState.Value == BfOrderState.Active;
 
     ConcurrentDictionary<long, BfxExecution> _execs = new();
     BfxOrderContext[] _children = new BfxOrderContext[0];
@@ -53,6 +57,12 @@ public class BfxOrderContext
     public BfxOrderContext OrderAccepted(string acceptanceId)
     {
         OrderAcceptanceId = acceptanceId;
+        return this;
+    }
+
+    public BfxOrderContext SetParent(string parentOrderAcceptanceId)
+    {
+        ParentOrderAcceptanceId = parentOrderAcceptanceId;
         return this;
     }
 

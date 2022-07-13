@@ -268,6 +268,9 @@ public class BfxApplication : IDisposable
 
         return _mds[productCode];
     }
-    public BfxPrivateDataSource GetPrivateDataSource() => _pds;
+    public IAsyncEnumerable<BfxOrder> GetActiveOrdersAsync(string productCode)
+        => _pds.GetOrderContextsAsync(productCode).Where(e => e.IsActive).Select(e => new BfxOrder(e));
+    public IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(string productCode, int count)
+        => _pds.GetOrderContextsAsync(productCode, BfOrderState.Unknown, count).Where(e => !e.HasParent).Select(e => new BfxOrder(e));
     public IEnumerable<BfxPosition> GetActivePositions() => _positions.GetActivePositions();
 }

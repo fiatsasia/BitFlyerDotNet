@@ -47,10 +47,13 @@ public class BfxPrivateDataSource
         return false;
     }
 
-    public async virtual IAsyncEnumerable<BfxOrderContext> GetActiveOrders(string productCode)
+    public virtual IAsyncEnumerable<BfxOrderContext> GetOrderContextsAsync(string productCode)
+        => _ctx.Values.ToList().Where(e => e.ProductCode == productCode).ToAsyncEnumerable();
+
+    public async IAsyncEnumerable<BfxOrderContext> GetOrderContextsAsync(string productCode, BfOrderState orderState, int count)
     {
-        var childOrders = await _client.GetChildOrdersAsync(productCode, orderState: BfOrderState.Active);
-        foreach (var order in childOrders)
+        // Get child active orders
+        await foreach (var order in _client.GetChildOrdersAsync(productCode, orderState, count, 0, e => true))
         {
             var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: order.ChildOrderId);
             yield return _ctx.AddOrUpdate(order.ChildOrderAcceptanceId,
@@ -59,7 +62,8 @@ public class BfxPrivateDataSource
             );
         }
 
-        await foreach (var parentOrder in _client.GetParentOrdersAsync(productCode, BfOrderState.Active, 0, 0, e => true))
+        // Get parent orders
+        await foreach (var parentOrder in _client.GetParentOrdersAsync(productCode, orderState, count, 0, e => true))
         {
             var parentOrderDetail = await _client.GetParentOrderAsync(productCode, parentOrderId: parentOrder.ParentOrderId);
             var pctx = _ctx.AddOrUpdate(parentOrder.ParentOrderAcceptanceId,
@@ -71,76 +75,11 @@ public class BfxPrivateDataSource
                 var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: childOrder.ChildOrderId);
                 pctx.UpdateChild(childOrder, execs);
                 _ctx.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
-                    _ => new BfxOrderContext(productCode).Update(childOrder, execs),
-                    (_, ctx) => ctx.Update(childOrder, execs)
+                    _ => new BfxOrderContext(productCode).Update(childOrder, execs).SetParent(pctx.OrderAcceptanceId),
+                    (_, ctx) => ctx.Update(childOrder, execs).SetParent(pctx.OrderAcceptanceId)
                 );
             }
             yield return pctx;
-        }
-    }
-
-    private async IAsyncEnumerable<BfxOrderContext> GetOrdersAsync(string productCode, BfOrderState orderState, int count, bool linkChildToParent, Func<BfxOrderContext, bool> predicate)
-    {
-#pragma warning disable CS8604
-        var ctxs = new Dictionary<string, BfxOrderContext>();
-
-        // Get child orders
-        await foreach (var childOrder in _client.GetChildOrdersAsync(productCode, orderState, count, 0, e => true))
-        {
-            var ctx = new BfxOrderContext(productCode);
-            var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: childOrder.ChildOrderId);
-            ctx.Update(childOrder, execs);
-            if (!predicate(ctx))
-            {
-                break;
-            }
-            ctxs.Add(ctx.OrderAcceptanceId, ctx);
-        }
-
-        // Get parent orders
-        await foreach (var parentOrder in _client.GetParentOrdersAsync(productCode, orderState, count, 0, e => true))
-        {
-            var ctx = new BfxOrderContext(productCode);
-            var parentOrderDetail = await _client.GetParentOrderAsync(productCode, parentOrderId: parentOrder.ParentOrderId);
-            ctx.Update(parentOrder, parentOrderDetail);
-            if (!predicate(ctx))
-            {
-                break;
-            }
-            ctxs.Add(ctx.OrderAcceptanceId, ctx);
-        }
-
-        // Link child to parent
-        if (linkChildToParent)
-        {
-            foreach (var parentOrder in ctxs.Values.Where(e => (e.OrderType != BfOrderType.Market && e.OrderType != BfOrderType.Limit)))
-            {
-                foreach (var childOrder in await _client.GetChildOrdersAsync(productCode, parentOrderId: parentOrder.OrderId))
-                {
-                    var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: childOrder.ChildOrderId);
-                    ctxs[parentOrder.OrderAcceptanceId].UpdateChild(childOrder, execs);
-                    ctxs.Remove(childOrder.ChildOrderAcceptanceId);
-                }
-            }
-        }
-
-        foreach (var trade in ctxs.Values)
-        {
-            yield return trade;
-        }
-#pragma warning restore CS8604
-    }
-
-    public async IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(string productCode, int count)
-    {
-        if (!_client.IsAuthenticated)
-        {
-            throw new BitFlyerUnauthorizedException();
-        }
-
-        await foreach (var trade in GetOrdersAsync(productCode, BfOrderState.Unknown, count, true, e => true))
-        {
-            yield return new BfxOrder(trade);
         }
     }
 }

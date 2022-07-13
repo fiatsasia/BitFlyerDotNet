@@ -52,8 +52,6 @@ partial class Program
             App.RealtimeSource.Channel.MessageSent += json => Console.WriteLine($"Socket message sent: {json}");
             App.RealtimeSource.Channel.MessageReceived += message => OnRealtimeMessageReceived(message);
 
-            var pds = App.GetPrivateDataSource();
-
             while (true)
             {
                 Console.WriteLine("===================================================================");
@@ -89,7 +87,7 @@ partial class Program
                             break;
 
                         case 'R':
-                            await foreach (var order in pds.GetRecentOrdersAsync(ProductCode, 20))
+                            await foreach (var order in App.GetRecentOrdersAsync(ProductCode, 20))
                             {
                                 PrintOrder(order);
                             }
@@ -145,13 +143,12 @@ partial class Program
         }
     }
 
-    static void CancelOrder()
+    static async Task CancelOrder()
     {
-        /*var tran = _transactions.Values.Where(e => e.IsCancelable).OrderBy(e => e.OpenTime).FirstOrDefault();
-        if (tran != null)
+        await foreach (var order in App.GetActiveOrdersAsync(ProductCode))
         {
-            tran.Cancel();
-        }*/
+            await App.CancelOrderAsync(ProductCode, order.OrderAcceptanceId);
+        }
     }
 
     static async void ClosePositions()

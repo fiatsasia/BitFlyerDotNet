@@ -42,7 +42,7 @@ public class BfxMarket : IDisposable
 
         IsInitialized = true;
 
-        await foreach (var ctx in _pds.GetActiveOrders(_productCode))
+        await foreach (var ctx in _pds.GetOrderContextsAsync(_productCode, BfOrderState.Active, 0))
         {
             var tx = new BfxTransaction(_client, ctx, _config);
             _oid2tid[ctx.OrderAcceptanceId] = tx.Id;
@@ -67,7 +67,7 @@ public class BfxMarket : IDisposable
             parent.UpdateChild(e);
         }
 
-        if (tx.GetOrderContext().OrderState != BfOrderState.Active)
+        if (!tx.GetOrderContext().IsActive)
         {
             _oid2tid.TryRemove(e.ChildOrderAcceptanceId, out _);
             _tx.TryRemove(tid, out tx);
@@ -87,7 +87,7 @@ public class BfxMarket : IDisposable
         tx.GetOrderContext().Update(e);
         tx.OnParentOrderEvent(e);
 
-        if (tx.GetOrderContext().OrderState != BfOrderState.Active)
+        if (!tx.GetOrderContext().IsActive)
         {
             _oid2tid.TryRemove(e.ParentOrderAcceptanceId, out _);
             _tx.TryRemove(tid, out tx);

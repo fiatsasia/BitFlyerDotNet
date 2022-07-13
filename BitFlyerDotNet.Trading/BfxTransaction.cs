@@ -65,7 +65,7 @@ class BfxTransaction
     public async Task CancelChildOrderAsync(CancellationTokenSource cts)
     {
         _ctsOrder.Cancel();
-        if (string.IsNullOrEmpty(_ctx.OrderAcceptanceId) || _ctx.OrderState != BfOrderState.Active)
+        if (!_ctx.IsActive)
         {
             Log.Debug("Cancel order requested but not active");
             OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.CancelIgnored, _ctx));
@@ -130,7 +130,7 @@ class BfxTransaction
     public async Task CancelParentOrderAsync(CancellationTokenSource cts)
     {
         _ctsOrder.Cancel();
-        if (string.IsNullOrEmpty(_ctx.OrderAcceptanceId) || _ctx.OrderState != BfOrderState.Active)
+        if (!_ctx.IsActive)
         {
             Log.Debug("Cancel order requested but not active");
             OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.CancelIgnored, _ctx));
