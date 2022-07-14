@@ -30,7 +30,6 @@ public class BfChildOrder
 
     [JsonConverter(typeof(StringEnumConverter))]
     public BfTimeInForce? TimeInForce { get; set; }
-    public bool ShouldSerializeTimeInForce() => (TimeInForce.HasValue && TimeInForce.Value != BfTimeInForce.NotSpecified); // default = GTC
 
     // This will be used order factory
     public static implicit operator BfParentOrderParameter(BfChildOrder order)
@@ -59,16 +58,6 @@ public partial class BitFlyerClient
         if (!request.ChildOrderType.IsChildOrderType())
         {
             throw new ArgumentException($"Invalid {nameof(BfChildOrder.ChildOrderType)} is {request.ChildOrderType}");
-        }
-
-        if (request.MinuteToExpire == 0 && Config.MinuteToExpire != 0)
-        {
-            request.MinuteToExpire = Config.MinuteToExpire;
-        }
-
-        if (request.TimeInForce == BfTimeInForce.NotSpecified && Config.TimeInForce != BfTimeInForce.NotSpecified)
-        {
-            request.TimeInForce = Config.TimeInForce;
         }
     }
 

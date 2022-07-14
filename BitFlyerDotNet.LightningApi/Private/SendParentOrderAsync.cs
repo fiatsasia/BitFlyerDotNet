@@ -44,7 +44,6 @@ public class BfParentOrder
 
     [JsonConverter(typeof(StringEnumConverter))]
     public BfTimeInForce? TimeInForce { get; set; }
-    public bool ShouldSerializeTimeInForce() => (TimeInForce.HasValue && TimeInForce.Value != BfTimeInForce.NotSpecified); // default = GTC
 
     public List<BfParentOrderParameter> Parameters { get; set; } = new ();
 
@@ -81,16 +80,6 @@ public partial class BitFlyerClient
             {
                 throw new ArgumentException();
             }
-        }
-
-        if (request.MinuteToExpire == 0 && Config.MinuteToExpire > 0)
-        {
-            request.MinuteToExpire = Config.MinuteToExpire;
-        }
-
-        if (request.TimeInForce == BfTimeInForce.NotSpecified && Config.TimeInForce != BfTimeInForce.NotSpecified)
-        {
-            request.TimeInForce = Config.TimeInForce;
         }
     }
 

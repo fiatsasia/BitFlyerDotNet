@@ -73,7 +73,6 @@ public class BfxApplication : IDisposable
         if (_client.IsAuthenticated)
         {
             _rts.GetParentOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnParentOrderEvent(e)).AddTo(_disposables);
-            _positions = new(await _client.GetPositionsAsync(BfProductCode.FX_BTC_JPY));
             _rts.GetChildOrderEventsSource().Subscribe(e =>
             {
                 _markets[e.ProductCode].OnChildOrderEvent(e);
@@ -120,6 +119,11 @@ public class BfxApplication : IDisposable
             await InitializeAsync();
         }
 
+        if (productCode == BfProductCode.FX_BTC_JPY)
+        {
+            _positions = new(await _client.GetPositionsAsync(BfProductCode.FX_BTC_JPY));
+        }
+
         if (!_markets[productCode].IsInitialized)
         {
             await _markets[productCode].InitializeAsync();
@@ -142,12 +146,9 @@ public class BfxApplication : IDisposable
     }
     #endregion Initialize and Finalize
 
-    #region Events
-    public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
-    public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;
-    #endregion Events
-
     #region Ordering
+    public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
+
     public void VerifyOrder(BfChildOrder order)
     {
         if (order.Size > Config.OrderSizeMax[order.ProductCode])
@@ -211,7 +212,7 @@ public class BfxApplication : IDisposable
     public Action<BfChildOrder> VerifyChildOrder { get; set; }
     public Action<BfParentOrder> VerifyParentOrder { get; set; }
 
-    public async Task<string> PlaceOrderAsync(BfChildOrder order, CancellationTokenSource cts = default)
+    public async Task<string> PlaceOrderAsync(BfChildOrder order, CancellationToken ct = default)
     {
         if (!IsMarketInitialized(order.ProductCode))
         {
@@ -224,10 +225,10 @@ public class BfxApplication : IDisposable
         }
 
         VerifyChildOrder.Invoke(order);
-        return await _markets[order.ProductCode].PlaceOrderAsync(order, cts);
+        return await _markets[order.ProductCode].PlaceOrderAsync(order, ct);
     }
 
-    public async Task<string> PlaceOrderAsync(BfParentOrder order, CancellationTokenSource cts = default)
+    public async Task<string> PlaceOrderAsync(BfParentOrder order, CancellationToken ct = default)
     {
         if (!IsMarketInitialized(order.Parameters[0].ProductCode))
         {
@@ -240,10 +241,10 @@ public class BfxApplication : IDisposable
         }
 
         VerifyParentOrder.Invoke(order);
-        return await _markets[order.Parameters[0].ProductCode].PlaceOrderAsync(order, cts);
+        return await _markets[order.Parameters[0].ProductCode].PlaceOrderAsync(order, ct);
     }
 
-    public async Task CancelOrderAsync(string productCode, string acceptanceId, CancellationTokenSource cts = default)
+    public async Task CancelOrderAsync(string productCode, string acceptanceId, CancellationToken ct = default)
     {
         if (!IsMarketInitialized(productCode))
         {
@@ -255,7 +256,7 @@ public class BfxApplication : IDisposable
             await InitializeMarketDataSourceAsync(productCode); // To subscribe order events
         }
 
-        await _markets[productCode].CancelOrderAsync(acceptanceId, cts);
+        await _markets[productCode].CancelOrderAsync(acceptanceId, ct);
     }
     #endregion Ordering
 
@@ -268,9 +269,15 @@ public class BfxApplication : IDisposable
 
         return _mds[productCode];
     }
+
     public IAsyncEnumerable<BfxOrder> GetActiveOrdersAsync(string productCode)
         => _pds.GetOrderContextsAsync(productCode).Where(e => e.IsActive).Select(e => new BfxOrder(e));
     public IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(string productCode, int count)
         => _pds.GetOrderContextsAsync(productCode, BfOrderState.Unknown, count).Where(e => !e.HasParent).Select(e => new BfxOrder(e));
+
+    #region Manage positions
+    public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;
+
     public IEnumerable<BfxPosition> GetActivePositions() => _positions.GetActivePositions();
+    #endregion Manage positions
 }

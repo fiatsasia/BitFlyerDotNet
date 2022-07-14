@@ -61,7 +61,7 @@ partial class Program
                         break;
 
                     case 'E':
-                        await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.Ticker.BestBid - UnexecutableGap, _orderSize, minuteToExpire: 1));
+                        await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.Ticker.BestBid - UnexecutableGap, _orderSize, minuteToExpire: TimeSpan.FromMinutes(1)));
                         break;
 
                     case 'F':

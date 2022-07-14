@@ -88,7 +88,7 @@ namespace OrderApiTests
 
                         case 'M':
                             {
-                                var order = BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize, minuteToExpire: 1);
+                                var order = BfOrderFactory.Limit(ProductCode, BfTradeSide.Sell, _ticker.BestAsk + UnexecuteGap, OrderSize, minuteToExpire: TimeSpan.FromMinutes(1));
                                 var result = await _client.SendChildOrderAsync(order);
                                 _childOrderAcceptanceIds.Enqueue(result.ChildOrderAcceptanceId);
                             }

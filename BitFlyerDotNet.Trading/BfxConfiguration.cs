@@ -13,6 +13,7 @@ public class BfxConfiguration
     public string DefaultProductCode { get; set; } = BfProductCode.FX_BTC_JPY;
 
     public TimeSpan PositionUpdateInterval { get; set; } = TimeSpan.FromSeconds(3);
+    public TimeSpan SendOrderTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public int OrderRetryMax { get; set; } = 3;
     public TimeSpan OrderRetryInterval { get; set; } = TimeSpan.FromSeconds(3);
 
@@ -26,6 +27,10 @@ public class BfxConfiguration
 
     public int CancelRetryMax { get; set; } = 3;
     public TimeSpan CancelRetryInterval { get; set; } = TimeSpan.FromSeconds(3);
+    public TimeSpan SendCancelOrderTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    public TimeSpan? MinuteToExpire { get; set; }
+    public BfTimeInForce? TimeInForce { get; set; }
 
 
     public Dictionary<string, decimal> OrderSizeMax { get; } = new();

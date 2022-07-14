@@ -107,10 +107,6 @@ namespace BitFlyerDotNet.Historical
             }
             OrderSize = request.Size;
             TimeInForce = request.TimeInForce;
-            if (TimeInForce == BfTimeInForce.NotSpecified)
-            {
-                TimeInForce = BfTimeInForce.GTC;
-            }
             MinuteToExpire = request.MinuteToExpire;
 
             ChildOrderIndex = -1;

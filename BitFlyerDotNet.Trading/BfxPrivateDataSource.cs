@@ -30,21 +30,11 @@ public class BfxPrivateDataSource
 
     public virtual bool FindParent(string childOrderAcceptanceId, out BfxOrderContext parent)
     {
-        foreach (var ctx in _ctx.Values.ToArray())
-        {
-            if (!ctx.HasChildren)
-            {
-                continue;
-            }
-            var childIndex = ctx.Children.ToList().FindIndex(e => e.OrderAcceptanceId == childOrderAcceptanceId);
-            if (childIndex >= 0)
-            {
-                parent = ctx;
-                return true;
-            }
-        }
-        parent = null;
-        return false;
+        parent = default;
+        return (_ctx.TryGetValue(childOrderAcceptanceId, out var child) &&
+            !string.IsNullOrEmpty(child.ParentOrderAcceptanceId) &&
+            _ctx.TryGetValue(child.ParentOrderAcceptanceId, out parent)
+        );
     }
 
     public virtual IAsyncEnumerable<BfxOrderContext> GetOrderContextsAsync(string productCode)
@@ -82,4 +72,9 @@ public class BfxPrivateDataSource
             yield return pctx;
         }
     }
+
+    /*public async IAsyncEnumerable<BfxPosition> GetPositionsAsync()
+    {
+        throw new NotImplementedException();
+    }*/
 }

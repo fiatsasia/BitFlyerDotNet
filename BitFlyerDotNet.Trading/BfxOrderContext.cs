@@ -96,7 +96,7 @@ public class BfxOrderContext
         ExpireDate = status.ExpireDate;
         OrderDate = status.ParentOrderDate;
         TotalCommission = status.TotalCommission;
-        TimeInForce = detail.TimeInForce == BfTimeInForce.NotSpecified ? null : detail.TimeInForce;
+        TimeInForce = detail.TimeInForce;
 
         if (_children.Length < detail.Parameters.Length)
         {

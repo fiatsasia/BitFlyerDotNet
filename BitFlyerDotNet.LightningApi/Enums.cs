@@ -292,7 +292,6 @@ public static class BfOrderTypeExtension
 
 public enum BfTimeInForce
 {
-    NotSpecified, // = GTC is default
     GTC,    // Good 'Till Canceled
     IOC,    // Immediate or Cancel
     FOK,    // Fill or Kill

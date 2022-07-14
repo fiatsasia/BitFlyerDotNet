@@ -95,12 +95,12 @@ public class BfxMarket : IDisposable
         }
     }
 
-    public async Task<string> PlaceOrderAsync(BfChildOrder order, CancellationTokenSource cts)
+    public async Task<string> PlaceOrderAsync(BfChildOrder order, CancellationToken ct)
     {
         // Sometimes child order event arraives before send order process completes.
         var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode).Update(order), _config);
         tx.OrderChanged += OnOrderChanged;
-        var oid = await tx.PlaceOrderAsync(order, cts);
+        var oid = await tx.PlaceOrderAsync(order, ct);
         if (string.IsNullOrEmpty(oid))
         {
             return default;
@@ -110,12 +110,12 @@ public class BfxMarket : IDisposable
         return oid;
     }
 
-    public async Task<string> PlaceOrderAsync(BfParentOrder order, CancellationTokenSource cts)
+    public async Task<string> PlaceOrderAsync(BfParentOrder order, CancellationToken ct)
     {
         // Sometimes parent order event arraives before send order process completes.
         var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode).Update(order), _config);
         tx.OrderChanged += OnOrderChanged;
-        var oid = await tx.PlaceOrdertAsync(order, cts);
+        var oid = await tx.PlaceOrderAsync(order, ct);
         if (string.IsNullOrEmpty(oid))
         {
             return default;
@@ -125,18 +125,8 @@ public class BfxMarket : IDisposable
         return oid;
     }
 
-    public async Task CancelOrderAsync(string acceptanceId, CancellationTokenSource cts)
-    {
-        var tx = _tx[_oid2tid[acceptanceId]];
-        if (tx.GetOrderContext().HasChildren)
-        {
-            await tx.CancelParentOrderAsync(cts);
-        }
-        else
-        {
-            await tx.CancelChildOrderAsync(cts);
-        }
-    }
+    public async Task CancelOrderAsync(string acceptanceId, CancellationToken ct)
+        => await _tx[_oid2tid[acceptanceId]].CancelOrderAsync(ct);
 
     void OnOrderChanged(object sender, BfxOrderChangedEventArgs e) => OrderChanged?.Invoke(sender, e);
 }

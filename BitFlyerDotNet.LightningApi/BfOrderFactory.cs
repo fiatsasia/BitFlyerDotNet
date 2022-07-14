@@ -10,18 +10,18 @@ namespace BitFlyerDotNet.LightningApi;
 
 public static class BfOrderFactory
 {
-    public static BfChildOrder Market(string productCode, BfTradeSide side, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+    public static BfChildOrder Market(string productCode, BfTradeSide side, decimal size, TimeSpan? minuteToExpire = default, BfTimeInForce? timeInForce = default)
         => new()
         {
             ProductCode = productCode,
             ChildOrderType = BfOrderType.Market,
             Side = side,
             Size = size,
-            MinuteToExpire = minuteToExpire,
+            MinuteToExpire = minuteToExpire.HasValue ? Convert.ToInt32(minuteToExpire.Value.TotalMinutes) : default,
             TimeInForce = timeInForce,
         };
 
-    public static BfChildOrder Limit(string productCode, BfTradeSide side, decimal price, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+    public static BfChildOrder Limit(string productCode, BfTradeSide side, decimal price, decimal size, TimeSpan? minuteToExpire = default, BfTimeInForce? timeInForce = default)
         => new()
         {
             ProductCode = productCode,
@@ -29,11 +29,11 @@ public static class BfOrderFactory
             Side = side,
             Size = size,
             Price = price,
-            MinuteToExpire = minuteToExpire,
+            MinuteToExpire = minuteToExpire.HasValue ? Convert.ToInt32(minuteToExpire.Value.TotalMinutes) : default,
             TimeInForce = timeInForce,
         };
 
-    public static BfParentOrder Stop(string productCode, BfTradeSide side, decimal triggerPrice, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+    public static BfParentOrder Stop(string productCode, BfTradeSide side, decimal triggerPrice, decimal size, TimeSpan? minuteToExpire = default, BfTimeInForce? timeInForce = default)
     {
         if (size > triggerPrice)
         {
@@ -43,8 +43,6 @@ public static class BfOrderFactory
         return new()
         {
             OrderMethod = BfOrderType.Simple,
-            MinuteToExpire = minuteToExpire,
-            TimeInForce = timeInForce,
             Parameters = new()
             {
                 new() {
@@ -54,11 +52,13 @@ public static class BfOrderFactory
                     TriggerPrice = triggerPrice,
                     Size = size,
                 }
-            }
+            },
+            MinuteToExpire = minuteToExpire.HasValue ? Convert.ToInt32(minuteToExpire.Value.TotalMinutes) : default,
+            TimeInForce = timeInForce,
         };
     }
 
-    public static BfParentOrder StopLimit(string productCode, BfTradeSide side, decimal triggerPrice, decimal price, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+    public static BfParentOrder StopLimit(string productCode, BfTradeSide side, decimal triggerPrice, decimal price, decimal size, TimeSpan? minuteToExpire = default, BfTimeInForce? timeInForce = default)
     {
         if (size > price || size > triggerPrice)
         {
@@ -68,8 +68,6 @@ public static class BfOrderFactory
         return new()
         {
             OrderMethod = BfOrderType.Simple,
-            MinuteToExpire = minuteToExpire,
-            TimeInForce = timeInForce,
             Parameters = new()
             {
                 new() {
@@ -80,11 +78,13 @@ public static class BfOrderFactory
                     Size = size,
                     TriggerPrice = triggerPrice
                 }
-            }
+            },
+            MinuteToExpire = minuteToExpire.HasValue ? Convert.ToInt32(minuteToExpire.Value.TotalMinutes) : default,
+            TimeInForce = timeInForce,
         };
     }
 
-    public static BfParentOrder Trail(string productCode, BfTradeSide side, decimal offset, decimal size, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+    public static BfParentOrder Trail(string productCode, BfTradeSide side, decimal offset, decimal size, TimeSpan? minuteToExpire = default, BfTimeInForce? timeInForce = default)
     {
         if (offset <= 0m)
         {
@@ -94,8 +94,6 @@ public static class BfOrderFactory
         return new()
         {
             OrderMethod = BfOrderType.Simple,
-            MinuteToExpire = minuteToExpire,
-            TimeInForce = timeInForce,
             Parameters = new()
             {
                 new() {
@@ -105,20 +103,22 @@ public static class BfOrderFactory
                     Offset = offset,
                     Size = size,
                 }
-            }
+            },
+            MinuteToExpire = minuteToExpire.HasValue ? Convert.ToInt32(minuteToExpire.Value.TotalMinutes) : default,
+            TimeInForce = timeInForce,
         };
     }
 
-    public static BfParentOrder IFD(BfParentOrderParameter first, BfParentOrderParameter second, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+    public static BfParentOrder IFD(BfParentOrderParameter first, BfParentOrderParameter second, TimeSpan? minuteToExpire = default, BfTimeInForce? timeInForce = default)
         => new()
         {
             OrderMethod = BfOrderType.IFD,
-            MinuteToExpire = minuteToExpire,
+            Parameters = new() { first, second },
+            MinuteToExpire = minuteToExpire.HasValue ? Convert.ToInt32(minuteToExpire.Value.TotalMinutes) : default,
             TimeInForce = timeInForce,
-            Parameters = new() { first, second }
         };
 
-    public static BfParentOrder OCO(BfParentOrderParameter first, BfParentOrderParameter second, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+    public static BfParentOrder OCO(BfParentOrderParameter first, BfParentOrderParameter second, TimeSpan? minuteToExpire = default, BfTimeInForce? timeInForce = default)
     {
         if (first.ConditionType == second.ConditionType && first.Side == second.Side)
         {
@@ -127,13 +127,13 @@ public static class BfOrderFactory
         return new()
         {
             OrderMethod = BfOrderType.OCO,
-            MinuteToExpire = minuteToExpire,
+            Parameters = new() { first, second },
+            MinuteToExpire = minuteToExpire.HasValue ? Convert.ToInt32(minuteToExpire.Value.TotalMinutes) : default,
             TimeInForce = timeInForce,
-            Parameters = new() { first, second }
         };
     }
 
-    public static BfParentOrder IFDOCO(BfParentOrderParameter ifdone, BfParentOrderParameter ocoFirst, BfParentOrderParameter ocoSecond, int minuteToExpire = 0, BfTimeInForce timeInForce = BfTimeInForce.NotSpecified)
+    public static BfParentOrder IFDOCO(BfParentOrderParameter ifdone, BfParentOrderParameter ocoFirst, BfParentOrderParameter ocoSecond, TimeSpan? minuteToExpire = default, BfTimeInForce? timeInForce = default)
     {
         if (ocoFirst.ConditionType == ocoSecond.ConditionType && ocoFirst.Side == ocoSecond.Side)
         {
@@ -142,9 +142,9 @@ public static class BfOrderFactory
         return new()
         {
             OrderMethod = BfOrderType.IFDOCO,
-            MinuteToExpire = minuteToExpire,
+            Parameters = new() { ifdone, ocoFirst, ocoSecond },
+            MinuteToExpire = minuteToExpire.HasValue ? Convert.ToInt32(minuteToExpire.Value.TotalMinutes) : default,
             TimeInForce = timeInForce,
-            Parameters = new() { ifdone, ocoFirst, ocoSecond }
         };
     }
 }

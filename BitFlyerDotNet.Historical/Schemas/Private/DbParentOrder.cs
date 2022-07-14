@@ -60,10 +60,6 @@ namespace BitFlyerDotNet.Historical
             ProductCode = productCode;
             OrderType = req.OrderMethod;
             TimeInForce = req.TimeInForce;
-            if (TimeInForce == BfTimeInForce.NotSpecified)
-            {
-                TimeInForce = BfTimeInForce.GTC;
-            }
             AcceptanceId = parentOrderAcceptanceId;
         }
 

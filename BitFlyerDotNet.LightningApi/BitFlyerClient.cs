@@ -24,17 +24,7 @@ public class BfErrorResponse
 
 public abstract class BitFlyerResponse
 {
-    public abstract string Json { get; set; }
-    public abstract bool IsError { get; }
-    public abstract bool IsNetworkError { get; }
-    public abstract bool IsApplicationError { get; }
-    public abstract bool IsUnauthorized { get; }
-    public abstract string ErrorMessage { get; set; }
-}
-
-public class BitFlyerResponse<T> : BitFlyerResponse
-{
-    static readonly JsonSerializerSettings _jsonDeserializeSettings = new ()
+    static readonly JsonSerializerSettings _jsonDeserializeSettings = new()
     {
         // To enable after develop/find PascalCaseNamingStrategy()
         //ContractResolver = new DefaultContractResolver { NamingStrategy = new PascalCaseNamingStrategy() },
@@ -42,14 +32,18 @@ public class BitFlyerResponse<T> : BitFlyerResponse
         DateTimeZoneHandling = DateTimeZoneHandling.Utc
     };
 
-    string JsonEmpty => (typeof(T) != typeof(string) && typeof(T).IsArray) ? "[]" : "{}";
-
+    public Exception Exception { get; internal set; }
     public HttpStatusCode StatusCode { get; internal set; } = HttpStatusCode.OK;
     public BfErrorResponse ErrorResponse { get; internal set; } = BfErrorResponse.Default;
-    public override bool IsUnauthorized => StatusCode == HttpStatusCode.Unauthorized;
+    public abstract bool IsEmpty { get; }
+
+    public bool IsError => StatusCode != HttpStatusCode.OK || ErrorResponse != BfErrorResponse.Default;
+    public bool IsErrorOrEmpty => IsError || IsEmpty;
+    public bool IsOk => StatusCode == HttpStatusCode.OK;
+    public bool IsUnauthorized => StatusCode == HttpStatusCode.Unauthorized;
 
     string _errorMessage;
-    public override string ErrorMessage
+    public string ErrorMessage
     {
         get
         {
@@ -69,60 +63,8 @@ public class BitFlyerResponse<T> : BitFlyerResponse
         set { _errorMessage = value; }
     }
 
-    public override bool IsNetworkError => StatusCode != HttpStatusCode.OK;
-    public override bool IsApplicationError => ErrorResponse != BfErrorResponse.Default;
-    public override bool IsError => StatusCode != HttpStatusCode.OK || ErrorResponse != BfErrorResponse.Default;
-    public bool IsEmpty => string.IsNullOrEmpty(_json) || _json == JsonEmpty;
-    public bool IsErrorOrEmpty => IsError || IsEmpty;
-    public bool IsOk => StatusCode == HttpStatusCode.OK;
-    public Exception Exception { get; internal set; }
-
-    T _response = default(T);
-    [Obsolete("This method is obsolete. Use Message property instead.", false)]
-    public T GetResponse()
-    {
-        if (IsError)
-        {
-            if (Exception != null)
-            {
-                throw Exception;
-            }
-            else
-            {
-                throw new ApplicationException(ErrorMessage);
-            }
-        }
-
-        if (object.Equals(_response, default(T)))
-        {
-            _response = JsonConvert.DeserializeObject<T>(_json, _jsonDeserializeSettings);
-        }
-        return _response;
-    }
-
-    public T GetContent()
-    {
-        if (IsError)
-        {
-            if (Exception != null)
-            {
-                throw Exception;
-            }
-            else
-            {
-                throw new ApplicationException(ErrorMessage);
-            }
-        }
-
-        if (object.Equals(_response, default(T)))
-        {
-            _response = JsonConvert.DeserializeObject<T>(_json, _jsonDeserializeSettings);
-        }
-        return _response;
-    }
-
     string _json;
-    public override string Json
+    public string Json
     {
         get { return _json; }
         set
@@ -138,15 +80,53 @@ public class BitFlyerResponse<T> : BitFlyerResponse
         }
     }
 
-    public BitFlyerResponse()
-    {
-        _json = JsonEmpty;
-    }
-
     internal void Set(HttpStatusCode statusCode, string json)
     {
         StatusCode = statusCode;
         Json = json;
+    }
+
+    protected BitFlyerResponse()
+    {
+    }
+
+    public T GetContent<T>()
+    {
+        if (IsError)
+        {
+            if (Exception != null)
+            {
+                throw Exception;
+            }
+            else
+            {
+                throw new ApplicationException(ErrorMessage);
+            }
+        }
+        return JsonConvert.DeserializeObject<T>(_json, _jsonDeserializeSettings);
+    }
+}
+
+public class BitFlyerResponse<T> : BitFlyerResponse
+{
+    public override bool IsEmpty => string.IsNullOrEmpty(Json) || Json == JsonEmpty;
+    string JsonEmpty => (typeof(T) != typeof(string) && typeof(T).IsArray) ? "[]" : "{}";
+
+    T _response = default(T);
+
+    public T GetContent()
+    {
+        if (object.Equals(_response, default(T)))
+        {
+            _response = GetContent<T>();
+        }
+        return _response;
+    }
+
+    public BitFlyerResponse()
+        : base()
+    {
+        Json = JsonEmpty;
     }
 }
 
@@ -176,7 +156,6 @@ public partial class BitFlyerClient : IDisposable
     HMACSHA256 _hash;
 
     public bool IsAuthenticated => _hash != null;
-    public BitFlyerClientConfig Config { get; } = new ();
     public long TotalReceivedMessageChars { get; private set; }
     public Func<string, string, bool> ConfirmCallback { get; set; } = (apiName, json) => true;
 
@@ -185,19 +164,19 @@ public partial class BitFlyerClient : IDisposable
     CountTimerLimitter _orderApiLimitter = new (ApiLimitInterval, OrderApiLimitCount);
     public bool IsOrderLimitReached => _orderApiLimitter.IsLimitReached;
 
-    public BitFlyerClient(BitFlyerClientConfig config = null)
+    public BitFlyerClient(TimeSpan? httpTimeout = default)
     {
-        if (config != null)
-        {
-            Config = config;
-        }
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
         _client = new ();
         _client.BaseAddress = new (BaseUri);
+        if (httpTimeout.HasValue)
+        {
+            _client.Timeout = httpTimeout.Value;
+        }
     }
 
-    public BitFlyerClient(string apiKey, string apiSecret, BitFlyerClientConfig config = null)
-        : this(config)
+    public BitFlyerClient(string apiKey, string apiSecret, TimeSpan? httpTimeout = default)
+        : this(httpTimeout)
     {
         _apiKey = apiKey;
         _hash = new (Encoding.UTF8.GetBytes(apiSecret));
@@ -220,12 +199,12 @@ public partial class BitFlyerClient : IDisposable
     internal async Task<BitFlyerResponse<T>> GetAsync<T>(string callerName, string queryParameters, CancellationToken ct)
     {
         var apiName = callerName.Replace("Async", "").ToLower();
-        Log.Debug($"{apiName}?{queryParameters}");
         var path = PublicBasePath + apiName;
         if (!string.IsNullOrEmpty(queryParameters))
         {
             path += "?" + queryParameters;
         }
+        Log.Debug(path);
 
         using (var request = new HttpRequestMessage(HttpMethod.Get, path))
         {
@@ -304,13 +283,13 @@ public partial class BitFlyerClient : IDisposable
         }
 
         var apiName = callerName.Replace("Async", "").ToLower();
-        Log.Debug($"{apiName}?{queryParameters}");
         var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ff");
         var path = PrivateBasePath + apiName;
         if (!string.IsNullOrEmpty(queryParameters))
         {
             path += "?" + queryParameters;
         }
+        Log.Debug(path);
 
         var text = timestamp + "GET" + path;
         var sign = BitConverter.ToString(_hash.ComputeHash(Encoding.UTF8.GetBytes(text))).Replace("-", string.Empty).ToLower();
