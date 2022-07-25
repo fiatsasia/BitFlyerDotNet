@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfChildOrder
+public class BfChildOrder : IBfOrder
 {
     public string ProductCode { get; set; }
 
@@ -45,7 +45,7 @@ public class BfChildOrder
     }
 }
 
-public class BfChildOrderResponse
+public class BfChildOrderAcceptance
 {
     [JsonProperty(PropertyName = "child_order_acceptance_id")]
     public string ChildOrderAcceptanceId { get; private set; }
@@ -53,12 +53,15 @@ public class BfChildOrderResponse
 
 public partial class BitFlyerClient
 {
-    void Validate(ref BfChildOrder request)
+    /// <summary>
+    /// Send a New Order
+    /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
+    /// </summary>
+    /// <param name="order"></param>
+    /// <returns></returns>
+    public Task<BitFlyerResponse<BfChildOrderAcceptance>> SendChildOrderAsync(BfChildOrder order, CancellationToken ct)
     {
-        if (!request.ChildOrderType.IsChildOrderType())
-        {
-            throw new ArgumentException($"Invalid {nameof(BfChildOrder.ChildOrderType)} is {request.ChildOrderType}");
-        }
+        return PostPrivateAsync<BfChildOrderAcceptance>(nameof(SendChildOrderAsync), order, ct);
     }
 
     /// <summary>
@@ -67,19 +70,7 @@ public partial class BitFlyerClient
     /// </summary>
     /// <param name="order"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfChildOrderResponse>> SendChildOrderAsync(BfChildOrder order, CancellationToken ct)
-    {
-        Validate(ref order);
-        return PostPrivateAsync<BfChildOrderResponse>(nameof(SendChildOrderAsync), order, ct);
-    }
-
-    /// <summary>
-    /// Send a New Order
-    /// <see href="https://scrapbox.io/BitFlyerDotNet/SendChildOrder">Online help</see>
-    /// </summary>
-    /// <param name="order"></param>
-    /// <returns></returns>
-    public async Task<BfChildOrderResponse> SendChildOrderAsync(BfChildOrder order)
+    public async Task<BfChildOrderAcceptance> SendChildOrderAsync(BfChildOrder order)
     {
         return (await SendChildOrderAsync(order, CancellationToken.None)).GetContent();
     }

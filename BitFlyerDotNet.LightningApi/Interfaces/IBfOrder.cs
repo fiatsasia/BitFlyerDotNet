@@ -1,0 +1,32 @@
+﻿//==============================================================================
+// Copyright (c) 2017-2022 Fiats Inc. All rights reserved.
+// Licensed under the MIT license. See LICENSE.txt in the solution folder for
+// full license information.
+// https://www.fiats.asia/
+// Fiats Inc. Nakano, Tokyo, Japan
+//
+
+namespace BitFlyerDotNet.LightningApi;
+
+public interface IBfOrder
+{
+}
+
+public static class IBfOrderExtensions
+{
+    public static string GetProductCode(this IBfOrder order)
+    {
+        if (order is BfParentOrder parentOrder)
+        {
+            return parentOrder.Parameters[0].ProductCode;
+        }
+        else if (order is BfChildOrder childOrder)
+        {
+            return childOrder.ProductCode;
+        }
+        else
+        {
+            throw new ArgumentException();
+        }
+    }
+}

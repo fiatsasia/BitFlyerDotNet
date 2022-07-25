@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.Trading;
 
-public class BfxMarket : IDisposable
+class BfxMarket : IDisposable
 {
     public bool IsInitialized { get; private set; }
     public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
@@ -33,7 +33,7 @@ public class BfxMarket : IDisposable
     {
     }
 
-    internal async Task InitializeAsync()
+    public async Task InitializeAsync()
     {
         if (!_client.IsAuthenticated)
         {
@@ -50,7 +50,7 @@ public class BfxMarket : IDisposable
         }
     }
 
-    internal void OnChildOrderEvent(BfChildOrderEvent e)
+    public void OnChildOrderEvent(BfChildOrderEvent e)
     {
         var tid = _oid2tid.GetOrAdd(e.ChildOrderAcceptanceId, _ =>
         {
@@ -75,7 +75,7 @@ public class BfxMarket : IDisposable
         }
     }
 
-    internal void OnParentOrderEvent(BfParentOrderEvent e)
+    public void OnParentOrderEvent(BfParentOrderEvent e)
     {
         var tid = _oid2tid.GetOrAdd(e.ParentOrderAcceptanceId, _ =>
         {
@@ -95,24 +95,9 @@ public class BfxMarket : IDisposable
         }
     }
 
-    public async Task<string> PlaceOrderAsync(BfChildOrder order, CancellationToken ct)
+    public async Task<string> PlaceOrderAsync<TOrder>(TOrder order, CancellationToken ct) where TOrder : IBfOrder
     {
         // Sometimes child order event arraives before send order process completes.
-        var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode).Update(order), _config);
-        tx.OrderChanged += OnOrderChanged;
-        var oid = await tx.PlaceOrderAsync(order, ct);
-        if (string.IsNullOrEmpty(oid))
-        {
-            return default;
-        }
-        var tid = _oid2tid.GetOrAdd(oid, _ => { _tx.TryAdd(tx.Id, tx); return tx.Id; });
-        _tx[tid].GetOrderContext().Update(order);
-        return oid;
-    }
-
-    public async Task<string> PlaceOrderAsync(BfParentOrder order, CancellationToken ct)
-    {
-        // Sometimes parent order event arraives before send order process completes.
         var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode).Update(order), _config);
         tx.OrderChanged += OnOrderChanged;
         var oid = await tx.PlaceOrderAsync(order, ct);

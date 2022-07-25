@@ -31,7 +31,7 @@ public class BfxMarketDataSource : IDisposable
         _disposables.Dispose();
     }
 
-    public bool IsInitialized => _rts.IsOpened;
+    public bool IsInitialized { get; private set; }
 
     public async Task InitializeAsync()
     {
@@ -43,5 +43,6 @@ public class BfxMarketDataSource : IDisposable
         Ticker = await _client.GetTickerAsync(_productCode);
         await _rts.TryOpenAsync();
         _rts.GetTickerSource(_productCode).Subscribe(ticker => { Ticker = ticker; }).AddTo(_disposables);
+        IsInitialized = true;
     }
 }

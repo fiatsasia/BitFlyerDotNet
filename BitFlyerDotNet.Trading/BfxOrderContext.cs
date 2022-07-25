@@ -125,6 +125,22 @@ public class BfxOrderContext
         return this;
     }
 
+    public BfxOrderContext Update(IBfOrder order)
+    {
+        if (order is BfParentOrder parentOrder)
+        {
+            return Update(parentOrder);
+        }
+        else if (order is BfChildOrder childOrder)
+        {
+            return Update(childOrder);
+        }
+        else
+        {
+            throw new ArgumentException();
+        }
+    }
+
     public BfxOrderContext Update(BfParentOrder order)
     {
         OrderType = order.OrderMethod;

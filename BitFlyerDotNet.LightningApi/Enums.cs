@@ -266,6 +266,14 @@ public static class BfOrderTypeExtension
             orderType == BfOrderType.Trail;
     }
 
+    public static bool IsSimpleConditionType(this BfOrderType orderType)
+    {
+        return
+            orderType == BfOrderType.Stop ||
+            orderType == BfOrderType.StopLimit ||
+            orderType == BfOrderType.Trail;
+    }
+
     // Send:
     //   BfChildOrderRequest.ChildOrderType
     public static bool IsChildOrderType(this BfOrderType orderType)

@@ -12,6 +12,7 @@ public class BfxPrivateDataSource
 {
     BitFlyerClient _client;
     ConcurrentDictionary<string, BfxOrderContext> _ctx = new();
+    BfxPositionManager _positions;
 
     public BfxPrivateDataSource(BitFlyerClient client)
     {
@@ -73,8 +74,27 @@ public class BfxPrivateDataSource
         }
     }
 
-    /*public async IAsyncEnumerable<BfxPosition> GetPositionsAsync()
+    public async Task InitializePositionsAsync(string productCode)
     {
-        throw new NotImplementedException();
-    }*/
+        if (_positions == default)
+        {
+            _positions = new(await _client.GetPositionsAsync(productCode));
+        }
+    }
+
+    public async IAsyncEnumerable<BfxPosition> GetActivePositionsAsync(string productCode)
+    {
+        if (_positions == default)
+        {
+            await InitializePositionsAsync(productCode);
+        }
+        foreach (var pos in _positions.GetActivePositions()) yield return pos;
+    }
+
+    public async IAsyncEnumerable<BfxPosition> UpdatePositionAsync(BfChildOrderEvent e)
+    {
+        await foreach (var pos in _positions.Update(e).ToAsyncEnumerable()) yield return pos;
+    }
+
+    public Task<decimal> GetTotalPositionSizeAsync() => Task.FromResult(_positions.TotalSize);
 }

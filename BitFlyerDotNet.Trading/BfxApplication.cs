@@ -21,7 +21,6 @@ public class BfxApplication : IDisposable
     Dictionary<string, BfxMarket> _markets = new();
     Dictionary<string, BfxMarketDataSource> _mds = new();
     BfxPrivateDataSource _pds;
-    BfxPositionManager _positions = new();
     #endregion Properties and fields
 
     #region Initialize and Finalize
@@ -39,8 +38,8 @@ public class BfxApplication : IDisposable
             _rts = new RealtimeSourceFactory();
         }
         _pds = new(_client);
-        VerifyChildOrder = VerifyOrder;
-        VerifyParentOrder = VerifyOrder;
+
+        VerifyOrderAsync = VerifyOrderDefaultAsync;
     }
 
     public BfxApplication() : this(new BfxConfiguration(), string.Empty, string.Empty) { }
@@ -62,24 +61,32 @@ public class BfxApplication : IDisposable
         var availableMarkets = await _client.GetMarketsAsync();
         await _rts.TryOpenAsync();
 
-        foreach (var productCode in availableMarkets.Select(e => !string.IsNullOrEmpty(e.Alias) ? e.Alias : e.ProductCode))
+        foreach (var mi in availableMarkets)
         {
-            var market = new BfxMarket(_client, productCode, _pds, Config);
+            var market = new BfxMarket(_client, mi.ProductCode, _pds, Config);
             market.OrderChanged += (sender, e) => OrderChanged?.Invoke(sender, e);
-            _markets[productCode] = market;
-            _mds[productCode] = new BfxMarketDataSource(productCode, _client, _rts);
+            _markets[mi.ProductCode] = market;
+            _mds[mi.ProductCode] = new BfxMarketDataSource(mi.ProductCode, _client, _rts);
+            if (!string.IsNullOrEmpty(mi.Alias))
+            {
+                _markets[mi.Alias] = _markets[mi.ProductCode];
+                _mds[mi.Alias] = _mds[mi.ProductCode];
+            }
         }
 
         if (_client.IsAuthenticated)
         {
             _rts.GetParentOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnParentOrderEvent(e)).AddTo(_disposables);
-            _rts.GetChildOrderEventsSource().Subscribe(e =>
+            _rts.GetChildOrderEventsSource().Subscribe(async e =>
             {
                 _markets[e.ProductCode].OnChildOrderEvent(e);
                 if (e.ProductCode == BfProductCode.FX_BTC_JPY && e.EventType == BfOrderEventType.Execution)
                 {
                     // child order subscription is scheduled on Rx default thread queueing scheduler
-                    _positions.Update(e).ForEach(pos => PositionChanged?.Invoke(this, new BfxPositionChangedEventArgs(pos, _positions.TotalSize)));
+                    await foreach (var pos in _pds.UpdatePositionAsync(e))
+                    {
+                        PositionChanged?.Invoke(this, new BfxPositionChangedEventArgs(pos, await _pds.GetTotalPositionSizeAsync()));
+                    }
                 }
             }).AddTo(_disposables);
         }
@@ -121,7 +128,7 @@ public class BfxApplication : IDisposable
 
         if (productCode == BfProductCode.FX_BTC_JPY)
         {
-            _positions = new(await _client.GetPositionsAsync(BfProductCode.FX_BTC_JPY));
+            await _pds.InitializePositionsAsync(BfProductCode.FX_BTC_JPY);
         }
 
         if (!_markets[productCode].IsInitialized)
@@ -149,99 +156,101 @@ public class BfxApplication : IDisposable
     #region Ordering
     public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
 
-    public void VerifyOrder(BfChildOrder order)
+    public Func<IBfOrder, Task> VerifyOrderAsync { get; set; }
+    public async Task VerifyOrderDefaultAsync(IBfOrder order)
+    {
+        var productCode = order.GetProductCode();
+        if (!_markets.ContainsKey(productCode))
+        {
+            throw new ArgumentException($"order: Unknown product code '{productCode}'.");
+        }
+
+        var ticker = (await GetMarketDataSourceAsync(productCode)).Ticker;
+        switch (order)
+        {
+            case BfChildOrder childOrder: VerifyOrder(childOrder, ticker); break;
+            case BfParentOrder parentOrder: VerifyOrder(parentOrder, ticker); break;
+            default: throw new ArgumentException();
+        }
+    }
+
+    void VerifyOrder(BfChildOrder order, BfTicker ticker)
     {
         if (order.Size > Config.OrderSizeMax[order.ProductCode])
         {
-            throw new ArgumentException("Order size exceeds the maximum size.");
+            throw new ArgumentException("child order: Order size exceeds the maximum size.");
         }
 
-        var mds = _mds[order.ProductCode];
-        if (Config.OrderPriceLimitter && order.ChildOrderType == BfOrderType.Limit)
+        switch (order.ChildOrderType)
         {
-#pragma warning disable CS8629
-            if (order.Side == BfTradeSide.Buy && order.Price.Value > mds.Ticker.BestAsk)
-            {
-                throw new ArgumentException("Buy order price is above best ask price.");
-            }
-            else if (order.Side == BfTradeSide.Sell && order.Price.Value < mds.Ticker.BestBid)
-            {
-                throw new ArgumentException("Sell order price is below best bid price.");
-            }
-#pragma warning restore CS8629
-        }
-    }
+            case BfOrderType.Market:
+                break;
 
-    public void VerifyOrder(BfParentOrder order)
-    {
-        foreach (var child in order.Parameters)
-        {
-            if (child.Size > Config.OrderSizeMax[order.Parameters[0].ProductCode])
-            {
-                throw new ArgumentException("Order size exceeds the maximum size.");
-            }
-        }
-
-        var children = order.OrderMethod switch
-        {
-            BfOrderType.IFD => order.Parameters.Take(1),
-            BfOrderType.OCO => order.Parameters.Take(2),
-            BfOrderType.IFDOCO => order.Parameters.Take(1),
-            _ => throw new ArgumentException()
-        };
-
-        var mds = _mds[order.Parameters[0].ProductCode];
-        foreach (var child in children)
-        {
-            if (Config.OrderPriceLimitter && child.ConditionType == BfOrderType.Limit)
-            {
-#pragma warning disable CS8629
-                if (child.Side == BfTradeSide.Buy && child.Price.Value > mds.Ticker.BestAsk)
+            case BfOrderType.Limit:
+                if (order.Side == BfTradeSide.Buy && order.Price.Value > ticker.BestBid)
                 {
-                    throw new ArgumentException("Buy order price is above best ask price.");
+                    throw new ArgumentException("child order: Buy order price is above best bid price.");
                 }
-                else if (child.Side == BfTradeSide.Sell && child.Price.Value < mds.Ticker.BestBid)
+                else if (order.Side == BfTradeSide.Sell && order.Price.Value < ticker.BestAsk)
                 {
-                    throw new ArgumentException("Sell order price is below best bid price.");
+                    throw new ArgumentException("child order: Sell order price is below best ask price.");
                 }
-#pragma warning restore CS8629
+                break;
+        }
+    }
+
+    void VerifyOrder(BfParentOrder parentOrder, BfTicker ticker)
+    {
+        for (var childIndex = 0; childIndex < parentOrder.Parameters.Count; childIndex++)
+        {
+            var order = parentOrder.Parameters[childIndex];
+            if (parentOrder.OrderMethod == BfOrderType.OCO || ((parentOrder.OrderMethod == BfOrderType.IFD || parentOrder.OrderMethod == BfOrderType.IFDOCO) && childIndex == 0))
+            {
+                switch (order.ConditionType)
+                {
+                    case BfOrderType.Limit:
+                        if (order.Side == BfTradeSide.Buy && order.Price.Value > ticker.BestBid)
+                        {
+                            throw new ArgumentException("parent order: Buy order price is above best bid price.");
+                        }
+                        else if (order.Side == BfTradeSide.Sell && order.Price.Value < ticker.BestAsk)
+                        {
+                            throw new ArgumentException("parent order: Sell order price is below best ask price.");
+                        }
+                        break;
+
+                    case BfOrderType.Stop:
+                    case BfOrderType.StopLimit:
+                        if (order.Side == BfTradeSide.Buy && order.TriggerPrice.Value < ticker.BestAsk)
+                        {
+                            throw new ArgumentException("parent order: Buy trigger price is below best ask price.");
+                        }
+                        else if (order.Side == BfTradeSide.Sell && order.TriggerPrice.Value > ticker.BestBid)
+                        {
+                            throw new ArgumentException("parent order: Sell trigger price is above best bid price.");
+                        }
+                        break;
+                }
             }
         }
     }
 
-    public Action<BfChildOrder> VerifyChildOrder { get; set; }
-    public Action<BfParentOrder> VerifyParentOrder { get; set; }
-
-    public async Task<string> PlaceOrderAsync(BfChildOrder order, CancellationToken ct = default)
+    public async Task<string> PlaceOrderAsync<TOrder>(TOrder order, CancellationToken ct = default) where TOrder : IBfOrder
     {
-        if (!IsMarketInitialized(order.ProductCode))
+        var productCode = order.GetProductCode();
+        if (!IsMarketInitialized(productCode))
         {
-            await InitializeMarketAsync(order.ProductCode);
+            await InitializeMarketAsync(productCode);
         }
 
-        if (!IsMarketDataSourceInitialized(order.ProductCode))
+        if (!IsMarketDataSourceInitialized(productCode))
         {
-            await InitializeMarketDataSourceAsync(order.ProductCode);
+            await InitializeMarketDataSourceAsync(productCode);
         }
 
-        VerifyChildOrder.Invoke(order);
-        return await _markets[order.ProductCode].PlaceOrderAsync(order, ct);
-    }
+        await VerifyOrderAsync?.Invoke(order);
 
-    public async Task<string> PlaceOrderAsync(BfParentOrder order, CancellationToken ct = default)
-    {
-        if (!IsMarketInitialized(order.Parameters[0].ProductCode))
-        {
-            await InitializeMarketAsync(order.Parameters[0].ProductCode);
-        }
-
-        if (!IsMarketDataSourceInitialized(order.Parameters[0].ProductCode))
-        {
-            await InitializeMarketDataSourceAsync(order.Parameters[0].ProductCode);
-        }
-
-        VerifyParentOrder.Invoke(order);
-        return await _markets[order.Parameters[0].ProductCode].PlaceOrderAsync(order, ct);
+        return await _markets[productCode].PlaceOrderAsync(order, ct);
     }
 
     public async Task CancelOrderAsync(string productCode, string acceptanceId, CancellationToken ct = default)
@@ -278,6 +287,6 @@ public class BfxApplication : IDisposable
     #region Manage positions
     public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;
 
-    public IEnumerable<BfxPosition> GetActivePositions() => _positions.GetActivePositions();
+    public IAsyncEnumerable<BfxPosition> GetActivePositions(string productCode) => _pds.GetActivePositionsAsync(productCode);
     #endregion Manage positions
 }

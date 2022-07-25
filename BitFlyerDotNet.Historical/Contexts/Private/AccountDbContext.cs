@@ -81,7 +81,7 @@ namespace BitFlyerDotNet.Historical
             => GetChildOrders().Where(e => e.ProductCode == productCode && e.ParentOrderAcceptanceId == parentOrderAcceptanceId && e.ChildOrderIndex == childOrderIndex).FirstOrDefault();
 
         // Parent orders
-        public void Insert(string productCode, BfParentOrder req, BfParentOrderResponse resp)
+        public void Insert(string productCode, BfParentOrder req, BfParentOrderAcceptance resp)
         {
             ParentOrders.Add(new DbParentOrder(productCode, req, resp.ParentOrderAcceptanceId));
             for (int childOrderIndex = 0; childOrderIndex < req.Parameters.Count; childOrderIndex++)
@@ -91,7 +91,7 @@ namespace BitFlyerDotNet.Historical
         }
 
         // Child orders
-        public void Insert(BfChildOrder req, BfChildOrderResponse resp)
+        public void Insert(BfChildOrder req, BfChildOrderAcceptance resp)
         {
             ChildOrders.Add(new DbChildOrder(req, resp.ChildOrderAcceptanceId));
         }

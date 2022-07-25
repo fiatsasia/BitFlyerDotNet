@@ -33,7 +33,7 @@ class BfxTransaction : IDisposable
         _ctsCancelOrder.Dispose();
     }
 
-    public async Task<string> PlaceOrderAsync<TOrder>(TOrder order, CancellationToken ct)
+    public async Task<string> PlaceOrderAsync<TOrder>(TOrder order, CancellationToken ct) where TOrder : IBfOrder
     {
         using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct, _ctsCancelOrder.Token))
         {
@@ -44,20 +44,20 @@ class BfxTransaction : IDisposable
                 {
                     BitFlyerResponse resp;
                     string id = string.Empty;
-                    if (order.GetType() == typeof(BfChildOrder))
+                    if (order is BfChildOrder childOrder)
                     {
-                        resp = await _client.SendChildOrderAsync(order as BfChildOrder, cts.Token);
+                        resp = await _client.SendChildOrderAsync(childOrder, cts.Token);
                         if (!resp.IsError)
                         {
-                            id = resp.GetContent<BfChildOrderResponse>().ChildOrderAcceptanceId;
+                            id = resp.GetContent<BfChildOrderAcceptance>().ChildOrderAcceptanceId;
                         }
                     }
-                    else if (order.GetType() == typeof(BfParentOrder))
+                    else if (order is BfParentOrder parentOrder)
                     {
-                        resp = await _client.SendParentOrderAsync(order as BfParentOrder, cts.Token);
+                        resp = await _client.SendParentOrderAsync(parentOrder, cts.Token);
                         if (!resp.IsError)
                         {
-                            id = resp.GetContent<BfParentOrderResponse>().ParentOrderAcceptanceId;
+                            id = resp.GetContent<BfParentOrderAcceptance>().ParentOrderAcceptanceId;
                         }
                     }
                     else
@@ -136,13 +136,13 @@ class BfxTransaction : IDisposable
         }
     }
 
-    internal BfxTransaction OnChildOrderEvent(BfChildOrderEvent e)
+    public BfxTransaction OnChildOrderEvent(BfChildOrderEvent e)
     {
         OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(e, _ctx));
         return this;
     }
 
-    internal BfxTransaction OnParentOrderEvent(BfParentOrderEvent e)
+    public BfxTransaction OnParentOrderEvent(BfParentOrderEvent e)
     {
         OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(e, _ctx));
         return this;

@@ -204,7 +204,7 @@ public partial class BitFlyerClient : IDisposable
         {
             path += "?" + queryParameters;
         }
-        Log.Debug(path);
+        Log.Trace($"HTTP get {path}");
 
         using (var request = new HttpRequestMessage(HttpMethod.Get, path))
         {
@@ -289,7 +289,7 @@ public partial class BitFlyerClient : IDisposable
         {
             path += "?" + queryParameters;
         }
-        Log.Debug(path);
+        Log.Trace($"HTTP get {path}");
 
         var text = timestamp + "GET" + path;
         var sign = BitConverter.ToString(_hash.ComputeHash(Encoding.UTF8.GetBytes(text))).Replace("-", string.Empty).ToLower();
@@ -380,7 +380,7 @@ public partial class BitFlyerClient : IDisposable
 
         var apiName = callerName.Replace("Async", "").ToLower();
         var body = JsonConvert.SerializeObject(requestObject, JsonSerializeSettings);
-        Log.Debug($"{apiName}:{body}");
+        Log.Trace($"HTTP post {apiName}:{body}");
         if (!ConfirmCallback(apiName, body))
         {
             return new BitFlyerResponse<T>();

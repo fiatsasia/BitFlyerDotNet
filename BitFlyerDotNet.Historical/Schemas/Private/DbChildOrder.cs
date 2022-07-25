@@ -201,7 +201,7 @@ namespace BitFlyerDotNet.Historical
         // From element of parent order
         //
 
-        public DbChildOrder(BfParentOrder req, BfParentOrderResponse resp, int childOrderIndex)
+        public DbChildOrder(BfParentOrder req, BfParentOrderAcceptance resp, int childOrderIndex)
         {
             ProductCode = req.Parameters[childOrderIndex].ProductCode;
             Side = req.Parameters[childOrderIndex].Side;

@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.Trading;
 
-class BfxActivePosition
+class BfxPositionContext
 {
     public string ChildOrderAcceptanceId { get; }
     public int ExecutionIndex { get; }
@@ -25,12 +25,12 @@ class BfxActivePosition
     decimal _sfd;
     public decimal SwapForDifference => _sfd * (CurrentSize / OpenSize);
 
-    private BfxActivePosition()
+    private BfxPositionContext()
     {
         ChildOrderAcceptanceId = string.Empty;
     }
 
-    public BfxActivePosition(BfPosition pos)
+    public BfxPositionContext(BfPosition pos)
     {
         ChildOrderAcceptanceId = string.Empty;
         Time = pos.OpenDate;
@@ -41,7 +41,7 @@ class BfxActivePosition
         _sfd = pos.SwapForDifference;
     }
 
-    public BfxActivePosition(BfChildOrderEvent e, decimal size)
+    public BfxPositionContext(BfChildOrderEvent e, decimal size)
     {
         if (e.EventType != BfOrderEventType.Execution)
         {
@@ -58,9 +58,9 @@ class BfxActivePosition
 #pragma warning restore CS8629
     }
 
-    internal BfxActivePosition Split(decimal splitSize)
+    internal BfxPositionContext Split(decimal splitSize)
     {
-        var newPos = new BfxActivePosition
+        var newPos = new BfxPositionContext
         {
             Time = this.Time,
             Price = this.Price,

@@ -288,7 +288,7 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         // Update parent orders cache
         //======================================================================
-        public void OpenParentOrder(BfParentOrder req, BfParentOrderResponse resp) => _procQ.Add(() =>
+        public void OpenParentOrder(BfParentOrder req, BfParentOrderAcceptance resp) => _procQ.Add(() =>
         {
             Log.Enter();
             _ctx.Insert(_productCode, req, resp);
@@ -335,7 +335,7 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         // Update child orders cache
         //======================================================================
-        public void OpenChildOrder(BfChildOrder req, BfChildOrderResponse resp) => _procQ.Add(() =>
+        public void OpenChildOrder(BfChildOrder req, BfChildOrderAcceptance resp) => _procQ.Add(() =>
         {
             Log.Enter();
             _ctx.Insert(req, resp);

@@ -34,7 +34,7 @@ public class BfParentOrderParameter
     public bool ShouldSerializeOffset() { return ConditionType == BfOrderType.Trail; }
 }
 
-public class BfParentOrder
+public class BfParentOrder : IBfOrder
 {
     [JsonConverter(typeof(StringEnumConverter))]
     public BfOrderType OrderMethod { get; set; }
@@ -60,7 +60,7 @@ public class BfParentOrder
     }
 }
 
-public class BfParentOrderResponse
+public class BfParentOrderAcceptance
 {
     [JsonProperty(PropertyName = "parent_order_acceptance_id")]
     public string ParentOrderAcceptanceId { get; private set; }
@@ -68,39 +68,23 @@ public class BfParentOrderResponse
 
 public partial class BitFlyerClient
 {
-    void Validate(ref BfParentOrder request)
+    /// <summary>
+    /// Submit New Parent Order (Special order)
+    /// <see href="https://scrapbox.io/BitFlyerDotNet/SendParentOrder">Online help</see>
+    /// </summary>
+    /// <param name="order"></param>
+    /// <returns></returns>
+    public Task<BitFlyerResponse<BfParentOrderAcceptance>> SendParentOrderAsync(BfParentOrder order, CancellationToken ct)
     {
-        if (!request.OrderMethod.IsOrderMethod())
-        {
-            throw new ArgumentException();
-        }
-        foreach (var childOrder in request.Parameters)
-        {
-            if (!childOrder.ConditionType.IsConditionType())
-            {
-                throw new ArgumentException();
-            }
-        }
+        return PostPrivateAsync<BfParentOrderAcceptance>(nameof(SendParentOrderAsync), order, ct);
     }
 
     /// <summary>
     /// Submit New Parent Order (Special order)
     /// <see href="https://scrapbox.io/BitFlyerDotNet/SendParentOrder">Online help</see>
     /// </summary>
-    /// <param name="request"></param>
+    /// <param name="order"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfParentOrderResponse>> SendParentOrderAsync(BfParentOrder request, CancellationToken ct)
-    {
-        Validate(ref request);
-        return PostPrivateAsync<BfParentOrderResponse>(nameof(SendParentOrderAsync), request, ct);
-    }
-
-    /// <summary>
-    /// Submit New Parent Order (Special order)
-    /// <see href="https://scrapbox.io/BitFlyerDotNet/SendParentOrder">Online help</see>
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
-    public async Task<BfParentOrderResponse> SendParentOrderAsync(BfParentOrder request)
-        => (await SendParentOrderAsync(request, CancellationToken.None)).GetContent();
+    public async Task<BfParentOrderAcceptance> SendParentOrderAsync(BfParentOrder order)
+        => (await SendParentOrderAsync(order, CancellationToken.None)).GetContent();
 }

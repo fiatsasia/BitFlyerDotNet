@@ -30,6 +30,7 @@ partial class Program
 
     static BfxApplication App { get; set; }
     static BfxMarketDataSource Mds { get; set; }
+    static BfxOrderTemplateManager Otm { get; set; }
     static Dictionary<string, string> Properties;
     static decimal _orderSize;
 
@@ -51,6 +52,10 @@ partial class Program
             App.OrderChanged += OnOrderChanged;
             App.RealtimeSource.Channel.MessageSent += json => Console.WriteLine($"Socket message sent: {json}");
             App.RealtimeSource.Channel.MessageReceived += message => OnRealtimeMessageReceived(message);
+
+            Otm = BfxOrderTemplateManager.Load("orderTemplates.json");
+            Mds = await App.GetMarketDataSourceAsync(ProductCode);
+            await Mds.InitializeAsync();
 
             while (true)
             {
@@ -83,7 +88,7 @@ partial class Program
                             break;
 
                         case 'P':
-                            GetActivePositions();
+                            await GetActivePositions();
                             break;
 
                         case 'R':
@@ -171,9 +176,12 @@ partial class Program
         }
     }
 
-    static void GetActivePositions()
+    static async Task GetActivePositions()
     {
-        App.GetActivePositions().ForEach(e => Console.WriteLine(ToDisplayString(e)));
+        await foreach (var pos in App.GetActivePositions(ProductCode))
+        {
+            Console.WriteLine(ToDisplayString(pos));
+        }
     }
 
     static void OnPositionChanged(object sender, BfxPositionChangedEventArgs e)

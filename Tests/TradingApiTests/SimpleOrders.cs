@@ -12,8 +12,6 @@ partial class Program
 {
     static async Task SimpleOrders()
     {
-        var mds = await App.GetMarketDataSourceAsync(ProductCode);
-
         while (true)
         {
             Console.WriteLine("L)imit price order best ask/bid price");
@@ -35,7 +33,7 @@ partial class Program
                             var side = SelectSide();
                             if (side != BfTradeSide.Unknown)
                             {
-                                await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, side, mds.Ticker.LastTradedPrice, _orderSize));
+                                await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, side, Mds.Ticker.LastTradedPrice, _orderSize));
                             }
                         }
                         break;
@@ -61,15 +59,15 @@ partial class Program
                         break;
 
                     case 'E':
-                        await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.Ticker.BestBid - UnexecutableGap, _orderSize, minuteToExpire: TimeSpan.FromMinutes(1)));
+                        await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.Ticker.BestBid - UnexecutableGap, _orderSize, minuteToExpire: TimeSpan.FromMinutes(1)));
                         break;
 
                     case 'F':
-                        await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, mds.Ticker.BestBid - UnexecutableGap, _orderSize, timeInForce: BfTimeInForce.FOK));
+                        await App.PlaceOrderAsync(BfOrderFactory.Limit(ProductCode, BfTradeSide.Buy, Mds.Ticker.BestBid - UnexecutableGap, _orderSize, timeInForce: BfTimeInForce.FOK));
                         break;
 
                     case 'C':
-                        CancelOrder();
+                        await CancelOrder();
                         break;
 
                     case 'X':

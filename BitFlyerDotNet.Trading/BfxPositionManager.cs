@@ -10,15 +10,17 @@ namespace BitFlyerDotNet.Trading;
 
 class BfxPositionManager
 {
-    ConcurrentQueue<BfxActivePosition> _q = new ConcurrentQueue<BfxActivePosition>();
-
+    public string ProductCode { get; private set; }
     public decimal TotalSize => Math.Abs(_q.Sum(e => e.CurrentSize));
     public BfTradeSide Side => _q.TryPeek(out var pos) ? pos.Side : BfTradeSide.Unknown;
+
+    ConcurrentQueue<BfxPositionContext> _q = new ConcurrentQueue<BfxPositionContext>();
 
     public BfxPositionManager() { }
     public BfxPositionManager(BfPosition[] positions)
     {
-        positions.ForEach(e => _q.Enqueue(new BfxActivePosition(e)));
+        ProductCode = positions[0].ProductCode;
+        positions.ForEach(e => _q.Enqueue(new BfxPositionContext(e)));
     }
 
     public IEnumerable<BfxPosition> GetActivePositions()
@@ -33,34 +35,32 @@ class BfxPositionManager
             throw new ArgumentException();
         }
 
-#pragma warning disable CS8629
         var executedSize = e.Side == BfTradeSide.Buy ? e.Size.Value : -e.Size.Value;
-#pragma warning restore CS8629
-        BfxActivePosition pos;
-        if (!_q.TryPeek(out pos) || Math.Sign(pos.OpenSize) == Math.Sign(executedSize)) // empty or same side
+        BfxPositionContext ctx;
+        if (!_q.TryPeek(out ctx) || Math.Sign(ctx.OpenSize) == Math.Sign(executedSize)) // empty or same side
         {
-            pos = new BfxActivePosition(e, e.Size.Value);
-            _q.Enqueue(pos);
-            return new BfxPosition[] { new BfxPosition(pos) };
+            ctx = new BfxPositionContext(e, e.Size.Value);
+            _q.Enqueue(ctx);
+            return new BfxPosition[] { new BfxPosition(ctx) };
         }
 
         // Process to another side
         var closeSize = executedSize;
-        var closedPos = new List<BfxActivePosition>();
-        while (_q.TryPeek(out pos) && Math.Abs(closeSize) > 0m)
+        var closedPos = new List<BfxPositionContext>();
+        while (_q.TryPeek(out ctx) && Math.Abs(closeSize) > 0m)
         {
-            if (Math.Abs(closeSize) >= Math.Abs(pos.CurrentSize))
+            if (Math.Abs(closeSize) >= Math.Abs(ctx.CurrentSize))
             {
-                closeSize += pos.CurrentSize;
-                if (_q.TryDequeue(out pos))
+                closeSize += ctx.CurrentSize;
+                if (_q.TryDequeue(out ctx))
                 {
-                    closedPos.Add(pos);
+                    closedPos.Add(ctx);
                 }
                 continue;
             }
-            if (Math.Abs(closeSize) < Math.Abs(pos.CurrentSize))
+            if (Math.Abs(closeSize) < Math.Abs(ctx.CurrentSize))
             {
-                closedPos.Add(pos.Split(closeSize));
+                closedPos.Add(ctx.Split(closeSize));
                 closeSize = 0;
                 break;
             }
@@ -70,9 +70,9 @@ class BfxPositionManager
 
         if (closeSize > 0m)
         {
-            pos = new BfxActivePosition(e, Math.Abs(closeSize));
-            _q.Enqueue(pos);
-            result.Add(new BfxPosition(pos));
+            ctx = new BfxPositionContext(e, Math.Abs(closeSize));
+            _q.Enqueue(ctx);
+            result.Add(new BfxPosition(ctx));
         }
 
         return result;

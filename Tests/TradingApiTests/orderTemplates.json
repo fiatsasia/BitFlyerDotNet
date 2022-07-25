@@ -1,0 +1,95 @@
+[
+    {
+        "id": "01G8HSMBNJVHGW8PTYYQJTPM11",
+        "category": "Unexecutable orders",
+        "description": "Unexecutable limit buy",
+        "orderType": "Limit",
+        "side": "Buy",
+        "orderPriceType": "Bid",
+        "orderPriceOffset": "-10%"
+    },
+    {
+        "id": "01G8J97KHEAYCD2ZT7E3FTYDPQ",
+        "category": "Unexecutable orders",
+        "description": "Unexecutable stop sell",
+        "orderType": "Stop",
+        "side": "Sell",
+        "orderPriceType": "Ask",
+        "orderPriceOffset": "-10%"
+    },
+    {
+        "id": "01G8J9F2MNVYWVXY0A7BFKR55K",
+        "category": "Unexecutable orders",
+        "description": "Unexecutable IFD limit",
+        "orderType": "IFD",
+        "children": [
+            {
+                "orderType": "Limit",
+                "side": "Buy",
+                "orderPriceType": "Bid",
+                "orderPriceOffset": "-10%"
+            },
+            {
+                "orderType": "Limit",
+                "side": "Sell",
+                "orderPriceType": "Ask",
+                "orderPriceOffset": "10%"
+            }
+        ]
+    },
+    {
+        "id": "01G8J9V8ASVV0R9P5WQPFXWDG6",
+        "category": "Unexecutable orders",
+        "description": "Unexecutable OCO stop limit",
+        "orderType": "OCO",
+        "children": [
+            {
+                "orderType": "StopLimit",
+                "side": "Sell",
+                "triggerPriceType": "LTP",
+                "triggerPriceOffset": "10%",
+                "orderPriceType": "Ask",
+                "orderPriceOffset": "10%"
+            },
+            {
+                "orderType": "StopLimit",
+                "side": "Buy",
+                "triggerPriceType": "LTP",
+                "triggerPriceOffset": "-10%",
+                "orderPriceType": "Bid",
+                "orderPriceOffset": "-10%"
+            }
+        ]
+    },
+    {
+        "id": "01G8JA8F6G0CGP06M7XRPDXQSN",
+        "category": "Unexecutable orders",
+        "description": "Unexecutable OCO limit",
+        "orderType": "OCO",
+        "children": [
+            {
+                "orderType": "Limit",
+                "side": "Buy",
+                "orderPriceType": "Bid",
+                "orderPriceOffset": "-10%"
+            },
+            {
+                "orderType": "Limit",
+                "side": "Sell",
+                "orderPriceType": "Ask",
+                "orderPriceOffset": "10%"
+            }
+        ]
+    },
+    {
+        "id": "01G8JABX2PTMVXQ4RQ3DJ9E1TV",
+        "category": "Unexecutable orders",
+        "description": "Unexecutable stop limit",
+        "orderType": "StopLimit",
+        "side": "Sell",
+        "triggerPriceType": "LTP",
+        "triggerPriceOffset": "10%",
+        "orderPriceType": "Ask",
+        "orderPriceOffset": "10%"
+    }
+]
