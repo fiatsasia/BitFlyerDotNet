@@ -44,6 +44,7 @@ public class BfParentOrder : IBfOrder
 
     [JsonConverter(typeof(StringEnumConverter))]
     public BfTimeInForce? TimeInForce { get; set; }
+    public bool ShouldSerializeTimeInForce() => TimeInForce.HasValue;
 
     public List<BfParentOrderParameter> Parameters { get; set; } = new ();
 

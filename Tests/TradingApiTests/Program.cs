@@ -13,6 +13,7 @@ global using System.IO;
 global using System.Xml.Linq;
 global using System.Threading.Tasks;
 global using System.Reactive.Linq;
+global using Newtonsoft.Json;
 global using BitFlyerDotNet.LightningApi;
 global using BitFlyerDotNet.Trading;
 
@@ -21,7 +22,6 @@ namespace TradingApiTests;
 partial class Program
 {
     const string ProductCode = BfProductCode.FX_BTC_JPY;
-    const decimal UnexecutableGap = 50000m;
     const string TimeFormat = "yyyy/MM/dd HH:mm:ss.ffff";
     const string OrderCacheFileName = "TradingApiTests.db3";
 
@@ -30,7 +30,6 @@ partial class Program
 
     static BfxApplication App { get; set; }
     static BfxMarketDataSource Mds { get; set; }
-    static BfxOrderTemplateManager Otm { get; set; }
     static Dictionary<string, string> Properties;
     static decimal _orderSize;
 
@@ -47,22 +46,21 @@ partial class Program
         using (App = new BfxApplication(key, secret))
         {
             App.AddTraceLoggingService(NLog.LogManager.GetLogger("debugOutput"));
+            App.AddOrderTemplates("orderTemplates.json");
             // App.AddDataSource(new BitFlyerDotNet.DataSource.SQLite());
+
             App.PositionChanged += OnPositionChanged;
             App.OrderChanged += OnOrderChanged;
             App.RealtimeSource.Channel.MessageSent += json => Console.WriteLine($"Socket message sent: {json}");
             App.RealtimeSource.Channel.MessageReceived += message => OnRealtimeMessageReceived(message);
 
-            Otm = BfxOrderTemplateManager.Load("orderTemplates.json");
-            Mds = await App.GetMarketDataSourceAsync(ProductCode);
-            await Mds.InitializeAsync();
 
             while (true)
             {
                 Console.WriteLine("===================================================================");
-                Console.WriteLine("S)imple orders");
-                Console.WriteLine("C)onditional orders");
-                Console.WriteLine("U)nexecutable orders");
+                Console.WriteLine("Place o)rder");
+                Console.WriteLine("C)ancel last order");
+                Console.WriteLine("X) Close position");
                 Console.WriteLine("");
                 Console.WriteLine("R)ecent orders");
                 Console.WriteLine("Active O)rders");
@@ -75,16 +73,43 @@ partial class Program
                 {
                     switch (GetCh())
                     {
-                        case 'S':
-                            await SimpleOrders();
+                        case 'O':
+                            {
+                                var templ = App.GetOrderTemplates();
+                                for (int i = 0; i < templ.Length; i++)
+                                {
+                                    Console.WriteLine($"{i}) {templ[i].Description}");
+                                }
+                                Console.WriteLine();
+                                Console.Write("Select conditional order>");
+                                var line = Console.ReadLine();
+                                if (string.IsNullOrEmpty(line))
+                                {
+                                    break;
+                                }
+                                var selectedNo = int.Parse(line);
+                                var order = await templ[selectedNo].CreateOrderAsync(ProductCode, _orderSize);
+                                Console.WriteLine(JsonConvert.SerializeObject(order, Formatting.Indented, BitFlyerClient.JsonSerializeSettings));
+
+                                try
+                                {
+                                    order.Verify();
+                                    await App.VerifyOrderDefaultAsync(order);
+                                    //await App.PlaceOrderAsync();
+                                }
+                                catch (ArgumentException ex)
+                                {
+                                    Console.WriteLine(ex.Message);
+                                }
+                            }
                             break;
 
                         case 'C':
-                            await ConditionalOrders();
+                            await CancelOrder();
                             break;
 
-                        case 'U':
-                            await UnexecutableOrders();
+                        case 'X':
+                            ClosePositions();
                             break;
 
                         case 'P':

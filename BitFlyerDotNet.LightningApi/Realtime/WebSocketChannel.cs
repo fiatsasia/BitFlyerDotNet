@@ -146,6 +146,10 @@ public class WebSocketChannel : IDisposable
                 OnMessageReceived(json);
                 WsReceived?.Invoke(json);
             }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
             catch (WebSocketException ex)
             {
                 var ie = ex.InnerException?.InnerException;

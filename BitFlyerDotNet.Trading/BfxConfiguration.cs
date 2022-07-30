@@ -35,6 +35,7 @@ public class BfxConfiguration
 
     public Dictionary<string, decimal> OrderSizeMax { get; } = new();
     public bool OrderPriceLimitter { get; } = true;
+    public bool IsVerifyDisabled { get; internal set; }
 
     public BfxConfiguration()
     {

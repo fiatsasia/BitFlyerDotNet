@@ -1,5 +1,209 @@
 [
     {
+        "id": "01G962NEAPGNQY6AW3ZGYSH7H0",
+        "category": "Simple orders",
+        "description": "Limit buy",
+        "orderType": "Limit",
+        "side": "Buy",
+        "orderPriceType": "Bid"
+    },
+    {
+        "id": "01G962P2WV70R1K73DQPGV5MAM",
+        "category": "Simple orders",
+        "description": "Limit sell",
+        "orderType": "Limit",
+        "side": "Sell",
+        "orderPriceType": "Ask"
+    },
+    {
+        "id": "01G962PGB8B36RYAVNYGAJC5QK",
+        "category": "Simple orders",
+        "description": "Market buy",
+        "orderType": "Market",
+        "side": "Buy"
+    },
+    {
+        "id": "01G962PZ2JBDBJ30HXYX8A0VWY",
+        "category": "Simple orders",
+        "description": "Market sell",
+        "orderType": "Market",
+        "side": "Sell"
+    },
+    {
+        "id": "01G962QAZE28PV80XCW1NFJ675",
+        "category": "Simple orders",
+        "description": "Trail buy",
+        "orderType": "Trail",
+        "side": "Buy",
+        "trailOffsetType": "LTP",
+        "trailOffsetRatio": "30bp"
+    },
+    {
+        "id": "01G962QPWSV99HXXSV7MYBVC73",
+        "category": "Simple orders",
+        "description": "Trail sell",
+        "orderType": "Trail",
+        "side": "Sell",
+        "trailOffsetType": "LTP",
+        "trailOffsetRatio": "30bp"
+    },
+
+    {
+        "id": "01G8ZG0ZQN5PZJ86665MP08R2C",
+        "category": "Conditional orders",
+        "description": "IFDOCO limit buy trail-stop sell",
+        "orderType": "IFDOCO",
+        "children": [
+            {
+                "orderType": "Limit",
+                "side": "Buy",
+                "orderPriceType": "Bid"
+            },
+            {
+                "orderType": "Trail",
+                "side": "Sell",
+                "trailOffsetType": "LTP",
+                "trailOffsetRatio": "30bp"
+            },
+            {
+                "orderType": "Stop",
+                "side": "Sell",
+                "triggerPriceType": "Ask",
+                "triggerPriceOffset": "-10bp"
+            }
+        ]
+    },
+    {
+        "id": "01G8ZWZ5KR7YKTAXTFJWTZJ3MT",
+        "category": "Conditional orders",
+        "description": "IFDOCO limit sell trail-stop buy",
+        "orderType": "IFDOCO",
+        "children": [
+            {
+                "orderType": "Limit",
+                "side": "Sell",
+                "orderPriceType": "Ask"
+            },
+            {
+                "orderType": "Trail",
+                "side": "Buy",
+                "trailOffsetType": "LTP",
+                "trailOffsetRatio": "30bp"
+            },
+            {
+                "orderType": "Stop",
+                "side": "Buy",
+                "triggerPriceType": "Bid",
+                "triggerPriceOffset": "10bp"
+            }
+        ]
+    },
+    {
+        "id": "01G8ZY27JNDSCGF8SPJV5SSVBW",
+        "category": "Conditional orders",
+        "description": "IFDOCO limit buy stoplimit-limit sell",
+        "orderType": "IFDOCO",
+        "children": [
+            {
+                "orderType": "Limit",
+                "side": "Buy",
+                "orderPriceType": "Bid"
+            },
+            {
+                "orderType": "StopLimit",
+                "side": "Sell",
+                "triggerPriceType": "Bid",
+                "triggerPriceOffset": "-10bp",
+                "orderPriceType": "Bid",
+                "orderPriceOffset": "-10bp"
+            },
+            {
+                "orderType": "Limit",
+                "side": "Sell",
+                "orderPriceType": "Ask",
+                "orderPriceOffset": "20bp"
+            }
+        ]
+    },
+    {
+        "id": "01G8ZY4HFXJ7XRG83F7SWVEEBY",
+        "category": "Conditional orders",
+        "description": "IFDOCO limit sell stoplimit-limit buy",
+        "orderType": "IFDOCO",
+        "children": [
+            {
+                "orderType": "Limit",
+                "side": "Sell",
+                "orderPriceType": "Ask"
+            },
+            {
+                "orderType": "StopLimit",
+                "side": "Buy",
+                "triggerPriceType": "Ask",
+                "triggerPriceOffset": "10bp",
+                "orderPriceType": "Ask",
+                "orderPriceOffset": "10bp"
+            },
+            {
+                "orderType": "Limit",
+                "side": "Buy",
+                "orderPriceType": "Bid",
+                "orderPriceOffset": "-20bp"
+            }
+        ]
+    },
+    {
+        "id": "01G94MQQNZYS521Z72Q7FDCK2Q",
+        "category": "Conditional orders",
+        "description": "IFDOCO limit buy trail-limit sell",
+        "orderType": "IFDOCO",
+        "children": [
+            {
+                "orderType": "Limit",
+                "side": "Buy",
+                "orderPriceType": "Bid"
+            },
+            {
+                "orderType": "Trail",
+                "side": "Sell",
+                "trailOffsetType": "LTP",
+                "trailOffsetRatio": "30bp"
+            },
+            {
+                "orderType": "Limit",
+                "side": "Sell",
+                "orderPriceType": "Bid",
+                "orderPriceOffset": "20bp"
+            }
+        ]
+    },
+    {
+        "id": "01G94MR62K9V58BVFBR1TV16AC",
+        "category": "Conditional orders",
+        "description": "IFDOCO limit sell trail-limit buy",
+        "orderType": "IFDOCO",
+        "children": [
+            {
+                "orderType": "Limit",
+                "side": "Sell",
+                "orderPriceType": "Ask"
+            },
+            {
+                "orderType": "Trail",
+                "side": "Buy",
+                "trailOffsetType": "LTP",
+                "trailOffsetRatio": "30bp"
+            },
+            {
+                "orderType": "Limit",
+                "side": "Buy",
+                "orderPriceType": "Ask",
+                "orderPriceOffset": "-20bp"
+            }
+        ]
+    },
+
+    {
         "id": "01G8HSMBNJVHGW8PTYYQJTPM11",
         "category": "Unexecutable orders",
         "description": "Unexecutable limit buy",
@@ -14,8 +218,8 @@
         "description": "Unexecutable stop sell",
         "orderType": "Stop",
         "side": "Sell",
-        "orderPriceType": "Ask",
-        "orderPriceOffset": "-10%"
+        "triggerPriceType": "Ask",
+        "triggerPriceOffset": "-10%"
     },
     {
         "id": "01G8J9F2MNVYWVXY0A7BFKR55K",
@@ -47,17 +251,17 @@
                 "orderType": "StopLimit",
                 "side": "Sell",
                 "triggerPriceType": "LTP",
-                "triggerPriceOffset": "10%",
+                "triggerPriceOffset": "-10%",
                 "orderPriceType": "Ask",
-                "orderPriceOffset": "10%"
+                "orderPriceOffset": "-10%"
             },
             {
                 "orderType": "StopLimit",
                 "side": "Buy",
                 "triggerPriceType": "LTP",
-                "triggerPriceOffset": "-10%",
+                "triggerPriceOffset": "10%",
                 "orderPriceType": "Bid",
-                "orderPriceOffset": "-10%"
+                "orderPriceOffset": "10%"
             }
         ]
     },
@@ -88,8 +292,71 @@
         "orderType": "StopLimit",
         "side": "Sell",
         "triggerPriceType": "LTP",
-        "triggerPriceOffset": "10%",
+        "triggerPriceOffset": "-10%",
         "orderPriceType": "Ask",
-        "orderPriceOffset": "10%"
+        "orderPriceOffset": "-10%"
+    },
+
+    {
+        "id": "01G962RA3B6P5TFDBDYS01ZP9G",
+        "category": "Expiration orders",
+        "description": "Minutes to expire limit",
+        "orderType": "Limit",
+        "side": "Buy",
+        "orderPriceType": "Bid",
+        "orderPriceOffset": "-10%",
+        "expirationPeriod": "00:01:00"
+    },
+    {
+        "id": "01G962RNRAHK0JH9CDX0STDEZN",
+        "category": "Expiration orders",
+        "description": "FOK limit",
+        "orderType": "Limit",
+        "side": "Buy",
+        "orderPriceType": "Bid",
+        "orderPriceOffset": "-10%",
+        "timeInForce":  "FOK"
+    },
+    {
+        "id": "01G94NX84YWC5DZ1MVH8M3237J",
+        "category": "Expiration orders",
+        "description": "Minutes to expire OCO",
+        "orderType": "OCO",
+        "expirationPeriod": "00:01:00",
+        "children": [
+            {
+                "orderType": "Limit",
+                "side": "Sell",
+                "orderPriceType": "Ask",
+                "orderPriceOffset": "10%"
+            },
+            {
+                "orderType": "Limit",
+                "side": "Buy",
+                "orderPriceType": "Bid",
+                "orderPriceOffset": "-10%"
+            }
+        ]
+    },
+    {
+        "id": "01G94PEG0FJJSN11K00JKTAXEA",
+        "category": "Expiration orders",
+        "description": "FOK OCO",
+        "orderType": "OCO",
+        "timeInForce":  "FOK",
+        "children": [
+            {
+                "orderType": "Limit",
+                "side": "Sell",
+                "orderPriceType": "Ask",
+                "orderPriceOffset": "10%"
+            },
+            {
+                "orderType": "Limit",
+                "side": "Buy",
+                "orderPriceType": "Bid",
+                "orderPriceOffset": "-10%"
+            }
+        ]
     }
 ]

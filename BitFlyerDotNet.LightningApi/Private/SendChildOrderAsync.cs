@@ -30,6 +30,7 @@ public class BfChildOrder : IBfOrder
 
     [JsonConverter(typeof(StringEnumConverter))]
     public BfTimeInForce? TimeInForce { get; set; }
+    public bool ShouldSerializeTimeInForce() => TimeInForce.HasValue;
 
     // This will be used order factory
     public static implicit operator BfParentOrderParameter(BfChildOrder order)

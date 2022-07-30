@@ -76,6 +76,9 @@ public static class BfProductCode
     }
 
     public static int GetPriceDecimals(string productCode) => _priceDecimals[productCode];
+
+    public static decimal RoundPrice(string productCode, decimal price)
+        => Math.Round(price, GetPriceDecimals(productCode));
 }
 
 public enum BfMarketType

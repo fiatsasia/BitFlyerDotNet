@@ -6,11 +6,14 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
+#pragma warning disable CS8629
+
 namespace BitFlyerDotNet.Trading;
 
 public class BfxApplication : IDisposable
 {
     #region Properties and fields
+    public Ulid Id { get; } = Ulid.NewUlid();
     public RealtimeSourceFactory RealtimeSource => _rts;
     public BfxConfiguration Config { get; }
     public bool IsInitialized => _markets.Count() > 0;
@@ -187,13 +190,17 @@ public class BfxApplication : IDisposable
                 break;
 
             case BfOrderType.Limit:
-                if (order.Side == BfTradeSide.Buy && order.Price.Value > ticker.BestBid)
+                if (order.Price.Value != Math.Round(order.Price.Value, BfProductCode.GetPriceDecimals(order.ProductCode)))
                 {
-                    throw new ArgumentException("child order: Buy order price is above best bid price.");
+                    throw new ArgumentException($"child order: The accuracy of order price varies.");
                 }
-                else if (order.Side == BfTradeSide.Sell && order.Price.Value < ticker.BestAsk)
+                if (order.Side == BfTradeSide.Buy && order.Price.Value > ticker.BestAsk)
                 {
-                    throw new ArgumentException("child order: Sell order price is below best ask price.");
+                    throw new ArgumentException($"child order: Buy order price {order.Price.Value} is above best ask price {ticker.BestAsk}.");
+                }
+                else if (order.Side == BfTradeSide.Sell && order.Price.Value < ticker.BestBid)
+                {
+                    throw new ArgumentException($"child order: Sell order price {order.Price.Value} is below best bid price {ticker.BestBid}.");
                 }
                 break;
         }
@@ -204,30 +211,45 @@ public class BfxApplication : IDisposable
         for (var childIndex = 0; childIndex < parentOrder.Parameters.Count; childIndex++)
         {
             var order = parentOrder.Parameters[childIndex];
+
+            // Check decimals
+            if (order.Price.HasValue && order.Price.Value != Math.Round(order.Price.Value, BfProductCode.GetPriceDecimals(order.ProductCode)))
+            {
+                throw new ArgumentException($"parent order: The accuracy of order price varies.");
+            }
+            if (order.TriggerPrice.HasValue && order.TriggerPrice.Value != Math.Round(order.TriggerPrice.Value, BfProductCode.GetPriceDecimals(order.ProductCode)))
+            {
+                throw new ArgumentException($"child order: The accuracy of trigger price varies.");
+            }
+            if (order.Offset.HasValue && order.Offset.Value != Math.Round(order.Offset.Value, BfProductCode.GetPriceDecimals(order.ProductCode)))
+            {
+                throw new ArgumentException($"child order: The accuracy of trail offset varies.");
+            }
+
             if (parentOrder.OrderMethod == BfOrderType.OCO || ((parentOrder.OrderMethod == BfOrderType.IFD || parentOrder.OrderMethod == BfOrderType.IFDOCO) && childIndex == 0))
             {
                 switch (order.ConditionType)
                 {
                     case BfOrderType.Limit:
-                        if (order.Side == BfTradeSide.Buy && order.Price.Value > ticker.BestBid)
+                        if (order.Side == BfTradeSide.Buy && order.Price.Value > ticker.BestAsk)
                         {
-                            throw new ArgumentException("parent order: Buy order price is above best bid price.");
+                            throw new ArgumentException($"parent order: Buy order price {order.Price.Value} is above best ask price {ticker.BestAsk}.");
                         }
-                        else if (order.Side == BfTradeSide.Sell && order.Price.Value < ticker.BestAsk)
+                        else if (order.Side == BfTradeSide.Sell && order.Price.Value < ticker.BestBid)
                         {
-                            throw new ArgumentException("parent order: Sell order price is below best ask price.");
+                            throw new ArgumentException($"parent order: Sell order price {order.Price.Value} is below best bid price {ticker.BestBid}.");
                         }
                         break;
 
                     case BfOrderType.Stop:
                     case BfOrderType.StopLimit:
-                        if (order.Side == BfTradeSide.Buy && order.TriggerPrice.Value < ticker.BestAsk)
+                        if (order.Side == BfTradeSide.Buy && order.TriggerPrice.Value < ticker.BestBid)
                         {
-                            throw new ArgumentException("parent order: Buy trigger price is below best ask price.");
+                            throw new ArgumentException("parent order: Buy trigger price is below best bid price.");
                         }
-                        else if (order.Side == BfTradeSide.Sell && order.TriggerPrice.Value > ticker.BestBid)
+                        else if (order.Side == BfTradeSide.Sell && order.TriggerPrice.Value > ticker.BestAsk)
                         {
-                            throw new ArgumentException("parent order: Sell trigger price is above best bid price.");
+                            throw new ArgumentException("parent order: Sell trigger price is above best ask price.");
                         }
                         break;
                 }
@@ -248,7 +270,11 @@ public class BfxApplication : IDisposable
             await InitializeMarketDataSourceAsync(productCode);
         }
 
-        await VerifyOrderAsync?.Invoke(order);
+        if (!Config.IsVerifyDisabled)
+        {
+            order.Verify();
+            await VerifyOrderAsync?.Invoke(order);
+        }
 
         return await _markets[productCode].PlaceOrderAsync(order, ct);
     }
