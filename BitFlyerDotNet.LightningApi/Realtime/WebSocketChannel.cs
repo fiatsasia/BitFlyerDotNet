@@ -142,7 +142,6 @@ public class WebSocketChannel : IDisposable
                 }
 
                 json = Encoding.UTF8.GetString(buffer, 0, length);
-                Log.TraceJson("WebSocket message received", json);
                 OnMessageReceived(json);
                 WsReceived?.Invoke(json);
             }

@@ -156,9 +156,7 @@ public class BfxApplication : IDisposable
     }
     #endregion Initialize and Finalize
 
-    #region Ordering
-    public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
-
+    #region Verify order
     public Func<IBfOrder, Task> VerifyOrderAsync { get; set; }
     public async Task VerifyOrderDefaultAsync(IBfOrder order)
     {
@@ -256,7 +254,10 @@ public class BfxApplication : IDisposable
             }
         }
     }
+    #endregion Verify order
 
+    #region Ordering
+    public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
     public async Task<string> PlaceOrderAsync<TOrder>(TOrder order, CancellationToken ct = default) where TOrder : IBfOrder
     {
         var productCode = order.GetProductCode();

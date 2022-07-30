@@ -29,6 +29,12 @@ public class BfxPrivateDataSource
         return _ctx.TryGetValue(acceptanceId, out var ctx) ? ctx : new BfxOrderContext(productCode);
     }
 
+    public virtual BfxOrderContext TryRegisterOrderContext(string acceptanceId, BfxOrderContext ctx)
+    {
+        _ctx.TryAdd(acceptanceId, ctx);
+        return ctx;
+    }
+
     public virtual bool FindParent(string childOrderAcceptanceId, out BfxOrderContext parent)
     {
         parent = default;
@@ -39,7 +45,21 @@ public class BfxPrivateDataSource
     }
 
     public virtual IAsyncEnumerable<BfxOrderContext> GetOrderContextsAsync(string productCode)
-        => _ctx.Values.ToList().Where(e => e.ProductCode == productCode).ToAsyncEnumerable();
+    {
+        // Remove child order which belonged parent order
+        var orders = _ctx.Values.Where(e => e.ProductCode == productCode).ToDictionary(e => e.OrderAcceptanceId, e => e);
+        foreach (var parentOrder in orders.Values.Where(e => e.HasChildren).ToList())
+        {
+            foreach (var childOrder in parentOrder.Children)
+            {
+                if (!string.IsNullOrEmpty(childOrder.OrderAcceptanceId))
+                {
+                    orders.Remove(childOrder.OrderAcceptanceId);
+                }
+            }
+        }
+        return orders.Values.ToList().ToAsyncEnumerable();
+    }
 
     public async IAsyncEnumerable<BfxOrderContext> GetOrderContextsAsync(string productCode, BfOrderState orderState, int count)
     {

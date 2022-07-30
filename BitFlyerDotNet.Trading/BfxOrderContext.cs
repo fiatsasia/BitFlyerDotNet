@@ -170,6 +170,7 @@ public class BfxOrderContext
         switch (e.EventType)
         {
             case BfOrderEventType.Order:
+                OrderDate = e.EventDate;
                 OrderType = e.ParentOrderType.Value;
                 ExpireDate = e.ExpireDate;
                 OrderState = BfOrderState.Active;
@@ -186,12 +187,14 @@ public class BfxOrderContext
 
             case BfOrderEventType.Trigger:
                 {
-                    if (_children.Length <= e.ChildOrderIndex)
+                    var index = e.ChildOrderIndex.Value - 1;
+                    if (_children.Length < index + 1)
                     {
-                        Array.Resize(ref _children, e.ChildOrderIndex.Value + 1);
-                        _children[e.ChildOrderIndex.Value] = new BfxOrderContext(ProductCode);
+                        Array.Resize(ref _children, index + 1);
+                        _children[index] = new BfxOrderContext(ProductCode);
                     }
-                    var child = _children[e.ChildOrderIndex.Value];
+                    var child = _children[index];
+                    child.OrderDate = e.EventDate;
                     child.OrderType = e.ChildOrderType.Value;
                     child.OrderAcceptanceId = e.ChildOrderAcceptanceId;
                     child.Side = e.Side;
@@ -204,7 +207,8 @@ public class BfxOrderContext
 
             case BfOrderEventType.Complete: // Complete child
                 {
-                    var child = _children[e.ChildOrderIndex.Value];
+                    var index = e.ChildOrderIndex.Value - 1;
+                    var child = _children[index];
                     child.OrderAcceptanceId = e.ChildOrderAcceptanceId;
                     child.OrderState = BfOrderState.Completed;
                     if (_children.All(c => c.OrderState == BfOrderState.Completed))
@@ -285,6 +289,7 @@ public class BfxOrderContext
         switch (e.EventType)
         {
             case BfOrderEventType.Order:
+                OrderDate = e.EventDate;
                 OrderType = e.ChildOrderType.Value;
                 OrderPrice = e.Price;
                 Side = e.Side;

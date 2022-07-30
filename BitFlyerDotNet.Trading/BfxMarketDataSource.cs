@@ -6,9 +6,9 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.Trading;
-
 #pragma warning disable CS8618
+
+namespace BitFlyerDotNet.Trading;
 
 public class BfxMarketDataSource : IDisposable
 {

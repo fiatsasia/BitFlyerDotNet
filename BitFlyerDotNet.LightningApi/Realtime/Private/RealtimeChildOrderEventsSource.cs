@@ -18,7 +18,11 @@ class RealtimeChildOrderEventsSource : RealtimeSourceBase<BfChildOrderEvent>
         _dispose = dispose;
     }
 
-    public override object OnMessageReceived(JToken token) => DispatchArrayMessage(token); // Channel returns array format
+    public override object OnMessageReceived(JToken token)
+    {
+        Log.TraceJson("Child order event received:", token.ToString(Formatting.None));
+        return DispatchArrayMessage(token); // Channel returns array format
+    }
 
     protected override void OnDispose()
     {

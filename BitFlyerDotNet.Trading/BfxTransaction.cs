@@ -117,7 +117,7 @@ class BfxTransaction : IDisposable
             }
 
             BitFlyerResponse resp;
-            if (_ctx.HasChildren)
+            if (!_ctx.HasChildren)
             {
                 resp = await _client.CancelChildOrderAsync(_ctx.ProductCode, string.Empty, _ctx.OrderAcceptanceId, cts?.Token ?? CancellationToken.None);
             }
@@ -125,7 +125,7 @@ class BfxTransaction : IDisposable
             {
                 resp = await _client.CancelParentOrderAsync(_ctx.ProductCode, string.Empty, _ctx.OrderAcceptanceId, cts?.Token ?? CancellationToken.None);
             }
-            if (resp.IsError)
+            if (!resp.IsError)
             {
                 OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.CancelAccepted, _ctx));
             }

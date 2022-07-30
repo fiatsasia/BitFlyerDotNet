@@ -17,6 +17,7 @@ public class BfxOrderChangedEventArgs : EventArgs
     public BfxOrderChangedEventArgs(BfxOrderEventType eventType, BfxOrderContext status)
     {
         EventType = eventType;
+        Time = DateTime.UtcNow;
         Order = new BfxOrder(status);
     }
 
@@ -24,9 +25,9 @@ public class BfxOrderChangedEventArgs : EventArgs
     {
         EventType = e.EventType switch
         {
-            BfOrderEventType.Order => BfxOrderEventType.OrderAccepted,
+            BfOrderEventType.Order => BfxOrderEventType.OrderConfirmed,
             BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
-            BfOrderEventType.Cancel => BfxOrderEventType.Canceled,
+            BfOrderEventType.Cancel => BfxOrderEventType.OrderCanceled,
             BfOrderEventType.CancelFailed => BfxOrderEventType.CancelFailed,
             BfOrderEventType.Execution => (status.OrderSize > status.ExecutedSize)
                 ? BfxOrderEventType.PartiallyExecuted
@@ -42,9 +43,9 @@ public class BfxOrderChangedEventArgs : EventArgs
     {
         EventType = e.EventType switch
         {
-            BfOrderEventType.Order => BfxOrderEventType.OrderAccepted,
+            BfOrderEventType.Order => BfxOrderEventType.OrderConfirmed,
             BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
-            BfOrderEventType.Cancel => BfxOrderEventType.Canceled,
+            BfOrderEventType.Cancel => BfxOrderEventType.OrderCanceled,
             BfOrderEventType.Trigger => BfxOrderEventType.ChildOrderChanged,
             BfOrderEventType.Complete => BfxOrderEventType.ChildOrderChanged,
             BfOrderEventType.Expire => BfxOrderEventType.Expired,

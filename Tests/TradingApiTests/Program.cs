@@ -29,7 +29,6 @@ partial class Program
     const char ESCAPE = (char)0x1b;
 
     static BfxApplication App { get; set; }
-    static BfxMarketDataSource Mds { get; set; }
     static Dictionary<string, string> Properties;
     static decimal _orderSize;
 
@@ -63,7 +62,7 @@ partial class Program
                 Console.WriteLine("X) Close position");
                 Console.WriteLine("");
                 Console.WriteLine("R)ecent orders");
-                Console.WriteLine("Active O)rders");
+                Console.WriteLine("A)ctive orders");
                 Console.WriteLine("T)oday's Profit");
                 Console.WriteLine("Active P)ositions");
                 Console.WriteLine("");
@@ -95,12 +94,19 @@ partial class Program
                                 {
                                     order.Verify();
                                     await App.VerifyOrderDefaultAsync(order);
-                                    //await App.PlaceOrderAsync();
+                                    await App.PlaceOrderAsync(order);
                                 }
                                 catch (ArgumentException ex)
                                 {
                                     Console.WriteLine(ex.Message);
                                 }
+                            }
+                            break;
+
+                        case 'A':
+                            await foreach (var order in App.GetActiveOrdersAsync(ProductCode))
+                            {
+                                PrintOrder(order);
                             }
                             break;
 
@@ -134,6 +140,7 @@ partial class Program
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
+                    Log.Error(ex);
                 }
             }
         }
@@ -219,18 +226,17 @@ partial class Program
     {
         var sb = new List<string>();
         sb.Add(e.Time.ToString(TimeFormat));
-
-        if (e.EventType != BfxOrderEventType.ChildOrderChanged)
-        {
-            sb.Add(e.EventType.ToString());
-        }
-        else
-        {
-            sb.Add(e.EventType.ToString());
-        }
-
         sb.Add($"{e.Order.ProductCode}");
         sb.Add($"{e.Order.OrderType}");
+        sb.Add(e.EventType.ToString());
+
+        switch (e.EventType)
+        {
+            case BfxOrderEventType.OrderAccepted:
+                sb.Add(e.Order.OrderAcceptanceId);
+                break;
+        }
+
         if (e.Order.Side.HasValue)
         {
             sb.Add($"{e.Order.Side}");
@@ -251,7 +257,10 @@ partial class Program
         {
             sb.Add($"ES:{e.Order.ExecutedSize}");
         }
-        Console.WriteLine(string.Join(' ', sb));
+
+        var msg = string.Join(' ', sb);
+        Console.WriteLine(msg);
+        Log.Info(msg);
     }
 
     static void PrintOrder(BfxOrder order)
@@ -267,6 +276,7 @@ partial class Program
         }
         sb.Add($"{order.ProductCode}");
         sb.Add($"{order.OrderType}");
+        sb.Add(order.OrderAcceptanceId);
         if (order.Side.HasValue)
         {
             sb.Add($"{order.Side}");

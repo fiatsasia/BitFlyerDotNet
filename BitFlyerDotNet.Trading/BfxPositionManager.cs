@@ -19,7 +19,7 @@ class BfxPositionManager
     public BfxPositionManager() { }
     public BfxPositionManager(BfPosition[] positions)
     {
-        ProductCode = positions[0].ProductCode;
+        ProductCode = BfProductCode.FX_BTC_JPY;
         positions.ForEach(e => _q.Enqueue(new BfxPositionContext(e)));
     }
 

@@ -217,6 +217,7 @@ public partial class BitFlyerClient : IDisposable
                 switch (responseObject.StatusCode)
                 {
                     case HttpStatusCode.OK:
+                        Log.Trace($"HTTP response {responseObject.Json}");
                         break;
 
                     case (HttpStatusCode)429:

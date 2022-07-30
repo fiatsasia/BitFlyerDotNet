@@ -18,7 +18,7 @@ public enum BfxOrderEventType
     PartiallyExecuted,
     Executed,
     OrderFailed,
-    Canceled,
+    OrderCanceled,
     CancelFailed,
     Expired,
     ChildOrderChanged,
