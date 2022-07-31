@@ -306,10 +306,41 @@ public class BfxApplication : IDisposable
         return _mds[productCode];
     }
 
-    public IAsyncEnumerable<BfxOrder> GetActiveOrdersAsync(string productCode)
-        => _pds.GetOrderContextsAsync(productCode).Where(e => e.IsActive).Select(e => new BfxOrder(e));
+    public async IAsyncEnumerable<BfxOrder> GetActiveOrdersAsync(string productCode)
+    {
+        if (!IsMarketInitialized(productCode))
+        {
+            await InitializeMarketAsync(productCode);
+        }
+
+        var ctxs = _pds.GetOrderCacheContexts(productCode).Where(e => e.IsActive).ToDictionary(e => e.OrderAcceptanceId, e => e);
+
+        // Attach children to parent
+        foreach (var pctx in ctxs.Values.Where(e => e.HasChildren).ToList())
+        {
+            var parentOrder = new BfxOrder(pctx);
+            for (var childIndex = 0; childIndex < pctx.Children.Count; childIndex++)
+            {
+                var cctx = pctx.Children[childIndex];
+                if (!string.IsNullOrEmpty(cctx.OrderAcceptanceId) && ctxs.TryGetValue(cctx.OrderAcceptanceId, out cctx))
+                {
+                    parentOrder.ReplaceChild(childIndex, cctx);
+                    ctxs.Remove(cctx.OrderAcceptanceId);
+                }
+            }
+            ctxs.Remove(pctx.OrderAcceptanceId);
+            yield return parentOrder;
+        }
+
+        // Enumerates independent child orders
+        foreach (var ctx in ctxs.Values)
+        {
+            yield return new(ctx);
+        }
+    }
+
     public IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(string productCode, int count)
-        => _pds.GetOrderContextsAsync(productCode, BfOrderState.Unknown, count).Where(e => !e.HasParent).Select(e => new BfxOrder(e));
+        => _pds.GetOrderServerContextsAsync(productCode, BfOrderState.Unknown, count).Where(e => !e.HasChildren).Select(e => new BfxOrder(e));
 
     #region Manage positions
     public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;

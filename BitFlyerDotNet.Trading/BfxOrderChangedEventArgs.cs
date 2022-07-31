@@ -14,44 +14,51 @@ public class BfxOrderChangedEventArgs : EventArgs
     public DateTime Time { get; internal set; }
     public BfxOrder Order { get; }
 
-    public BfxOrderChangedEventArgs(BfxOrderEventType eventType, BfxOrderContext status)
+    public BfxOrderChangedEventArgs(BfxOrderEventType eventType, BfxOrder order)
     {
         EventType = eventType;
         Time = DateTime.UtcNow;
-        Order = new BfxOrder(status);
+        Order = order;
     }
 
-    public BfxOrderChangedEventArgs(BfChildOrderEvent e, BfxOrderContext status)
+    internal BfxOrderChangedEventArgs(BfxOrderEventType eventType, BfxOrderContext status)
+        : this(eventType, new BfxOrder(status))
     {
-        EventType = e.EventType switch
-        {
-            BfOrderEventType.Order => BfxOrderEventType.OrderConfirmed,
-            BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
-            BfOrderEventType.Cancel => BfxOrderEventType.OrderCanceled,
-            BfOrderEventType.CancelFailed => BfxOrderEventType.CancelFailed,
-            BfOrderEventType.Execution => (status.OrderSize > status.ExecutedSize)
-                ? BfxOrderEventType.PartiallyExecuted
-                : BfxOrderEventType.Executed,
-            BfOrderEventType.Expire => BfxOrderEventType.Expired,
-            _ => throw new ArgumentException()
-        };
-        Time = e.EventDate;
-        Order = new BfxOrder(status);
     }
 
-    public BfxOrderChangedEventArgs(BfParentOrderEvent e, BfxOrderContext status)
+    internal BfxOrderChangedEventArgs(BfChildOrderEvent e, BfxOrderContext status)
+        : this(
+            e.EventType switch
+            {
+                BfOrderEventType.Order => BfxOrderEventType.OrderConfirmed,
+                BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
+                BfOrderEventType.Cancel => BfxOrderEventType.OrderCanceled,
+                BfOrderEventType.CancelFailed => BfxOrderEventType.CancelFailed,
+                BfOrderEventType.Execution => (status.OrderSize > status.ExecutedSize)
+                    ? BfxOrderEventType.PartiallyExecuted
+                    : BfxOrderEventType.Executed,
+                BfOrderEventType.Expire => BfxOrderEventType.Expired,
+                _ => throw new ArgumentException()
+            },
+            new BfxOrder(status)
+        )
     {
-        EventType = e.EventType switch
-        {
-            BfOrderEventType.Order => BfxOrderEventType.OrderConfirmed,
-            BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
-            BfOrderEventType.Cancel => BfxOrderEventType.OrderCanceled,
-            BfOrderEventType.Trigger => BfxOrderEventType.ChildOrderChanged,
-            BfOrderEventType.Complete => BfxOrderEventType.ChildOrderChanged,
-            BfOrderEventType.Expire => BfxOrderEventType.Expired,
-            _ => throw new ArgumentException()
-        };
-        Time = e.EventDate;
-        Order = new BfxOrder(status);
+    }
+
+    internal BfxOrderChangedEventArgs(BfParentOrderEvent e, BfxOrderContext status)
+        : this(
+            e.EventType switch
+            {
+                BfOrderEventType.Order => BfxOrderEventType.OrderConfirmed,
+                BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
+                BfOrderEventType.Cancel => BfxOrderEventType.OrderCanceled,
+                BfOrderEventType.Trigger => BfxOrderEventType.ChildOrderChanged,
+                BfOrderEventType.Complete => BfxOrderEventType.ChildOrderChanged,
+                BfOrderEventType.Expire => BfxOrderEventType.Expired,
+                _ => throw new ArgumentException()
+            },
+            new BfxOrder(status)
+        )
+    {
     }
 }

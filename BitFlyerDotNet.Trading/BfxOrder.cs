@@ -28,39 +28,44 @@ public class BfxOrder
 
     BfxOrder[] _children;
 
-    public BfxOrder(BfxOrderContext os)
+    internal BfxOrder(BfxOrderContext ctx)
     {
-        ProductCode = os.ProductCode;
+        ProductCode = ctx.ProductCode;
 
-        switch (os.OrderType)
+        switch (ctx.OrderType)
         {
             case BfOrderType.Market:
             case BfOrderType.Limit:
             case BfOrderType.Stop:
             case BfOrderType.StopLimit:
             case BfOrderType.Trail:
-                SetCommonPart(os);
-                SetIndividualPart(os);
+                SetCommonPart(ctx);
+                SetIndividualPart(ctx);
                 break;
 
             case BfOrderType.Simple:
-                SetCommonPart(os);
-                SetIndividualPart(os.Children[0]);
-                OrderType = os.Children[0].OrderType;
+                SetCommonPart(ctx);
+                SetIndividualPart(ctx.Children[0]);
+                OrderType = ctx.Children[0].OrderType;
                 break;
 
             case BfOrderType.IFD:
             case BfOrderType.OCO:
             case BfOrderType.IFDOCO:
-                SetCommonPart(os);
+                SetCommonPart(ctx);
                 break;
         }
 
-        _children = new BfxOrder[os.OrderType.GetChildCount()];
+        _children = new BfxOrder[ctx.OrderType.GetChildCount()];
         for (int i = 0; i < _children.Length; i++)
         {
-            _children[i] = new(os.Children[i]);
+            _children[i] = new(ctx.Children[i]);
         }
+    }
+
+    internal void ReplaceChild(int childIndex, BfxOrderContext child)
+    {
+        _children[childIndex] = new(child);
     }
 
     void SetCommonPart(BfxOrderContext os)

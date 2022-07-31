@@ -42,7 +42,7 @@ class BfxMarket : IDisposable
 
         IsInitialized = true;
 
-        await foreach (var ctx in _pds.GetOrderContextsAsync(_productCode, BfOrderState.Active, 0))
+        await foreach (var ctx in _pds.GetOrderServerContextsAsync(_productCode, BfOrderState.Active, 0))
         {
             var tx = new BfxTransaction(_client, ctx, _config);
             _oid2tid[ctx.OrderAcceptanceId] = tx.Id;
@@ -50,52 +50,46 @@ class BfxMarket : IDisposable
         }
     }
 
-    public void OnChildOrderEvent(BfChildOrderEvent e)
+    BfxTransaction GetOrCreateTransaction(string acceptanceId)
     {
-        var tid = _oid2tid.GetOrAdd(e.ChildOrderAcceptanceId, _ =>
+        var tid = _oid2tid.GetOrAdd(acceptanceId, _ =>
         {
-            var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, e.ChildOrderAcceptanceId), _config);
+            var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, acceptanceId), _config);
             tx.OrderChanged += OnOrderChanged;
             _tx.TryAdd(tx.Id, tx);
             Log.Debug($"Transaction tid:{tx.Id} opened");
             return tx.Id;
         });
         var tx = _tx[tid];
-        _pds.TryRegisterOrderContext(e.ChildOrderAcceptanceId, tx.GetOrderContext().Update(e));
-        tx.OnChildOrderEvent(e);
+        _pds.TryRegisterOrderContext(_productCode, acceptanceId, tx.GetOrderContext());
+        return tx;
+    }
 
-        if (_pds.FindParent(e.ChildOrderAcceptanceId, out var parent))
-        {
-            parent.UpdateChild(e);
-        }
+    public void OnChildOrderEvent(BfChildOrderEvent e)
+    {
+        var tx = GetOrCreateTransaction(e.ChildOrderAcceptanceId);
+        tx.GetOrderContext().Update(e);
+        tx.OnChildOrderEvent(e);
 
         if (!tx.GetOrderContext().IsActive)
         {
             _oid2tid.TryRemove(e.ChildOrderAcceptanceId, out _);
-            _tx.TryRemove(tid, out tx);
-            Log.Debug($"Transaction tid:{tid} closed");
+            _tx.TryRemove(tx.Id, out tx);
+            Log.Debug($"Transaction tid:{tx.Id} closed");
         }
     }
 
     public void OnParentOrderEvent(BfParentOrderEvent e)
     {
-        var tid = _oid2tid.GetOrAdd(e.ParentOrderAcceptanceId, _ =>
-        {
-            var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, e.ParentOrderAcceptanceId), _config);
-            tx.OrderChanged += OnOrderChanged;
-            _tx.TryAdd(tx.Id, tx);
-            Log.Debug($"Transaction tid:{tx.Id} opened");
-            return tx.Id;
-        });
-        var tx = _tx[tid];
-        _pds.TryRegisterOrderContext(e.ParentOrderAcceptanceId, tx.GetOrderContext().Update(e));
+        var tx = GetOrCreateTransaction(e.ParentOrderAcceptanceId);
+        tx.GetOrderContext().Update(e);
         tx.OnParentOrderEvent(e);
 
         if (!tx.GetOrderContext().IsActive)
         {
             _oid2tid.TryRemove(e.ParentOrderAcceptanceId, out _);
-            _tx.TryRemove(tid, out tx);
-            Log.Debug($"Transaction tid:{tid} closed");
+            _tx.TryRemove(tx.Id, out tx);
+            Log.Debug($"Transaction tid:{tx.Id} closed");
         }
     }
 
@@ -115,7 +109,7 @@ class BfxMarket : IDisposable
             Log.Debug($"Transaction tid:{tx.Id} opened");
             return tx.Id;
         });
-        _pds.TryRegisterOrderContext(acceptanceId, _tx[tid].GetOrderContext().Update(order));
+        _pds.TryRegisterOrderContext(_productCode, acceptanceId, _tx[tid].GetOrderContext().Update(order));
         return acceptanceId;
     }
 

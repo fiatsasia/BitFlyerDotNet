@@ -8,10 +8,10 @@
 
 namespace BitFlyerDotNet.Trading;
 
-public class BfxPrivateDataSource
+class BfxPrivateDataSource
 {
     BitFlyerClient _client;
-    ConcurrentDictionary<string, BfxOrderContext> _ctx = new();
+    ConcurrentDictionary<string, ConcurrentDictionary<string, BfxOrderContext>> _ctxs = new();
     BfxPositionManager _positions;
 
     public BfxPrivateDataSource(BitFlyerClient client)
@@ -19,55 +19,31 @@ public class BfxPrivateDataSource
         _client = client;
     }
 
-    public virtual BfxOrderContext CreateOrderContext(string productCode)
+    public BfxOrderContext CreateOrderContext(string productCode)
     {
         return new BfxOrderContext(productCode);
     }
 
-    public virtual BfxOrderContext GetOrCreateOrderContext(string productCode, string acceptanceId)
+    public BfxOrderContext GetOrCreateOrderContext(string productCode, string acceptanceId)
     {
-        return _ctx.TryGetValue(acceptanceId, out var ctx) ? ctx : new BfxOrderContext(productCode);
+        return _ctxs.GetOrAdd(productCode, _ => new()).TryGetValue(acceptanceId, out var ctx) ? ctx : new BfxOrderContext(productCode);
     }
 
-    public virtual BfxOrderContext TryRegisterOrderContext(string acceptanceId, BfxOrderContext ctx)
+    public BfxOrderContext TryRegisterOrderContext(string productCode, string acceptanceId, BfxOrderContext ctx)
     {
-        _ctx.TryAdd(acceptanceId, ctx);
+        _ctxs.GetOrAdd(productCode, _ => new()).TryAdd(acceptanceId, ctx);
         return ctx;
     }
 
-    public virtual bool FindParent(string childOrderAcceptanceId, out BfxOrderContext parent)
+    public async IAsyncEnumerable<BfxOrderContext> GetOrderServerContextsAsync(string productCode, BfOrderState orderState, int count)
     {
-        parent = default;
-        return (_ctx.TryGetValue(childOrderAcceptanceId, out var child) &&
-            !string.IsNullOrEmpty(child.ParentOrderAcceptanceId) &&
-            _ctx.TryGetValue(child.ParentOrderAcceptanceId, out parent)
-        );
-    }
+        var ctx = _ctxs.GetOrAdd(productCode, _ => new());
 
-    public virtual IAsyncEnumerable<BfxOrderContext> GetOrderContextsAsync(string productCode)
-    {
-        // Remove child order which belonged parent order
-        var orders = _ctx.Values.Where(e => e.ProductCode == productCode).ToDictionary(e => e.OrderAcceptanceId, e => e);
-        foreach (var parentOrder in orders.Values.Where(e => e.HasChildren).ToList())
-        {
-            foreach (var childOrder in parentOrder.Children)
-            {
-                if (!string.IsNullOrEmpty(childOrder.OrderAcceptanceId))
-                {
-                    orders.Remove(childOrder.OrderAcceptanceId);
-                }
-            }
-        }
-        return orders.Values.ToList().ToAsyncEnumerable();
-    }
-
-    public async IAsyncEnumerable<BfxOrderContext> GetOrderContextsAsync(string productCode, BfOrderState orderState, int count)
-    {
         // Get child active orders
         await foreach (var order in _client.GetChildOrdersAsync(productCode, orderState, count, 0, e => true))
         {
             var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: order.ChildOrderId);
-            yield return _ctx.AddOrUpdate(order.ChildOrderAcceptanceId,
+            yield return ctx.AddOrUpdate(order.ChildOrderAcceptanceId,
                 _ => new BfxOrderContext(productCode).Update(order, execs),
                 (_, ctx) => ctx.Update(order, execs)
             );
@@ -77,7 +53,7 @@ public class BfxPrivateDataSource
         await foreach (var parentOrder in _client.GetParentOrdersAsync(productCode, orderState, count, 0, e => true))
         {
             var parentOrderDetail = await _client.GetParentOrderAsync(productCode, parentOrderId: parentOrder.ParentOrderId);
-            var pctx = _ctx.AddOrUpdate(parentOrder.ParentOrderAcceptanceId,
+            var pctx = ctx.AddOrUpdate(parentOrder.ParentOrderAcceptanceId,
                 _ => new BfxOrderContext(productCode).Update(parentOrder, parentOrderDetail),
                 (_, ctx) => ctx.Update(parentOrder, parentOrderDetail)
             );
@@ -85,14 +61,17 @@ public class BfxPrivateDataSource
             {
                 var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: childOrder.ChildOrderId);
                 pctx.UpdateChild(childOrder, execs);
-                _ctx.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
-                    _ => new BfxOrderContext(productCode).Update(childOrder, execs).SetParent(pctx.OrderAcceptanceId),
-                    (_, ctx) => ctx.Update(childOrder, execs).SetParent(pctx.OrderAcceptanceId)
+                ctx.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
+                    _ => new BfxOrderContext(productCode).Update(childOrder, execs),
+                    (_, ctx) => ctx.Update(childOrder, execs)
                 );
             }
             yield return pctx;
         }
     }
+
+    public IEnumerable<BfxOrderContext> GetOrderCacheContexts(string productCode)
+        => _ctxs.GetOrAdd(productCode, _ => new()).Values.ToList();
 
     public async Task InitializePositionsAsync(string productCode)
     {
