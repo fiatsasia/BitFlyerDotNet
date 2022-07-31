@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfParentOrderEvent
+public class BfParentOrderEvent : IBfOrderEvent
 {
     [JsonProperty(PropertyName = "product_code")]
     public string ProductCode { get; private set; }

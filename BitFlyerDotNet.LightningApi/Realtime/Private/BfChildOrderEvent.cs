@@ -18,7 +18,7 @@ namespace BitFlyerDotNet.LightningApi;
 /// <summary>
 /// Send parent order <see href="https://scrapbox.io/BitFlyerDotNet/ChildOrderEvent"/>
 /// </summary>
-public class BfChildOrderEvent
+public class BfChildOrderEvent : IBfOrderEvent
 {
     [JsonProperty(PropertyName = "product_code")]
     public string ProductCode { get; private set; }             // EventType = All

@@ -26,35 +26,32 @@ public class BfxOrderChangedEventArgs : EventArgs
     {
     }
 
-    internal BfxOrderChangedEventArgs(BfChildOrderEvent e, BfxOrderContext status)
+    internal BfxOrderChangedEventArgs(IBfOrderEvent e, BfxOrderContext status)
         : this(
-            e.EventType switch
+            e switch
             {
-                BfOrderEventType.Order => BfxOrderEventType.OrderConfirmed,
-                BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
-                BfOrderEventType.Cancel => BfxOrderEventType.OrderCanceled,
-                BfOrderEventType.CancelFailed => BfxOrderEventType.CancelFailed,
-                BfOrderEventType.Execution => (status.OrderSize > status.ExecutedSize)
-                    ? BfxOrderEventType.PartiallyExecuted
-                    : BfxOrderEventType.Executed,
-                BfOrderEventType.Expire => BfxOrderEventType.Expired,
-                _ => throw new ArgumentException()
-            },
-            new BfxOrder(status)
-        )
-    {
-    }
-
-    internal BfxOrderChangedEventArgs(BfParentOrderEvent e, BfxOrderContext status)
-        : this(
-            e.EventType switch
-            {
-                BfOrderEventType.Order => BfxOrderEventType.OrderConfirmed,
-                BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
-                BfOrderEventType.Cancel => BfxOrderEventType.OrderCanceled,
-                BfOrderEventType.Trigger => BfxOrderEventType.ChildOrderChanged,
-                BfOrderEventType.Complete => BfxOrderEventType.ChildOrderChanged,
-                BfOrderEventType.Expire => BfxOrderEventType.Expired,
+                BfChildOrderEvent coe => coe.EventType switch
+                {
+                    BfOrderEventType.Order => BfxOrderEventType.OrderConfirmed,
+                    BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
+                    BfOrderEventType.Cancel => BfxOrderEventType.OrderCanceled,
+                    BfOrderEventType.CancelFailed => BfxOrderEventType.CancelFailed,
+                    BfOrderEventType.Execution => (status.OrderSize > status.ExecutedSize)
+                        ? BfxOrderEventType.PartiallyExecuted
+                        : BfxOrderEventType.Executed,
+                    BfOrderEventType.Expire => BfxOrderEventType.Expired,
+                    _ => throw new ArgumentException()
+                },
+                BfParentOrderEvent poe => poe.EventType switch
+                {
+                    BfOrderEventType.Order => BfxOrderEventType.OrderConfirmed,
+                    BfOrderEventType.OrderFailed => BfxOrderEventType.OrderFailed,
+                    BfOrderEventType.Cancel => BfxOrderEventType.OrderCanceled,
+                    BfOrderEventType.Trigger => BfxOrderEventType.ChildOrderChanged,
+                    BfOrderEventType.Complete => BfxOrderEventType.ChildOrderChanged,
+                    BfOrderEventType.Expire => BfxOrderEventType.Expired,
+                    _ => throw new ArgumentException()
+                },
                 _ => throw new ArgumentException()
             },
             new BfxOrder(status)

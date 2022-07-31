@@ -76,6 +76,14 @@ class BfxOrderContext
         return this;
     }
 
+    public BfxOrderContext Update(IBfOrderEvent e)
+        => e switch
+        {
+            BfChildOrderEvent coe => Update(coe),
+            BfParentOrderEvent poe => Update(poe),
+            _ => throw new ArgumentException()
+        };
+
     BfxOrderContext Update(BfParentOrderDetailStatusParameter order)
     {
         OrderType = order.ConditionType;
@@ -158,7 +166,7 @@ class BfxOrderContext
         return this;
     }
 
-    public BfxOrderContext Update(BfParentOrderEvent e)
+    BfxOrderContext Update(BfParentOrderEvent e)
     {
         OrderId = e.ParentOrderId;
         OrderAcceptanceId = e.ParentOrderAcceptanceId;
@@ -275,7 +283,7 @@ class BfxOrderContext
         return this;
     }
 
-    public BfxOrderContext Update(BfChildOrderEvent e)
+    BfxOrderContext Update(BfChildOrderEvent e)
     {
         OrderAcceptanceId = e.ChildOrderAcceptanceId;
         OrderId = e.ChildOrderId;

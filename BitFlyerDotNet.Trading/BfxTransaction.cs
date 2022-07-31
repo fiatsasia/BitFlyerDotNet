@@ -136,13 +136,7 @@ class BfxTransaction : IDisposable
         }
     }
 
-    public BfxTransaction OnChildOrderEvent(BfChildOrderEvent e)
-    {
-        OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(e, _ctx));
-        return this;
-    }
-
-    public BfxTransaction OnParentOrderEvent(BfParentOrderEvent e)
+    public BfxTransaction OnOrderEvent(IBfOrderEvent e)
     {
         OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(e, _ctx));
         return this;

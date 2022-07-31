@@ -79,10 +79,10 @@ public class BfxApplication : IDisposable
 
         if (_client.IsAuthenticated)
         {
-            _rts.GetParentOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnParentOrderEvent(e)).AddTo(_disposables);
+            _rts.GetParentOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnOrderEvent(e)).AddTo(_disposables);
             _rts.GetChildOrderEventsSource().Subscribe(async e =>
             {
-                _markets[e.ProductCode].OnChildOrderEvent(e);
+                _markets[e.ProductCode].OnOrderEvent(e);
                 if (e.ProductCode == BfProductCode.FX_BTC_JPY && e.EventType == BfOrderEventType.Execution)
                 {
                     // child order subscription is scheduled on Rx default thread queueing scheduler
@@ -116,8 +116,8 @@ public class BfxApplication : IDisposable
         _client.Authenticate(key, secret);
         await Task.Run(() => _rts.Authenticate(key, secret));
 
-        _rts.GetParentOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnParentOrderEvent(e)).AddTo(_disposables);
-        _rts.GetChildOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnChildOrderEvent(e)).AddTo(_disposables);
+        _rts.GetParentOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnOrderEvent(e)).AddTo(_disposables);
+        _rts.GetChildOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnOrderEvent(e)).AddTo(_disposables);
     }
 
     public bool IsMarketInitialized(string productCode) => IsInitialized ? _markets[productCode].IsInitialized : false;

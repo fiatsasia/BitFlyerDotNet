@@ -50,8 +50,9 @@ class BfxMarket : IDisposable
         }
     }
 
-    BfxTransaction GetOrCreateTransaction(string acceptanceId)
+    public void OnOrderEvent(IBfOrderEvent e)
     {
+        var acceptanceId = e.GetAcceptanceId();
         var tid = _oid2tid.GetOrAdd(acceptanceId, _ =>
         {
             var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, acceptanceId), _config);
@@ -62,35 +63,17 @@ class BfxMarket : IDisposable
         });
         var tx = _tx[tid];
         _pds.TryRegisterOrderContext(_productCode, acceptanceId, tx.GetOrderContext());
-        return tx;
-    }
 
-    public void OnChildOrderEvent(BfChildOrderEvent e)
-    {
-        var tx = GetOrCreateTransaction(e.ChildOrderAcceptanceId);
         tx.GetOrderContext().Update(e);
-        tx.OnChildOrderEvent(e);
+        tx.OnOrderEvent(e);
 
         if (!tx.GetOrderContext().IsActive)
         {
-            _oid2tid.TryRemove(e.ChildOrderAcceptanceId, out _);
+            _oid2tid.TryRemove(acceptanceId, out _);
             _tx.TryRemove(tx.Id, out tx);
             Log.Debug($"Transaction tid:{tx.Id} closed");
         }
-    }
 
-    public void OnParentOrderEvent(BfParentOrderEvent e)
-    {
-        var tx = GetOrCreateTransaction(e.ParentOrderAcceptanceId);
-        tx.GetOrderContext().Update(e);
-        tx.OnParentOrderEvent(e);
-
-        if (!tx.GetOrderContext().IsActive)
-        {
-            _oid2tid.TryRemove(e.ParentOrderAcceptanceId, out _);
-            _tx.TryRemove(tx.Id, out tx);
-            Log.Debug($"Transaction tid:{tx.Id} closed");
-        }
     }
 
     public async Task<string> PlaceOrderAsync<TOrder>(TOrder order, CancellationToken ct) where TOrder : IBfOrder
