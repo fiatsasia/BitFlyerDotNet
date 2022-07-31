@@ -6,6 +6,7 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
+#pragma warning disable CS8602
 #pragma warning disable CS8618
 
 namespace BitFlyerDotNet.Trading;
@@ -19,7 +20,7 @@ public enum PriceType
     Mid,
 }
 
-public class BfxChildOrderTemplateBase
+public class BfxOrderTemplateBase
 {
     public BfOrderType OrderType { get; set; }
     public BfTradeSide Side { get; set; }
@@ -33,12 +34,12 @@ public class BfxChildOrderTemplateBase
     public BfTimeInForce? TimeInForce { get; set; }
 }
 
-public class BfxOrderTemplate : BfxChildOrderTemplateBase
+public class BfxOrderTemplate : BfxOrderTemplateBase
 {
     public Ulid Id { get; set; }
     public string Category { get; set; }
     public string Description { get; set; }
-    public BfxChildOrderTemplateBase[] Children { get; set; }
+    public BfxOrderTemplateBase[] Children { get; set; }
 
     internal BfxApplication App { get; set; }
 
@@ -82,7 +83,7 @@ public class BfxOrderTemplate : BfxChildOrderTemplateBase
         return order;
     }
 
-    BfParentOrderParameter CreateParameter(BfxChildOrderTemplateBase templ, string productCode, decimal size, BfTicker ticker)
+    BfParentOrderParameter CreateParameter(BfxOrderTemplateBase templ, string productCode, decimal size, BfTicker ticker)
     {
         var order = new BfParentOrderParameter
         {
