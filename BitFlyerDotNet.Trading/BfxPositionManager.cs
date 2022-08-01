@@ -12,11 +12,9 @@ class BfxPositionManager
 {
     public string ProductCode { get; private set; }
     public decimal TotalSize => Math.Abs(_q.Sum(e => e.CurrentSize));
-    public BfTradeSide Side => _q.TryPeek(out var pos) ? pos.Side : BfTradeSide.Unknown;
 
     ConcurrentQueue<BfxPositionContext> _q = new ConcurrentQueue<BfxPositionContext>();
 
-    public BfxPositionManager() { }
     public BfxPositionManager(BfPosition[] positions)
     {
         ProductCode = BfProductCode.FX_BTC_JPY;

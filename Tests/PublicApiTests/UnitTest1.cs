@@ -51,7 +51,7 @@ namespace PublicApiTests
         public async Task GetChats()
         {
             // Until 5 minutes before
-            var resp = await _client.GetChatsAsync(DateTime.UtcNow - TimeSpan.FromMinutes(5), CancellationToken.None);
+            var resp = await _client.GetChatsAsync(CancellationToken.None);
             Assert.IsFalse(resp.IsErrorOrEmpty);
 
             var jobject = JsonConvert.DeserializeObject(resp.Json);

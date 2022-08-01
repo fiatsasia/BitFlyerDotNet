@@ -17,8 +17,7 @@ public class BfCoinin
     public string OrderId { get; private set; }
 
     [JsonProperty(PropertyName = "currency_code")]
-    [JsonConverter(typeof(StringEnumConverter))]
-    public BfCurrencyCode CurrencyCode { get; private set; }
+    public string CurrencyCode { get; private set; }
 
     [JsonProperty(PropertyName = "amount")]
     public decimal Amount { get; private set; }

@@ -14,8 +14,7 @@ public class BfCoinAddress
     public string AddressType { get; private set; }
 
     [JsonProperty(PropertyName = "currency_code")]
-    [JsonConverter(typeof(StringEnumConverter))]
-    public BfCurrencyCode CurrencyCode { get; private set; }
+    public string CurrencyCode { get; private set; }
 
     [JsonProperty(PropertyName = "address")]
     public string Address { get; private set; }

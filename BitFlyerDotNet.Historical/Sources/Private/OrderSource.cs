@@ -543,7 +543,7 @@ namespace BitFlyerDotNet.Historical
             }
         }
 
-        public async IAsyncEnumerable<DbBalance> GetBalancesAsync(BfCurrencyCode currencyCode, DateTime start, DateTime end)
+        public async IAsyncEnumerable<DbBalance> GetBalancesAsync(string currencyCode, DateTime start, DateTime end)
         {
             var latestQuery = _ctx.GetBalances().OrderByDescending(e => e.Id).Take(1);
             if (latestQuery.Count() == 0)

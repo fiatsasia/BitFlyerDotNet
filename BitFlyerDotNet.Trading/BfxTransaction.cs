@@ -10,7 +10,6 @@ namespace BitFlyerDotNet.Trading;
 
 class BfxTransaction : IDisposable
 {
-    public Ulid Id { get; } = Ulid.NewUlid();
     public BfxOrderContext GetOrderContext() => _ctx;
     public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
 

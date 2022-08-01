@@ -14,19 +14,10 @@ public interface IBfOrder
 
 public static class IBfOrderExtensions
 {
-    public static string GetProductCode(this IBfOrder order)
+    public static string GetProductCode(this IBfOrder order) => order switch
     {
-        if (order is BfParentOrder parentOrder)
-        {
-            return parentOrder.Parameters[0].ProductCode;
-        }
-        else if (order is BfChildOrder childOrder)
-        {
-            return childOrder.ProductCode;
-        }
-        else
-        {
-            throw new ArgumentException();
-        }
-    }
+        BfParentOrder parentOrder => parentOrder.Parameters[0].ProductCode,
+        BfChildOrder childOrder => childOrder.ProductCode,
+        _ => throw new ArgumentException()
+    };
 }

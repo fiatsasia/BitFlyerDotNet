@@ -21,7 +21,7 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 1)]
-        public BfCurrencyCode CurrencyCode { get; set; }
+        public string CurrencyCode { get; set; }
 
         [Required]
         [Column(Order = 2)]

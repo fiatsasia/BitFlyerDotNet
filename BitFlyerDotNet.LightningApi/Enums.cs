@@ -8,20 +8,24 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public enum BfCurrencyCode
+public static class BfCurrencyCode
 {
-    JPY,
-    BTC,
-    BCH,
-    ETH,
-    ETC,
-    LTC,
-    MONA,
-    LSK,
-    XRP,
-    BAT,
-    XLM,
-    XEM,
+    public const string JPY = "JPY";
+    public const string BTC = "BTC";
+    public const string BCH = "BCH";
+    public const string ETH = "ETH";
+    public const string ETC = "ETC";
+    public const string LTC = "LTC";
+    public const string MONA = "MONA";
+    public const string LSK = "LSK";
+    public const string XRP = "XRP";
+    public const string BAT = "BAT";
+    public const string XLM = "XLM";
+    public const string XEM = "XEM";
+    public const string XTZ = "XTZ";
+    public const string DOT = "DOT";
+    public const string LINK = "LINK";
+    public const string XYM = "XYM";
 }
 
 public static class BfProductCode
@@ -90,8 +94,6 @@ public enum BfMarketType
 
 public enum BfTradeSide
 {
-    [EnumMember(Value = "")]
-    Unknown,
     [EnumMember(Value = "BUY")]
     Buy,
     [EnumMember(Value = "SELL")]
@@ -144,8 +146,6 @@ public enum BfTradeType
 
 public enum BfHealthState
 {
-    [EnumMember(Value = "")]
-    Unknown,
     [EnumMember(Value = "NORMAL")]
     Normal,
     [EnumMember(Value = "BUSY")]
@@ -162,8 +162,6 @@ public enum BfHealthState
 
 public enum BfBoardState
 {
-    [EnumMember(Value = "")]
-    Unknown,
     [EnumMember(Value = "RUNNING")]
     Running,
     [EnumMember(Value = "CLOSED")]
@@ -182,8 +180,6 @@ public enum BfBoardState
 
 public enum BfTransactionStatus
 {
-    [EnumMember(Value = "")]
-    Unknown,
     [EnumMember(Value = "PENDING")]
     Pending,
     [EnumMember(Value = "COMPLETED")]
@@ -196,8 +192,6 @@ public enum BfTransactionStatus
 /// </summary>
 public enum BfOrderType
 {
-    [EnumMember(Value = "")]
-    Unknown,
     [EnumMember(Value = "LIMIT")]
     Limit,
     [EnumMember(Value = "MARKET")]

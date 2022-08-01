@@ -10,8 +10,7 @@ namespace BitFlyerDotNet.LightningApi;
 
 public class BfWithdrawRequest
 {
-    [JsonConverter(typeof(StringEnumConverter))]
-    public BfCurrencyCode CurrencyCode { get; set; }
+    public string CurrencyCode { get; set; }
 
     public int BankAccountId { get; set; }
 
@@ -40,7 +39,7 @@ public partial class BitFlyerClient
     /// <param name="amount"></param>
     /// <param name="authenticationCode"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfWithdrawResponse>> WithdrawAsync(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode, CancellationToken ct)
+    public Task<BitFlyerResponse<BfWithdrawResponse>> WithdrawAsync(string currencyCode, int bankAccountId, decimal amount, string authenticationCode, CancellationToken ct)
     {
         return PostPrivateAsync<BfWithdrawResponse>(nameof(WithdrawAsync), new BfWithdrawRequest
         {
@@ -51,6 +50,6 @@ public partial class BitFlyerClient
         }, ct);
     }
 
-    public async Task<BfWithdrawResponse> WithdrawAsync(BfCurrencyCode currencyCode, int bankAccountId, decimal amount, string authenticationCode)
+    public async Task<BfWithdrawResponse> WithdrawAsync(string currencyCode, int bankAccountId, decimal amount, string authenticationCode)
         => (await WithdrawAsync(currencyCode, bankAccountId, amount, authenticationCode, CancellationToken.None)).GetContent();
 }

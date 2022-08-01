@@ -14,11 +14,10 @@ public interface IBfOrderEvent
 
 public static class IBfOrderEventExtensions
 {
-    public static string GetAcceptanceId(this IBfOrderEvent e)
-        => e switch
-        {
-            BfChildOrderEvent coe => coe.ChildOrderAcceptanceId,
-            BfParentOrderEvent poe => poe.ParentOrderAcceptanceId,
-            _ => throw new ArgumentException()
-        };
+    public static string GetAcceptanceId(this IBfOrderEvent e) => e switch
+    {
+        BfChildOrderEvent coe => coe.ChildOrderAcceptanceId,
+        BfParentOrderEvent poe => poe.ParentOrderAcceptanceId,
+        _ => throw new ArgumentException()
+    };
 }

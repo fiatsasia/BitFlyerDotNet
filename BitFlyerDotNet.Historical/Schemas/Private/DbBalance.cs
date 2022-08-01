@@ -29,7 +29,7 @@ namespace BitFlyerDotNet.Historical
 
         [Required]
         [Column(Order = 3)]
-        public BfCurrencyCode CurrencyCode { get; set; }
+        public string CurrencyCode { get; set; }
 
         [Required]
         [Column(Order = 4)]

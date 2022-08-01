@@ -161,25 +161,6 @@ partial class Program
         Environment.Exit(1);
     }
 
-    static BfTradeSide SelectSide()
-    {
-        Console.Write("B)uy S)ell : ");
-        while (true)
-        {
-            switch (GetCh())
-            {
-                case 'B':
-                    return BfTradeSide.Buy;
-
-                case 'S':
-                    return BfTradeSide.Sell;
-
-                case ESCAPE:
-                    return BfTradeSide.Unknown;
-            }
-        }
-    }
-
     static async Task CancelOrder()
     {
         await foreach (var order in App.GetActiveOrdersAsync(ProductCode))

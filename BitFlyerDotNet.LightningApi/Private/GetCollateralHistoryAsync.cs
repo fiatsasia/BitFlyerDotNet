@@ -14,8 +14,7 @@ public class BfCollateralHistory
     public int PagingId { get; private set; }
 
     [JsonProperty(PropertyName = "currency_code")]
-    [JsonConverter(typeof(StringEnumConverter))]
-    public BfCurrencyCode CurrencyCode { get; private set; }
+    public string CurrencyCode { get; private set; }
 
     [JsonProperty(PropertyName = "change")]
     public decimal Change { get; private set; }

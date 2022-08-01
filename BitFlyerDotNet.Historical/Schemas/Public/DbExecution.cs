@@ -44,7 +44,7 @@ namespace BitFlyerDotNet.Historical
                 {
                     case "B": return BfTradeSide.Buy;
                     case "S": return BfTradeSide.Sell;
-                    case "E": return BfTradeSide.Unknown;
+                    case "E": return BfTradeSide.BuySell;
                     default: throw new ArgumentException();
                 }
             }
@@ -54,7 +54,7 @@ namespace BitFlyerDotNet.Historical
                 {
                     case BfTradeSide.Buy: BuySell = "B"; break;
                     case BfTradeSide.Sell: BuySell = "S"; break;
-                    case BfTradeSide.Unknown: BuySell = "E"; break;
+                    case BfTradeSide.BuySell: BuySell = "E"; break;
                     default: throw new ArgumentException();
                 }
             }

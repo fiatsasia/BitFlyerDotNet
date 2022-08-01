@@ -76,13 +76,12 @@ class BfxOrderContext
         return this;
     }
 
-    public BfxOrderContext Update(IBfOrderEvent e)
-        => e switch
-        {
-            BfChildOrderEvent coe => Update(coe),
-            BfParentOrderEvent poe => Update(poe),
-            _ => throw new ArgumentException()
-        };
+    public BfxOrderContext Update(IBfOrderEvent e) => e switch
+    {
+        BfChildOrderEvent coe => Update(coe),
+        BfParentOrderEvent poe => Update(poe),
+        _ => throw new ArgumentException()
+    };
 
     BfxOrderContext Update(BfParentOrderDetailStatusParameter order)
     {
@@ -136,24 +135,16 @@ class BfxOrderContext
         return this;
     }
 
-    public BfxOrderContext Update(IBfOrder order)
+    public BfxOrderContext Update(IBfOrder order, string acceptanceId) => order switch
     {
-        if (order is BfParentOrder parentOrder)
-        {
-            return Update(parentOrder);
-        }
-        else if (order is BfChildOrder childOrder)
-        {
-            return Update(childOrder);
-        }
-        else
-        {
-            throw new ArgumentException();
-        }
-    }
+        BfChildOrder childOrder => Update(childOrder, acceptanceId),
+        BfParentOrder parentOrder => Update(parentOrder, acceptanceId),
+        _ => throw new ArgumentException()
+    };
 
-    public BfxOrderContext Update(BfParentOrder order)
+    public BfxOrderContext Update(BfParentOrder order, string acceptanceId)
     {
+        OrderAcceptanceId = acceptanceId;
         OrderType = order.OrderMethod;
         MinuteToExpire = order.MinuteToExpire;
         TimeInForce = order.TimeInForce;
@@ -231,8 +222,9 @@ class BfxOrderContext
         return this;
     }
 
-    public BfxOrderContext Update(BfChildOrder order)
+    public BfxOrderContext Update(BfChildOrder order, string acceptanceId)
     {
+        OrderAcceptanceId = acceptanceId;
         OrderType = order.ChildOrderType;
         Side = order.Side;
         OrderPrice = order.Price;

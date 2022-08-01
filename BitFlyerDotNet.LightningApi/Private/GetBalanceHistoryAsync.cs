@@ -23,8 +23,7 @@ public class BfBalanceHistory
     public string ProductCode { get; private set; }
 
     [JsonProperty(PropertyName = "currency_code")]
-    [JsonConverter(typeof(StringEnumConverter))]
-    public BfCurrencyCode CurrencyCode { get; private set; }
+    public string CurrencyCode { get; private set; }
 
     [JsonProperty(PropertyName = "trade_type")]
     [JsonConverter(typeof(StringEnumConverter))]
@@ -60,10 +59,10 @@ public partial class BitFlyerClient
     /// <param name="before"></param>
     /// <param name="after"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfBalanceHistory[]>> GetBalanceHistoryAsync(BfCurrencyCode currencyCode, int count, int before, int after, CancellationToken ct)
+    public Task<BitFlyerResponse<BfBalanceHistory[]>> GetBalanceHistoryAsync(string currencyCode, int count, int before, int after, CancellationToken ct)
     {
         var query = string.Format("currency_code={0}{1}{2}{3}",
-            currencyCode.ToEnumString(),
+            currencyCode,
             (count > 0) ? $"&count={count}" : "",
             (before > 0) ? $"&before={before}" : "",
             (after > 0) ? $"&after={after}" : ""
@@ -71,10 +70,10 @@ public partial class BitFlyerClient
         return GetPrivateAsync<BfBalanceHistory[]>(nameof(GetBalanceHistoryAsync), query, ct);
     }
 
-    public async Task<BfBalanceHistory[]> GetBalanceHistoryAsync(BfCurrencyCode currencyCode, int count = 0, int before = 0, int after = 0)
+    public async Task<BfBalanceHistory[]> GetBalanceHistoryAsync(string currencyCode, int count = 0, int before = 0, int after = 0)
         => (await GetBalanceHistoryAsync(currencyCode, count, before, after, CancellationToken.None)).GetContent();
 
-    public async IAsyncEnumerable<BfBalanceHistory> GetBalanceHistoryAsync(BfCurrencyCode currencyCode, int before, Func<BfBalanceHistory, bool> predicate)
+    public async IAsyncEnumerable<BfBalanceHistory> GetBalanceHistoryAsync(string currencyCode, int before, Func<BfBalanceHistory, bool> predicate)
     {
         while (true)
         {

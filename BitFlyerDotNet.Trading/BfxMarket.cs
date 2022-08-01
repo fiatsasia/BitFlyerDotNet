@@ -6,11 +6,12 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
+#pragma warning disable CS8603
 #pragma warning disable CS8604
 
 namespace BitFlyerDotNet.Trading;
 
-class BfxMarket : IDisposable
+class BfxMarket
 {
     public bool IsInitialized { get; private set; }
     public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
@@ -20,8 +21,7 @@ class BfxMarket : IDisposable
     BfxPrivateDataSource _pds;
     BfxConfiguration _config;
 
-    ConcurrentDictionary<Ulid, BfxTransaction> _tx = new();
-    ConcurrentDictionary<string, Ulid> _oid2tid = new();
+    ConcurrentDictionary<string, BfxTransaction> _tx = new();
 
     public BfxMarket(BitFlyerClient client, string productCode, BfxPrivateDataSource pds, BfxConfiguration config)
     {
@@ -31,75 +31,62 @@ class BfxMarket : IDisposable
         _config = config;
     }
 
-    public void Dispose()
-    {
-    }
-
     public async Task InitializeAsync()
     {
         if (!_client.IsAuthenticated)
         {
-            throw new InvalidOperationException($"Client is not authorized. To Authenticate first.");
+            throw new InvalidOperationException("Client is not authorized. To Authenticate first.");
+        }
+        if (IsInitialized)
+        {
+            throw new InvalidOperationException($"Market '{_productCode}' is already initialized.");
         }
 
         IsInitialized = true;
 
         await foreach (var ctx in _pds.GetOrderServerContextsAsync(_productCode, BfOrderState.Active, 0))
         {
-            var tx = new BfxTransaction(_client, ctx, _config);
-            _oid2tid[ctx.OrderAcceptanceId] = tx.Id;
-            _tx.TryAdd(tx.Id, tx);
+            _tx.TryAdd(ctx.OrderAcceptanceId, new BfxTransaction(_client, ctx, _config));
         }
-    }
-
-    public void OnOrderEvent(IBfOrderEvent e)
-    {
-        var acceptanceId = e.GetAcceptanceId();
-        var tid = _oid2tid.GetOrAdd(acceptanceId, _ =>
-        {
-            var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, acceptanceId), _config);
-            tx.OrderChanged += OnOrderChanged;
-            _tx.TryAdd(tx.Id, tx);
-            Log.Debug($"Transaction tid:{tx.Id} opened");
-            return tx.Id;
-        });
-        var tx = _tx[tid];
-        _pds.TryRegisterOrderContext(_productCode, acceptanceId, tx.GetOrderContext());
-
-        tx.GetOrderContext().Update(e);
-        tx.OnOrderEvent(e);
-
-        if (!tx.GetOrderContext().IsActive)
-        {
-            _oid2tid.TryRemove(acceptanceId, out _);
-            _tx.TryRemove(tx.Id, out tx);
-            Log.Debug($"Transaction tid:{tx.Id} closed");
-        }
-
     }
 
     public async Task<string> PlaceOrderAsync<TOrder>(TOrder order, CancellationToken ct) where TOrder : IBfOrder
     {
-        // Sometimes child order event arraives before send order process completes.
-        var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode).Update(order), _config);
+        // Sometimes child order event arrives before send order process completion.
+        var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode), _config);
         tx.OrderChanged += OnOrderChanged;
         var acceptanceId = await tx.PlaceOrderAsync(order, ct);
         if (string.IsNullOrEmpty(acceptanceId))
         {
             return default;
         }
-        var tid = _oid2tid.GetOrAdd(acceptanceId, _ =>
-        {
-            _tx.TryAdd(tx.Id, tx);
-            Log.Debug($"Transaction tid:{tx.Id} opened");
-            return tx.Id;
-        });
-        _pds.TryRegisterOrderContext(_productCode, acceptanceId, _tx[tid].GetOrderContext().Update(order));
+        Log.Debug($"Transaction id:{acceptanceId} opened");
+        tx = _tx.GetOrAdd(acceptanceId, tx);
+        _pds.TryRegisterOrderContext(_productCode, acceptanceId, tx.GetOrderContext().Update(order, acceptanceId));
         return acceptanceId;
     }
 
-    public async Task CancelOrderAsync(string acceptanceId, CancellationToken ct)
-        => await _tx[_oid2tid[acceptanceId]].CancelOrderAsync(ct);
+    public async Task CancelOrderAsync(string acceptanceId, CancellationToken ct) => await _tx[acceptanceId].CancelOrderAsync(ct);
+
+    public void OnOrderEvent(IBfOrderEvent e)
+    {
+        var acceptanceId = e.GetAcceptanceId();
+        var tx = _tx.GetOrAdd(acceptanceId, _ =>
+        {
+            var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, acceptanceId), _config);
+            tx.OrderChanged += OnOrderChanged;
+            Log.Debug($"Transaction id:{acceptanceId} opened");
+            return tx;
+        });
+        _pds.TryRegisterOrderContext(_productCode, acceptanceId, tx.GetOrderContext().Update(e));
+        tx.OnOrderEvent(e);
+
+        if (!tx.GetOrderContext().IsActive)
+        {
+            _tx.TryRemove(acceptanceId, out tx);
+            Log.Debug($"Transaction id:{acceptanceId} closed");
+        }
+    }
 
     void OnOrderChanged(object sender, BfxOrderChangedEventArgs e) => OrderChanged?.Invoke(sender, e);
 }

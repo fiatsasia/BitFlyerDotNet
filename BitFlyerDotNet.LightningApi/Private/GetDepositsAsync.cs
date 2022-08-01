@@ -17,15 +17,14 @@ public class BfDeposit
     public string OrderId { get; private set; }
 
     [JsonProperty(PropertyName = "currency_code")]
-    [JsonConverter(typeof(StringEnumConverter))]
-    public BfCurrencyCode CurrencyCode { get; private set; }
+    public string CurrencyCode { get; private set; }
 
     [JsonProperty(PropertyName = "amount")]
     public decimal Amount { get; private set; }
 
     [JsonProperty(PropertyName = "status")]
     [JsonConverter(typeof(StringEnumConverter))]
-    public BfTransactionStatus Status { get; private set; }
+    public BfTransactionStatus TransactionStatus { get; private set; }
 
     [JsonProperty(PropertyName = "event_date")]
     public DateTime EventDate { get; private set; }
