@@ -33,7 +33,7 @@ class BfxOrderContext
     public BfOrderState? OrderState { get; private set; }
     #endregion Order management info
 
-    public uint? PagingId { get; protected set; }
+    public long? PagingId { get; protected set; }
     public decimal? AveragePrice { get; protected set; }
     public decimal? OutstandingSize { get; protected set; }
     public decimal? CancelSize { get; protected set; }
@@ -106,7 +106,7 @@ class BfxOrderContext
     public BfxOrderContext Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
     {
         OrderAcceptanceId = status.ParentOrderAcceptanceId;
-        PagingId = status.PagingId;
+        PagingId = status.Id;
         OrderId = status.ParentOrderId;
         OrderType = status.ParentOrderType;
         OrderState = status.ParentOrderState;
@@ -237,7 +237,7 @@ class BfxOrderContext
     public BfxOrderContext Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
     {
         OrderAcceptanceId = status.ChildOrderAcceptanceId;
-        PagingId = status.PagingId;
+        PagingId = status.Id;
         OrderId = status.ChildOrderId;
         Side = status.Side;
         OrderType = status.ChildOrderType;
@@ -254,7 +254,7 @@ class BfxOrderContext
 
         foreach (var exec in execs)
         {
-            _execs.GetOrAdd(exec.ExecutionId, _ => new BfxExecution(exec));
+            _execs.GetOrAdd(exec.Id, _ => new BfxExecution(exec));
         }
 
         return this;

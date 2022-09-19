@@ -9,6 +9,8 @@
 using System;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
+using System.Threading;
 using BitFlyerDotNet.LightningApi;
 
 namespace BitFlyerDotNet.Historical
@@ -92,7 +94,7 @@ namespace BitFlyerDotNet.Historical
             return _dbctx.ManageTable.Buffer(2, 1).SkipLast(1).Select(rec =>
             {
                 var count = 0;
-                return new HistoricalExecutionSource(client, _productCode, rec[0].StartExecutionId, rec[1].EndExecutionId)
+                return client.GetExecutionsAsync(_productCode, 0, rec[0].StartExecutionId, rec[1].EndExecutionId, null, CancellationToken.None).ToObservable()
                 .Select(exec => { count++; return exec; })
                 .Finally(() =>
                 {
@@ -121,7 +123,7 @@ namespace BitFlyerDotNet.Historical
                 after = manageRec[0].EndExecutionId;
             }
 
-            return new HistoricalExecutionSource(client, _productCode, 0, after)
+            return client.GetExecutionsAsync(_productCode, 0, 0, after, null, CancellationToken.None).ToObservable()
             .Select(exec =>
             {
                 Add(exec);

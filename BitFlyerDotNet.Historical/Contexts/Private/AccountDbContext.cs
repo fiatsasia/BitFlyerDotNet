@@ -148,7 +148,7 @@ namespace BitFlyerDotNet.Historical
 
         public void InsertIfNotExits(string productCode, BfPrivateExecution exec)
         {
-            var rec = GetExecutions().Where(e => e.ExecutionId == exec.ExecutionId).FirstOrDefault();
+            var rec = GetExecutions().Where(e => e.ExecutionId == exec.Id).FirstOrDefault();
             if (rec == default)
             {
                 Executions.Add(new DbPrivateExecution(productCode, exec));

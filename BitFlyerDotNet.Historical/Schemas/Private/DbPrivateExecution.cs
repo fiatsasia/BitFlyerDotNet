@@ -65,7 +65,7 @@ namespace BitFlyerDotNet.Historical
         public DbPrivateExecution(string productCode, BfPrivateExecution exec)
         {
             ProductCode = productCode;
-            ExecutionId = exec.ExecutionId;
+            ExecutionId = exec.Id;
             Side = exec.Side;
             Price = exec.Price;
             Size = exec.Size;

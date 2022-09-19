@@ -8,10 +8,10 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfDeposit
+public class BfDeposit : IBfPagingElement
 {
     [JsonProperty(PropertyName = "id")]
-    public int PagingId { get; private set; }
+    public long Id { get; private set; }
 
     [JsonProperty(PropertyName = "order_id")]
     public string OrderId { get; private set; }
@@ -40,7 +40,7 @@ public partial class BitFlyerClient
     /// <param name="before"></param>
     /// <param name="after"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfDeposit[]>> GetDepositsAsync(int count, int before, int after, CancellationToken ct)
+    public Task<BitFlyerResponse<BfDeposit[]>> GetDepositsAsync(long count, long before, long after, CancellationToken ct)
     {
         var query = string.Format("{0}{1}{2}",
             (count > 0)  ? $"&count={count}"   : "",
@@ -51,6 +51,6 @@ public partial class BitFlyerClient
         return GetPrivateAsync<BfDeposit[]>(nameof(GetDepositsAsync), query, ct);
     }
 
-    public async Task<BfDeposit[]> GetDepositsAsync(int count = 0, int before = 0, int after = 0)
+    public async Task<BfDeposit[]> GetDepositsAsync(long count = 0L, long before = 0L, long after = 0L)
         => (await GetDepositsAsync(count, before, after, CancellationToken.None)).GetContent();
 }

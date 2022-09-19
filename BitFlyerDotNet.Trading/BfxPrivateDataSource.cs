@@ -40,7 +40,7 @@ class BfxPrivateDataSource
         var ctx = _ctxs.GetOrAdd(productCode, _ => new());
 
         // Get child active orders
-        await foreach (var order in _client.GetChildOrdersAsync(productCode, orderState, count, 0, e => true))
+        await foreach (var order in _client.GetChildOrdersAsync(productCode, orderState, count, 0, 0, "", "", "", e => true, CancellationToken.None))
         {
             var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: order.ChildOrderId);
             yield return ctx.AddOrUpdate(order.ChildOrderAcceptanceId,
@@ -50,7 +50,7 @@ class BfxPrivateDataSource
         }
 
         // Get parent orders
-        await foreach (var parentOrder in _client.GetParentOrdersAsync(productCode, orderState, count, 0, e => true))
+        await foreach (var parentOrder in _client.GetParentOrdersAsync(productCode, orderState, count, 0, 0, e => true, CancellationToken.None))
         {
             var parentOrderDetail = await _client.GetParentOrderAsync(productCode, parentOrderId: parentOrder.ParentOrderId);
             var pctx = ctx.AddOrUpdate(parentOrder.ParentOrderAcceptanceId,

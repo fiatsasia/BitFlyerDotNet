@@ -8,10 +8,10 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfPrivateExecution
+public class BfPrivateExecution : IBfPagingElement
 {
     [JsonProperty(PropertyName = "id")]
-    public long ExecutionId { get; private set; }
+    public long Id { get; private set; }
 
     [JsonProperty(PropertyName = "child_order_id")]
     public string ChildOrderId { get; private set; }
@@ -49,7 +49,7 @@ public partial class BitFlyerClient
     /// <param name="childOrderId"></param>
     /// <param name="childOrderAcceptanceId"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfPrivateExecution[]>> GetPrivateExecutionsAsync(string productCode, int count, long before, long after, string childOrderId, string childOrderAcceptanceId, CancellationToken ct)
+    public Task<BitFlyerResponse<BfPrivateExecution[]>> GetPrivateExecutionsAsync(string productCode, long count, long before, long after, string childOrderId, string childOrderAcceptanceId, CancellationToken ct)
     {
         var query = string.Format("product_code={0}{1}{2}{3}{4}{5}",
             productCode,
@@ -63,37 +63,6 @@ public partial class BitFlyerClient
         return GetPrivateAsync<BfPrivateExecution[]>("getexecutions", query, ct);
     }
 
-    public async Task<BfPrivateExecution[]> GetPrivateExecutionsAsync(string productCode, int count = 0, long before = 0, long after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
+    public async Task<BfPrivateExecution[]> GetPrivateExecutionsAsync(string productCode, long count = 0, long before = 0, long after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
         => (await GetPrivateExecutionsAsync(productCode, count, before, after, childOrderId, childOrderAcceptanceId, CancellationToken.None)).GetContent();
-
-
-    public async IAsyncEnumerable<BfPrivateExecution> GetPrivateExecutionsAsync(string productCode, long before, Func<BfPrivateExecution, bool> predicate)
-    {
-        while (true)
-        {
-            var execs = await GetPrivateExecutionsAsync(productCode, ReadCountMax, before);
-            if (execs.Length == 0)
-            {
-                break;
-            }
-
-            foreach (var exec in execs)
-            {
-                if (!predicate(exec))
-                {
-                    yield break;
-                }
-                yield return exec;
-            }
-
-            if (execs.Length < ReadCountMax)
-            {
-                break;
-            }
-            before = execs.Last().ExecutionId;
-        }
-    }
-
-    public IAsyncEnumerable<BfPrivateExecution> GetPrivateExecutionsAsync(string productCode, DateTime after)
-        => GetPrivateExecutionsAsync(productCode, 0, e => e.ExecutedTime >= after);
 }

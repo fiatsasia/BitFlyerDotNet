@@ -60,9 +60,9 @@ namespace BitFlyerDotNet.Historical
 
         public void Update(BfExecution exec)
         {
-            StartExecutionId = Math.Min(exec.ExecutionId, StartExecutionId);
+            StartExecutionId = Math.Min(exec.Id, StartExecutionId);
             StartExecutedTime = (exec.ExecutedTime < StartExecutedTime) ? exec.ExecutedTime : StartExecutedTime;
-            EndExecutionId = Math.Max(exec.ExecutionId, EndExecutionId);
+            EndExecutionId = Math.Max(exec.Id, EndExecutionId);
             EndExecutedTime = (exec.ExecutedTime > EndExecutedTime) ? exec.ExecutedTime : EndExecutedTime;
             LastUpdatedTime = DateTime.UtcNow;
             ExecutionCount++;

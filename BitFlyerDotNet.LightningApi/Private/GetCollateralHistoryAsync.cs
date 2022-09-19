@@ -8,10 +8,10 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfCollateralHistory
+public class BfCollateralHistory : IBfPagingElement
 {
     [JsonProperty(PropertyName = "id")]
-    public int PagingId { get; private set; }
+    public long Id { get; private set; }
 
     [JsonProperty(PropertyName = "currency_code")]
     public string CurrencyCode { get; private set; }
@@ -39,7 +39,7 @@ public partial class BitFlyerClient
     /// <param name="before"></param>
     /// <param name="after"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfCollateralHistory[]>> GetCollateralHistoryAsync(int count, int before, int after, CancellationToken ct)
+    public Task<BitFlyerResponse<BfCollateralHistory[]>> GetCollateralHistoryAsync(long count, long before, long after, CancellationToken ct)
     {
         var query = string.Format("{0}{1}{2}",
             (count > 0)  ? $"&count={count}"   : "",
@@ -50,33 +50,6 @@ public partial class BitFlyerClient
         return GetPrivateAsync<BfCollateralHistory[]>(nameof(GetCollateralHistoryAsync), query, ct);
     }
 
-    public async Task<BfCollateralHistory[]> GetCollateralHistoryAsync(int count = 0, int before = 0, int after = 0)
+    public async Task<BfCollateralHistory[]> GetCollateralHistoryAsync(long count = 0L, long before = 0L, long after = 0L)
         => (await GetCollateralHistoryAsync(count, before, after, CancellationToken.None)).GetContent();
-
-    public async IAsyncEnumerable<BfCollateralHistory> GetCollateralHistoryAsync(int before, Func<BfCollateralHistory, bool> predicate)
-    {
-        while (true)
-        {
-            var execs = await GetCollateralHistoryAsync(ReadCountMax, before, 0);
-            if (execs.Length == 0)
-            {
-                break;
-            }
-
-            foreach (var exec in execs)
-            {
-                if (!predicate(exec))
-                {
-                    yield break;
-                }
-                yield return exec;
-            }
-
-            if (execs.Length < ReadCountMax)
-            {
-                break;
-            }
-            before = execs.Last().PagingId;
-        }
-    }
 }

@@ -17,7 +17,7 @@ namespace BitFlyerDotNet.Historical
     {
         [Key]
         [Column(Order = 0)]
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         [Required]
         [Column(Order = 1)]
@@ -65,7 +65,7 @@ namespace BitFlyerDotNet.Historical
 
         public DbBalance(BfBalanceHistory balance)
         {
-            Id = balance.PagingId;
+            Id = balance.Id;
             Date = balance.EventDate;
             ProductCode = balance.ProductCode;
             CurrencyCode = balance.CurrencyCode;

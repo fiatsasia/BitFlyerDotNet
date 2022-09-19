@@ -17,7 +17,7 @@ namespace BitFlyerDotNet.Historical
     {
         [Key]
         [Column(Order = 0)]
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         [Required]
         [Column(Order = 1)]
@@ -45,7 +45,7 @@ namespace BitFlyerDotNet.Historical
 
         public DbCollateral(BfCollateralHistory coll)
         {
-            Id = coll.PagingId;
+            Id = coll.Id;
             CurrencyCode = coll.CurrencyCode;
             Change = coll.Change;
             Amount = coll.Amount;

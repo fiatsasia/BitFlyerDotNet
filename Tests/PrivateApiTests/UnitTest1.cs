@@ -74,12 +74,12 @@ namespace PrivateApiTests
 
         void Dump(BfChildOrderStatus order)
         {
-            Console.WriteLine($"{order.PagingId} {order.ChildOrderDate} {order.ChildOrderType} {order.ChildOrderState}");
+            Console.WriteLine($"{order.Id} {order.ChildOrderDate} {order.ChildOrderType} {order.ChildOrderState}");
         }
 
         void Dump(BfParentOrderStatus order)
         {
-            Console.WriteLine($"{order.PagingId} {order.ParentOrderDate} {order.ParentOrderType} {order.ParentOrderState}");
+            Console.WriteLine($"{order.Id} {order.ParentOrderDate} {order.ParentOrderType} {order.ParentOrderState}");
         }
 
         [TestMethod]
@@ -281,7 +281,7 @@ namespace PrivateApiTests
             try
             {
                 var after = DateTime.UtcNow - TimeSpan.FromDays(60);
-                var orders = _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0,  e => e.ChildOrderDate > after);
+                var orders = _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, "", "", "",  e => e.ChildOrderDate > after, CancellationToken.None);
                 await foreach (var order in orders)
                 {
                     Dump(order);
@@ -511,7 +511,7 @@ namespace PrivateApiTests
             try
             {
                 var after = DateTime.UtcNow - TimeSpan.FromDays(60);
-                var orders = _client.GetParentOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, e => e.ParentOrderDate > after);
+                var orders = _client.GetParentOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, e => e.ParentOrderDate > after, CancellationToken.None);
                 await foreach (var order in orders)
                 {
                     Dump(order);

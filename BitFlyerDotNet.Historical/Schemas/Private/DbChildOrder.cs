@@ -20,7 +20,7 @@ namespace BitFlyerDotNet.Historical
         public uint Id { get; set; }
 
         [Column(Order = 1)]
-        public uint PagingId { get; set; }
+        public long PagingId { get; set; }
 
         [Required]
         [Column(Order = 2)]
@@ -126,7 +126,7 @@ namespace BitFlyerDotNet.Historical
 
         public void Update(BfChildOrderStatus order)
         {
-            PagingId = order.PagingId;
+            PagingId = order.Id;
             AcceptanceId = order.ChildOrderAcceptanceId;
             OrderId = order.ChildOrderId;
             OrderPrice = order.Price;

@@ -8,10 +8,10 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfCoinin
+public class BfCoinin : IBfPagingElement
 {
     [JsonProperty(PropertyName = "id")]
-    public int PagingId { get; private set; }
+    public long Id { get; private set; }
 
     [JsonProperty(PropertyName = "order_id")]
     public string OrderId { get; private set; }
@@ -46,7 +46,7 @@ public partial class BitFlyerClient
     /// <param name="before"></param>
     /// <param name="after"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfCoinin[]>> GetCoinInsAsync(int count, int before, int after, CancellationToken ct)
+    public Task<BitFlyerResponse<BfCoinin[]>> GetCoinInsAsync(long count, long before, long after, CancellationToken ct)
     {
         var query = string.Format("{0}{1}{2}",
             (count > 0)  ? $"&count={count}"   : "",
@@ -57,6 +57,6 @@ public partial class BitFlyerClient
         return GetPrivateAsync<BfCoinin[]>(nameof(GetCoinInsAsync), query, ct);
     }
 
-    public async Task<BfCoinin[]> GetCoinInsAsync(int count = 0, int before = 0, int after = 0)
+    public async Task<BfCoinin[]> GetCoinInsAsync(long count = 0, long before = 0, long after = 0)
         => (await GetCoinInsAsync(count, before, after, CancellationToken.None)).GetContent();
 }

@@ -149,7 +149,6 @@ partial class Program
     static void LoadSettings(string filePath)
     {
         var xml = XDocument.Load(filePath);
-        var n = xml.Element("RunSettings").Elements("TestRunParameters");
         Properties = xml.Element("RunSettings").Element("TestRunParameters").Elements("Parameter").ToDictionary(e => e.Attribute("name").Value, e => e.Attribute("value").Value);
     }
 

@@ -16,7 +16,7 @@ namespace BitFlyerDotNet.Historical
     public class DbParentOrder
     {
         [Column(Order = 0)]
-        public uint PagingId { get; set; }
+        public long PagingId { get; set; }
 
         [Required]
         [Column(Order = 1)]
@@ -79,7 +79,7 @@ namespace BitFlyerDotNet.Historical
         {
             ProductCode = productCode;
 
-            PagingId = order.PagingId;
+            PagingId = order.Id;
             OrderId = order.ParentOrderId;
             OrderType = order.ParentOrderType;
             ExpireDate = order.ExpireDate;
@@ -91,7 +91,7 @@ namespace BitFlyerDotNet.Historical
 
         public void Update(BfParentOrderStatus order, BfParentOrderDetailStatus detail)
         {
-            PagingId = order.PagingId;
+            PagingId = order.Id;
             State = order.ParentOrderState;
             OrderDate = order.ParentOrderDate;
             TimeInForce = detail.TimeInForce;

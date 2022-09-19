@@ -38,7 +38,7 @@ public class BfxExecution
 
     public BfxExecution(BfPrivateExecution exec)
     {
-        Id = exec.ExecutionId;
+        Id = exec.Id;
         Time = exec.ExecutedTime;
         Side = exec.Side;
         Price = exec.Price;

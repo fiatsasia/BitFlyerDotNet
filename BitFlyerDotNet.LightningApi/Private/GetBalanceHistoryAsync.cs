@@ -8,10 +8,10 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfBalanceHistory
+public class BfBalanceHistory : IBfPagingElement
 {
     [JsonProperty(PropertyName = "id")]
-    public int PagingId { get; private set; }
+    public long Id { get; private set; }
 
     [JsonProperty(PropertyName = "trade_date")]
     public DateTime TradeDate { get; private set; }
@@ -59,7 +59,7 @@ public partial class BitFlyerClient
     /// <param name="before"></param>
     /// <param name="after"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfBalanceHistory[]>> GetBalanceHistoryAsync(string currencyCode, int count, int before, int after, CancellationToken ct)
+    public Task<BitFlyerResponse<BfBalanceHistory[]>> GetBalanceHistoryAsync(string currencyCode, long count, long before, long after, CancellationToken ct)
     {
         var query = string.Format("currency_code={0}{1}{2}{3}",
             currencyCode,
@@ -70,33 +70,6 @@ public partial class BitFlyerClient
         return GetPrivateAsync<BfBalanceHistory[]>(nameof(GetBalanceHistoryAsync), query, ct);
     }
 
-    public async Task<BfBalanceHistory[]> GetBalanceHistoryAsync(string currencyCode, int count = 0, int before = 0, int after = 0)
+    public async Task<BfBalanceHistory[]> GetBalanceHistoryAsync(string currencyCode, long count = 0, long before = 0, long after = 0)
         => (await GetBalanceHistoryAsync(currencyCode, count, before, after, CancellationToken.None)).GetContent();
-
-    public async IAsyncEnumerable<BfBalanceHistory> GetBalanceHistoryAsync(string currencyCode, int before, Func<BfBalanceHistory, bool> predicate)
-    {
-        while (true)
-        {
-            var balances = (await GetBalanceHistoryAsync(currencyCode, ReadCountMax, before, 0, CancellationToken.None)).GetContent();
-            if (balances.Length == 0)
-            {
-                break;
-            }
-
-            foreach (var balance in balances)
-            {
-                if (!predicate(balance))
-                {
-                    yield break;
-                }
-                yield return balance;
-            }
-
-            if (balances.Length < ReadCountMax)
-            {
-                break;
-            }
-            before = balances.Last().PagingId;
-        }
-    }
 }

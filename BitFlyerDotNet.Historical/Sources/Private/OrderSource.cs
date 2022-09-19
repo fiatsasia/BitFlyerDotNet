@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using BitFlyerDotNet.LightningApi;
+using System.Threading;
 
 namespace BitFlyerDotNet.Historical
 {
@@ -84,7 +85,7 @@ namespace BitFlyerDotNet.Historical
         //======================================================================
         public async void UpdateRecentParentOrders(DateTime after)
         {
-            await foreach (var parent in _client.GetParentOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, e => e.ParentOrderDate >= after))
+            await foreach (var parent in _client.GetParentOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, e => e.ParentOrderDate >= after, CancellationToken.None))
             {
                 var recParent = _ctx.FindParentOrder(_productCode, parent.ParentOrderAcceptanceId);
                 var detail = await _client.GetParentOrderAsync(_productCode, parentOrderAcceptanceId: parent.ParentOrderAcceptanceId);
@@ -126,13 +127,13 @@ namespace BitFlyerDotNet.Historical
 
         public void UpdateRecentChildOrders(DateTime after)
         {
-            _ctx.Upsert(_productCode, _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, e => e.ChildOrderDate > after).ToEnumerable());
+            _ctx.Upsert(_productCode, _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, "", "", "", e => e.ChildOrderDate > after, CancellationToken.None).ToEnumerable());
             _ctx.SaveChanges();
         }
 
         public void UpdateRecentExecutions(DateTime after)
         {
-            var execs = _client.GetPrivateExecutionsAsync(_productCode, after).ToEnumerable();
+            var execs = _client.GetPrivateExecutionsAsync(_productCode, 0, 0, 0, "", "", e => e.ExecutedTime >= after, CancellationToken.None).ToEnumerable();
             _ctx.InsertIfNotExits(_productCode, execs);
             _ctx.SaveChanges();
         }
@@ -487,14 +488,14 @@ namespace BitFlyerDotNet.Historical
             var latestQuery = _ctx.GetExecutions().OrderByDescending(e => e.ExecutionId).Take(1);
             if (latestQuery.Count() == 0)
             {
-                _client.GetPrivateExecutionsAsync(productCode, 0, e => e.ExecutedTime >= start).ToEnumerable()
+                _client.GetPrivateExecutionsAsync(productCode, 0, 0, 0, "", "", e => e.ExecutedTime >= start, CancellationToken.None).ToEnumerable()
                     .ForEach(e => _ctx.Executions.Add(new DbPrivateExecution(productCode, e)));
                 _ctx.SaveChanges();
             }
             else
             {
                 var after = latestQuery.First().ExecutionId;
-                _client.GetPrivateExecutionsAsync(productCode, 0, e => e.ExecutionId > after).ToEnumerable()
+                _client.GetPrivateExecutionsAsync(productCode, 0, 0, after, "", "", null, CancellationToken.None).ToEnumerable()
                     .ForEach(e => _ctx.Executions.Add(new DbPrivateExecution(productCode, e)));
                 _ctx.SaveChanges();
 
@@ -502,7 +503,7 @@ namespace BitFlyerDotNet.Historical
                 if (oldestQuery.Count() > 0)
                 {
                     var oldest = oldestQuery.First();
-                    _client.GetPrivateExecutionsAsync(productCode, oldest.ExecutionId, e => e.ExecutedTime >= start).ToEnumerable()
+                    _client.GetPrivateExecutionsAsync(productCode, 0, oldest.ExecutionId, 0, "", "", e => e.ExecutedTime >= start, CancellationToken.None).ToEnumerable()
                         .ForEach(e => _ctx.Executions.Add(new DbPrivateExecution(productCode, e)));
                     _ctx.SaveChanges();
                 }
@@ -516,14 +517,14 @@ namespace BitFlyerDotNet.Historical
             var latestQuery = _ctx.GetCollaterals().OrderByDescending(e => e.Id).Take(1);
             if (latestQuery.Count() == 0)
             {
-                await _client.GetCollateralHistoryAsync(0, e => e.Date >= start)
+                await _client.GetCollateralHistoryAsync(0, 0, 0, e => e.Date >= start, CancellationToken.None)
                     .ForEachAsync(e => _ctx.Collaterals.Add(new DbCollateral(e)));
                 _ctx.SaveChanges();
             }
             else
             {
                 var after = latestQuery.First().Id;
-                await _client.GetCollateralHistoryAsync(0, e => e.PagingId > after)
+                await _client.GetCollateralHistoryAsync(0, 0, after, null, CancellationToken.None)
                     .ForEachAsync(e => _ctx.Collaterals.Add(new DbCollateral(e)));
                 _ctx.SaveChanges();
 
@@ -531,7 +532,7 @@ namespace BitFlyerDotNet.Historical
                 if (oldestQuery.Count() > 0)
                 {
                     var oldest = oldestQuery.First();
-                    await _client.GetCollateralHistoryAsync(oldest.Id, e => e.Date >= start)
+                    await _client.GetCollateralHistoryAsync(0, oldest.Id, 0, e => e.Date >= start, CancellationToken.None)
                         .ForEachAsync(e => _ctx.Collaterals.Add(new DbCollateral(e)));
                     _ctx.SaveChanges();
                 }
@@ -548,14 +549,14 @@ namespace BitFlyerDotNet.Historical
             var latestQuery = _ctx.GetBalances().OrderByDescending(e => e.Id).Take(1);
             if (latestQuery.Count() == 0)
             {
-                await _client.GetBalanceHistoryAsync(currencyCode, 0, e => e.EventDate >= start)
+                await _client.GetBalanceHistoryAsync(currencyCode, 0, 0, 0, e => e.EventDate >= start, CancellationToken.None)
                     .ForEachAsync(e => _ctx.Balances.Add(new DbBalance(e)));
                 _ctx.SaveChanges();
             }
             else
             {
                 var after = latestQuery.First().Id;
-                await _client.GetBalanceHistoryAsync(currencyCode, 0, e => e.PagingId > after)
+                await _client.GetBalanceHistoryAsync(currencyCode, 0, 0, after, null, CancellationToken.None)
                     .ForEachAsync(e => _ctx.Balances.Add(new DbBalance(e)));
                 _ctx.SaveChanges();
 
@@ -563,7 +564,7 @@ namespace BitFlyerDotNet.Historical
                 if (oldestQuery.Count() > 0)
                 {
                     var oldest = oldestQuery.First();
-                    await _client.GetBalanceHistoryAsync(currencyCode, oldest.Id, e => e.EventDate >= start)
+                    await _client.GetBalanceHistoryAsync(currencyCode, 0, oldest.Id, 0, e => e.EventDate >= start, CancellationToken.None)
                         .ForEachAsync(e => _ctx.Balances.Add(new DbBalance(e)));
                     _ctx.SaveChanges();
                 }

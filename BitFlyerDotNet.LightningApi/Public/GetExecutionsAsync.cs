@@ -8,10 +8,10 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfExecution
+public class BfExecution : IBfPagingElement
 {
     [JsonProperty(PropertyName = "id")]
-    public long ExecutionId { get; private set; }
+    public long Id { get; private set; }
 
     [JsonProperty(PropertyName = "side")]
     [JsonConverter(typeof(StringEnumConverter))]

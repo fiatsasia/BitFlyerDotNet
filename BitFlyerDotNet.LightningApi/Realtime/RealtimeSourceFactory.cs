@@ -130,11 +130,11 @@ public class RealtimeSourceFactory : IDisposable
             Channel.RegisterSource(source);
             if (startPending)
             {
-                return source.ObserveOn(Scheduler).SkipWhile(tick => tick.ExecutionId == 0).Publish();
+                return source.ObserveOn(Scheduler).SkipWhile(tick => tick.Id == 0).Publish();
             }
             else
             {
-                return source.ObserveOn(Scheduler).SkipWhile(tick => tick.ExecutionId == 0).Publish().RefCount();
+                return source.ObserveOn(Scheduler).SkipWhile(tick => tick.Id == 0).Publish().RefCount();
             }
         });
 

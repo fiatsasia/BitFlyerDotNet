@@ -8,10 +8,10 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfChildOrderStatus
+public class BfChildOrderStatus : IBfPagingElement
 {
     [JsonProperty(PropertyName = "id")]
-    public uint PagingId { get; private set; }
+    public long Id { get; private set; }
 
     [JsonProperty(PropertyName = "child_order_id")]
     public string ChildOrderId { get; private set; }
@@ -80,9 +80,9 @@ public partial class BitFlyerClient
     public Task<BitFlyerResponse<BfChildOrderStatus[]>> GetChildOrdersAsync(
         string productCode,
         BfOrderState orderState,
-        int count,
-        uint before,
-        uint after,
+        long count,
+        long before,
+        long after,
         string childOrderId,
         string childOrderAcceptanceId,
         string parentOrderId,
@@ -119,60 +119,11 @@ public partial class BitFlyerClient
     public async Task<BfChildOrderStatus[]> GetChildOrdersAsync(
         string productCode,
         BfOrderState orderState = BfOrderState.Unknown,
-        int count = 0,
-        uint before = 0,
-        uint after = 0,
+        long count = 0L,
+        long before = 0L,
+        long after = 0L,
         string childOrderId = null,
         string childOrderAcceptanceId = null,
         string parentOrderId = null
     ) => (await GetChildOrdersAsync(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, CancellationToken.None)).GetContent();
-
-    /// <summary>
-    /// List child orders with query predicate
-    /// <see href="https://scrapbox.io/BitFlyerDotNet/GetChildOrders">Online help</see>
-    /// </summary>
-    /// <param name="productCode"></param>
-    /// <param name="orderState"></param>
-    /// <param name="count"></param>
-    /// <param name="before"></param>
-    /// <param name="predicate"></param>
-    /// <returns></returns>
-    public async IAsyncEnumerable<BfChildOrderStatus> GetChildOrdersAsync(string productCode, BfOrderState orderState, int count, uint before, Func<BfChildOrderStatus, bool> predicate)
-    {
-        var readCount = Math.Min(count, ReadCountMax);
-        if (count == 0)
-        {
-            count = int.MaxValue;
-        }
-        while (true)
-        {
-            var orders = await GetChildOrdersAsync(productCode, orderState, readCount, before);
-            if (orders.Length == 0)
-            {
-                break;
-            }
-
-            foreach (var order in orders)
-            {
-                if (count-- == 0)
-                {
-                    yield break;
-                }
-
-                if (!predicate(order))
-                {
-                    yield break;
-                }
-
-                yield return order;
-            }
-
-            if (orders.Length < ReadCountMax)
-            {
-                break;
-            }
-
-            before = orders.Last().PagingId;
-        }
-    }
 }

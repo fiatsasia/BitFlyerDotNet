@@ -8,10 +8,10 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfCoinOut
+public class BfCoinOut : IBfPagingElement
 {
     [JsonProperty(PropertyName = "id")]
-    public int PagingId { get; private set; }
+    public long Id { get; private set; }
 
     [JsonProperty(PropertyName = "order_id")]
     public string OrderId { get; private set; }
@@ -52,7 +52,7 @@ public partial class BitFlyerClient
     /// <param name="before"></param>
     /// <param name="after"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfCoinOut[]>> GetCoinOutsAsync(int count, int before, int after, CancellationToken ct)
+    public Task<BitFlyerResponse<BfCoinOut[]>> GetCoinOutsAsync(long count, long before, long after, CancellationToken ct)
     {
         var query = string.Format("{0}{1}{2}",
             (count > 0)  ? $"&count={count}"   : "",
@@ -63,6 +63,6 @@ public partial class BitFlyerClient
         return GetPrivateAsync<BfCoinOut[]>(nameof(GetCoinOutsAsync), query, ct);
     }
 
-    public async Task<BfCoinOut[]> GetCoinOutsAsync(int count = 0, int before = 0, int after = 0)
+    public async Task<BfCoinOut[]> GetCoinOutsAsync(long count = 0L, long before = 0L, long after = 0L)
         => (await GetCoinOutsAsync(count, before, after, CancellationToken.None)).GetContent();
 }

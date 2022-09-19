@@ -8,10 +8,10 @@
 
 namespace BitFlyerDotNet.LightningApi;
 
-public class BfWithdrawal
+public class BfWithdrawal : IBfPagingElement
 {
     [JsonProperty(PropertyName = "id")]
-    public int PagingId { get; private set; }
+    public long Id { get; private set; }
 
     [JsonProperty(PropertyName = "order_id")]
     public string OrderId { get; private set; }
@@ -41,7 +41,7 @@ public partial class BitFlyerClient
     /// <param name="before"></param>
     /// <param name="after"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfWithdrawal[]>> GetWithdrawalsAsync(string messageId, int count, int before, int after, CancellationToken ct)
+    public Task<BitFlyerResponse<BfWithdrawal[]>> GetWithdrawalsAsync(string messageId, long count, long before, long after, CancellationToken ct)
     {
         var query = string.Format("{0}{1}{2}{3}",
             !string.IsNullOrEmpty(messageId) ? "message_id=" + messageId : "",
@@ -53,6 +53,6 @@ public partial class BitFlyerClient
         return GetPrivateAsync<BfWithdrawal[]>(nameof(GetWithdrawalsAsync), query, ct);
     }
 
-    public async Task<BfWithdrawal[]> GetWithdrawalsAsync(string messageId = null, int count = 0, int before = 0, int after = 0)
+    public async Task<BfWithdrawal[]> GetWithdrawalsAsync(string messageId = null, long count = 0L, long before = 0L, long after = 0L)
         => (await GetWithdrawalsAsync(messageId, count, before, after, CancellationToken.None)).GetContent();
 }
