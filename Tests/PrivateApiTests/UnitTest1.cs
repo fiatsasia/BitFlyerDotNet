@@ -148,7 +148,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetBalanceAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -163,7 +163,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetBalanceHistoryAsync(BfCurrencyCode.JPY, 5, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -178,7 +178,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetBankAccountsAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -193,7 +193,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -208,7 +208,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Active, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -223,7 +223,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Completed, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -238,7 +238,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Canceled, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -253,7 +253,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Expired, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -268,7 +268,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Rejected, 5, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -300,7 +300,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetAddressesAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -315,7 +315,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetCoinInsAsync(0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -330,7 +330,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetCoinOutsAsync(0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -345,7 +345,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetCollateralAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -360,7 +360,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetCollateralAccountsAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -375,7 +375,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetCollateralHistoryAsync(5, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -390,7 +390,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetDepositsAsync(0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -407,7 +407,7 @@ namespace PrivateApiTests
             Assert.IsFalse(resp.IsUnauthorized, "Permission denied");
             Assert.IsFalse(resp.IsError, resp.ErrorMessage);
             Dump(resp);
-            var content = resp.GetContent();
+            var content = resp.Deserialize();
         }
 
         // 2020/07/27
@@ -422,7 +422,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -437,7 +437,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Active, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -452,7 +452,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Completed, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -468,7 +468,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Canceled, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -483,7 +483,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Expired, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -498,7 +498,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Rejected, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -530,7 +530,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetPermissionsAsync(CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -545,7 +545,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetPositionsAsync(_productCode, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -562,7 +562,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetPrivateExecutionsAsync(_productCode, 1, 0, 0, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -577,7 +577,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetTradingCommissionAsync(_productCode, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {
@@ -592,7 +592,7 @@ namespace PrivateApiTests
                 var resp = await _client.GetWithdrawalsAsync(null, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
-                var content = resp.GetContent();
+                var content = resp.Deserialize();
             }
             catch (BitFlyerUnauthorizedException) // Should enable from settings
             {

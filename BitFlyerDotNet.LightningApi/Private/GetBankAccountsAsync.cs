@@ -41,5 +41,5 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public Task<BitFlyerResponse<BfBankAccount[]>> GetBankAccountsAsync(CancellationToken ct) => GetPrivateAsync<BfBankAccount[]>(nameof(GetBankAccountsAsync), string.Empty, ct);
 
-    public async Task<BfBankAccount[]> GetBankAccountsAsync() => (await GetBankAccountsAsync(CancellationToken.None)).GetContent();
+    public async Task<BfBankAccount[]> GetBankAccountsAsync() => (await GetBankAccountsAsync(CancellationToken.None)).Deserialize();
 }

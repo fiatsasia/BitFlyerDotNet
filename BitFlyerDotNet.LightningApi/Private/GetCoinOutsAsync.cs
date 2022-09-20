@@ -64,5 +64,5 @@ public partial class BitFlyerClient
     }
 
     public async Task<BfCoinOut[]> GetCoinOutsAsync(long count = 0L, long before = 0L, long after = 0L)
-        => (await GetCoinOutsAsync(count, before, after, CancellationToken.None)).GetContent();
+        => (await GetCoinOutsAsync(count, before, after, CancellationToken.None)).Deserialize();
 }

@@ -87,5 +87,5 @@ public partial class BitFlyerClient
     /// <param name="order"></param>
     /// <returns></returns>
     public async Task<BfParentOrderAcceptance> SendParentOrderAsync(BfParentOrder order)
-        => (await SendParentOrderAsync(order, CancellationToken.None)).GetContent();
+        => (await SendParentOrderAsync(order, CancellationToken.None)).Deserialize();
 }

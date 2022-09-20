@@ -73,6 +73,6 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public async Task<BfChildOrderAcceptance> SendChildOrderAsync(BfChildOrder order)
     {
-        return (await SendChildOrderAsync(order, CancellationToken.None)).GetContent();
+        return (await SendChildOrderAsync(order, CancellationToken.None)).Deserialize();
     }
 }

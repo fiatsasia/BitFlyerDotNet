@@ -125,5 +125,5 @@ public partial class BitFlyerClient
         string childOrderId = null,
         string childOrderAcceptanceId = null,
         string parentOrderId = null
-    ) => (await GetChildOrdersAsync(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, CancellationToken.None)).GetContent();
+    ) => (await GetChildOrdersAsync(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, CancellationToken.None)).Deserialize();
 }

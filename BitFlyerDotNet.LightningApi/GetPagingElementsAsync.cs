@@ -39,7 +39,7 @@ public partial class BitFlyerClient
                 continue;
             }
 
-            var elements = resp.GetContent();
+            var elements = resp.Deserialize();
             if (elements.Length == 0)
             {
                 break;

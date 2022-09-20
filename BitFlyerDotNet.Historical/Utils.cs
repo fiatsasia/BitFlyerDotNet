@@ -6,55 +6,49 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Reactive.Disposables;
+namespace BitFlyerDotNet.Historical;
 
-namespace BitFlyerDotNet.Historical
+static class MathEx
 {
-    static class MathEx
+    public static decimal Truncate(this decimal value, int precision)
     {
-        public static decimal Truncate(this decimal value, int precision)
-        {
-            var step = (decimal)Math.Pow(10, precision);
-            var trunc = Math.Truncate(step * value);
-            return trunc / step;
-        }
-
-        public static decimal Ceiling(this decimal value, int precision)
-        {
-            var step = (decimal)Math.Pow(10, precision);
-            var ceil = Math.Ceiling(step * value);
-            return ceil / step;
-        }
+        var step = (decimal)Math.Pow(10, precision);
+        var trunc = Math.Truncate(step * value);
+        return trunc / step;
     }
 
-    static class EnumUtil
+    public static decimal Ceiling(this decimal value, int precision)
     {
-        public static string ToEnumString<TEnum>(this TEnum type) where TEnum : struct
-        {
-            var enumType = typeof(TEnum);
-            var name = Enum.GetName(enumType, type);
-            var enumMemberAttribute = ((EnumMemberAttribute[])enumType.GetField(name).GetCustomAttributes(typeof(EnumMemberAttribute), true)).SingleOrDefault();
-            return enumMemberAttribute?.Value ?? type.ToString();
-        }
+        var step = (decimal)Math.Pow(10, precision);
+        var ceil = Math.Ceiling(step * value);
+        return ceil / step;
     }
+}
 
-    static class RxUtil
+static class EnumUtil
+{
+    public static string ToEnumString<TEnum>(this TEnum type) where TEnum : struct
     {
-        public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
-        {
-            disposable.Add(resource);
-            return resource;
-        }
+        var enumType = typeof(TEnum);
+        var name = Enum.GetName(enumType, type);
+        var enumMemberAttribute = ((EnumMemberAttribute[])enumType.GetField(name).GetCustomAttributes(typeof(EnumMemberAttribute), true)).SingleOrDefault();
+        return enumMemberAttribute?.Value ?? type.ToString();
     }
+}
 
-    public static class DateTimeExtensions
+static class RxUtil
+{
+    public static TResult AddTo<TResult>(this TResult resource, CompositeDisposable disposable) where TResult : IDisposable
     {
-        public static DateTime Round(this DateTime dt, TimeSpan unit)
-        {
-            return new DateTime(dt.Ticks / unit.Ticks * unit.Ticks, dt.Kind);
-        }
+        disposable.Add(resource);
+        return resource;
+    }
+}
+
+public static class DateTimeExtensions
+{
+    public static DateTime Round(this DateTime dt, TimeSpan unit)
+    {
+        return new DateTime(dt.Ticks / unit.Ticks * unit.Ticks, dt.Kind);
     }
 }

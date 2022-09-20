@@ -32,5 +32,5 @@ public partial class BitFlyerClient
     public Task<BitFlyerResponse<BfCollateral>> GetCollateralAsync(CancellationToken ct)
         => GetPrivateAsync<BfCollateral>(nameof(GetCollateralAsync), string.Empty, ct);
 
-    public async Task<BfCollateral> GetCollateralAsync() => (await GetCollateralAsync(CancellationToken.None)).GetContent();
+    public async Task<BfCollateral> GetCollateralAsync() => (await GetCollateralAsync(CancellationToken.None)).Deserialize();
 }

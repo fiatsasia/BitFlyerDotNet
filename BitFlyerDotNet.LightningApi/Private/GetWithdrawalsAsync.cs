@@ -54,5 +54,5 @@ public partial class BitFlyerClient
     }
 
     public async Task<BfWithdrawal[]> GetWithdrawalsAsync(string messageId = null, long count = 0L, long before = 0L, long after = 0L)
-        => (await GetWithdrawalsAsync(messageId, count, before, after, CancellationToken.None)).GetContent();
+        => (await GetWithdrawalsAsync(messageId, count, before, after, CancellationToken.None)).Deserialize();
 }

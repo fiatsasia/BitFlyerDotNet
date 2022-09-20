@@ -59,5 +59,5 @@ public partial class BitFlyerClient
     }
 
     public async Task<BfExecution[]> GetExecutionsAsync(string productCode, long count = 0, long before = 0, long after = 0)
-        => (await GetExecutionsAsync(productCode, count, before, after, CancellationToken.None)).GetContent();
+        => (await GetExecutionsAsync(productCode, count, before, after, CancellationToken.None)).Deserialize();
 }

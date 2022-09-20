@@ -26,5 +26,5 @@ public partial class BitFlyerClient
         => GetPrivateAsync<BfTradingCommission>(nameof(GetTradingCommissionAsync), "product_code=" + productCode, ct);
 
     public async Task<decimal> GetTradingCommissionAsync(string productCode)
-        => (await GetTradingCommissionAsync(productCode, CancellationToken.None)).GetContent().CommissionRate;
+        => (await GetTradingCommissionAsync(productCode, CancellationToken.None)).Deserialize().CommissionRate;
 }

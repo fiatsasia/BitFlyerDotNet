@@ -51,5 +51,5 @@ public partial class BitFlyerClient
     }
 
     public async Task<BfWithdrawResponse> WithdrawAsync(string currencyCode, int bankAccountId, decimal amount, string authenticationCode)
-        => (await WithdrawAsync(currencyCode, bankAccountId, amount, authenticationCode, CancellationToken.None)).GetContent();
+        => (await WithdrawAsync(currencyCode, bankAccountId, amount, authenticationCode, CancellationToken.None)).Deserialize();
 }

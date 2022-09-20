@@ -6,54 +6,50 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using BitFlyerDotNet.LightningApi;
+namespace BitFlyerDotNet.Historical;
 
-namespace BitFlyerDotNet.Historical
+public interface ICacheFactory
 {
-    public interface ICacheFactory
+    IExecutionCache CreateExecutionCache(string productCode);
+    ICacheDbContext CreateDbContext(string productCode);
+}
+
+public class SqliteCacheFactory : ICacheFactory
+{
+    string _cacheFolderPath;
+
+    public SqliteCacheFactory(string cacheFolderPath)
     {
-        IExecutionCache CreateExecutionCache(string productCode);
-        ICacheDbContext CreateDbContext(string productCode);
+        _cacheFolderPath = cacheFolderPath;
     }
 
-    public class SqliteCacheFactory : ICacheFactory
+    public IExecutionCache CreateExecutionCache(string productCode)
     {
-        string _cacheFolderPath;
-
-        public SqliteCacheFactory(string cacheFolderPath)
-        {
-            _cacheFolderPath = cacheFolderPath;
-        }
-
-        public IExecutionCache CreateExecutionCache(string productCode)
-        {
-            return new ExecutionCache(new SqliteDbContext(_cacheFolderPath, productCode), productCode);
-        }
-
-        public ICacheDbContext CreateDbContext(string productCode)
-        {
-            return new SqliteDbContext(_cacheFolderPath, productCode);
-        }
+        return new ExecutionCache(new SqliteDbContext(_cacheFolderPath, productCode), productCode);
     }
 
-    public class SqlServerCacheFactory : ICacheFactory
+    public ICacheDbContext CreateDbContext(string productCode)
     {
-        readonly string _connStr;
+        return new SqliteDbContext(_cacheFolderPath, productCode);
+    }
+}
 
-        public SqlServerCacheFactory(string connStr)
-        {
-            _connStr = connStr;
-        }
+public class SqlServerCacheFactory : ICacheFactory
+{
+    readonly string _connStr;
 
-        public IExecutionCache CreateExecutionCache(string productCode)
-        {
-            return new ExecutionCache(new SqlServerDbContext(_connStr, productCode), productCode);
-        }
+    public SqlServerCacheFactory(string connStr)
+    {
+        _connStr = connStr;
+    }
 
-        public ICacheDbContext CreateDbContext(string productCode)
-        {
-            return new SqlServerDbContext(_connStr, productCode);
-        }
+    public IExecutionCache CreateExecutionCache(string productCode)
+    {
+        return new ExecutionCache(new SqlServerDbContext(_connStr, productCode), productCode);
+    }
+
+    public ICacheDbContext CreateDbContext(string productCode)
+    {
+        return new SqlServerDbContext(_connStr, productCode);
     }
 }

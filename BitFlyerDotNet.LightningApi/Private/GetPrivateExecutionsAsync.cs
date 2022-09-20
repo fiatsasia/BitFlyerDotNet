@@ -64,5 +64,5 @@ public partial class BitFlyerClient
     }
 
     public async Task<BfPrivateExecution[]> GetPrivateExecutionsAsync(string productCode, long count = 0, long before = 0, long after = 0, string childOrderId = null, string childOrderAcceptanceId = null)
-        => (await GetPrivateExecutionsAsync(productCode, count, before, after, childOrderId, childOrderAcceptanceId, CancellationToken.None)).GetContent();
+        => (await GetPrivateExecutionsAsync(productCode, count, before, after, childOrderId, childOrderAcceptanceId, CancellationToken.None)).Deserialize();
 }

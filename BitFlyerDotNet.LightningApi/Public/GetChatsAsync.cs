@@ -29,7 +29,7 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public Task<BitFlyerResponse<BfChat[]>> GetChatsAsync(CancellationToken ct) => GetAsync<BfChat[]>(nameof(GetChatsAsync), string.Empty, ct);
 
-    public async Task<BfChat[]> GetChatsAsync() => (await GetChatsAsync(CancellationToken.None)).GetContent();
+    public async Task<BfChat[]> GetChatsAsync() => (await GetChatsAsync(CancellationToken.None)).Deserialize();
 
     /// <summary>
     /// Chat (Japan)
@@ -42,7 +42,7 @@ public partial class BitFlyerClient
         return GetAsync<BfChat[]>(nameof(GetChatsAsync), "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"), ct);
     }
 
-    public async Task<BfChat[]> GetChatsAsync(DateTime fromDate) => (await GetChatsAsync(fromDate, CancellationToken.None)).GetContent();
+    public async Task<BfChat[]> GetChatsAsync(DateTime fromDate) => (await GetChatsAsync(fromDate, CancellationToken.None)).Deserialize();
 
     /// <summary>
     /// Chat (U.S.)
@@ -51,7 +51,7 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public Task<BitFlyerResponse<BfChat[]>> GetChatsUsaAsync(CancellationToken ct) => GetAsync<BfChat[]>(nameof(GetChatsAsync) + UsaMarket, string.Empty, ct);
 
-    public async Task<BfChat[]> GetChatsUsaAsync() => (await GetChatsUsaAsync(CancellationToken.None)).GetContent();
+    public async Task<BfChat[]> GetChatsUsaAsync() => (await GetChatsUsaAsync(CancellationToken.None)).Deserialize();
 
     /// <summary>
     /// Chat (U.S.)
@@ -62,7 +62,7 @@ public partial class BitFlyerClient
     public Task<BitFlyerResponse<BfChat[]>> GetChatsUsaAsync(DateTime fromDate, CancellationToken ct)
         => GetAsync<BfChat[]>(nameof(GetChatsAsync) + UsaMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"), ct);
 
-    public async Task<BfChat[]> GetChatsUsaAsync(DateTime fromDate) => (await GetChatsUsaAsync(fromDate, CancellationToken.None)).GetContent();
+    public async Task<BfChat[]> GetChatsUsaAsync(DateTime fromDate) => (await GetChatsUsaAsync(fromDate, CancellationToken.None)).Deserialize();
 
     /// <summary>
     /// Chat (E.U.)
@@ -71,7 +71,7 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public Task<BitFlyerResponse<BfChat[]>> GetChatsEuAsync(CancellationToken ct) => GetAsync<BfChat[]>(nameof(GetChatsAsync) + EuMarket, string.Empty, ct);
 
-    public async Task<BfChat[]> GetChatsEuAsync() => (await GetChatsEuAsync(CancellationToken.None)).GetContent();
+    public async Task<BfChat[]> GetChatsEuAsync() => (await GetChatsEuAsync(CancellationToken.None)).Deserialize();
 
     /// <summary>
     /// Chat (E.U.)
@@ -82,5 +82,5 @@ public partial class BitFlyerClient
     public Task<BitFlyerResponse<BfChat[]>> GetChatsEuAsync(DateTime fromDate, CancellationToken ct)
         => GetAsync<BfChat[]>(nameof(GetChatsAsync) + EuMarket, "from_date=" + fromDate.ToString("yyyy-MM-ddTHH:mm:ss.fff"), ct);
 
-    public async Task<BfChat[]> GetChatsEuAsync(DateTime fromDate) => (await GetChatsEuAsync(fromDate, CancellationToken.None)).GetContent();
+    public async Task<BfChat[]> GetChatsEuAsync(DateTime fromDate) => (await GetChatsEuAsync(fromDate, CancellationToken.None)).Deserialize();
 }

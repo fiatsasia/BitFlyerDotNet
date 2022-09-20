@@ -33,5 +33,5 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public Task<BitFlyerResponse<BfCorporateLeverage>> GetCorporateLeverageAsync(CancellationToken ct) => GetAsync<BfCorporateLeverage>(nameof(GetCorporateLeverageAsync), string.Empty, ct);
 
-    public async Task<BfCorporateLeverage> GetCorporateLeverageAsync() => (await GetCorporateLeverageAsync(CancellationToken.None)).GetContent();
+    public async Task<BfCorporateLeverage> GetCorporateLeverageAsync() => (await GetCorporateLeverageAsync(CancellationToken.None)).Deserialize();
 }

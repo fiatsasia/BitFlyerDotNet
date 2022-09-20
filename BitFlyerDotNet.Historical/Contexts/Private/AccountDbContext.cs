@@ -10,6 +10,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using BitFlyerDotNet.LightningApi;
+using System;
 
 namespace BitFlyerDotNet.Historical
 {
@@ -70,6 +71,11 @@ namespace BitFlyerDotNet.Historical
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlite(_connStr);
+        }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            configurationBuilder.Properties<Enum>().HaveConversion<string>();
         }
 
         public DbParentOrder FindParentOrder(string productCode, string acceptanceId) => ParentOrders.Find(productCode, acceptanceId);

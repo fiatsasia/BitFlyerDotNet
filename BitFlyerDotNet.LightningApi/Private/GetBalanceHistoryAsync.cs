@@ -71,5 +71,5 @@ public partial class BitFlyerClient
     }
 
     public async Task<BfBalanceHistory[]> GetBalanceHistoryAsync(string currencyCode, long count = 0, long before = 0, long after = 0)
-        => (await GetBalanceHistoryAsync(currencyCode, count, before, after, CancellationToken.None)).GetContent();
+        => (await GetBalanceHistoryAsync(currencyCode, count, before, after, CancellationToken.None)).Deserialize();
 }

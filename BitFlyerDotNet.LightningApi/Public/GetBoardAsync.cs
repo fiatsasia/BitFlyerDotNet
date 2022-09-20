@@ -39,5 +39,5 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public Task<BitFlyerResponse<BfBoard>> GetBoardAsync(string productCode, CancellationToken ct) => GetAsync<BfBoard>(nameof(GetBoardAsync), "product_code=" + productCode, ct);
 
-    public async Task<BfBoard> GetBoardAsync(string productCode) => (await GetBoardAsync(productCode, CancellationToken.None)).GetContent();
+    public async Task<BfBoard> GetBoardAsync(string productCode) => (await GetBoardAsync(productCode, CancellationToken.None)).Deserialize();
 }

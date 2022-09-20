@@ -51,5 +51,5 @@ public partial class BitFlyerClient
     }
 
     public async Task<BfCollateralHistory[]> GetCollateralHistoryAsync(long count = 0L, long before = 0L, long after = 0L)
-        => (await GetCollateralHistoryAsync(count, before, after, CancellationToken.None)).GetContent();
+        => (await GetCollateralHistoryAsync(count, before, after, CancellationToken.None)).Deserialize();
 }

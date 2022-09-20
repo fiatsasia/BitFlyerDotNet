@@ -26,5 +26,5 @@ public partial class BitFlyerClient
     public Task<BitFlyerResponse<BfMarketHealth>> GetHealthAsync(string productCode, CancellationToken ct)
         => GetAsync<BfMarketHealth>(nameof(GetHealthAsync), "product_code=" + productCode, ct);
 
-    public async Task<BfMarketHealth> GetHealthAsync(string productCode) => (await GetHealthAsync(productCode, CancellationToken.None)).GetContent();
+    public async Task<BfMarketHealth> GetHealthAsync(string productCode) => (await GetHealthAsync(productCode, CancellationToken.None)).Deserialize();
 }

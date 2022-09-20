@@ -18,5 +18,5 @@ public partial class BitFlyerClient
     public Task<BitFlyerResponse<string[]>> GetPermissionsAsync(CancellationToken ct)
         => GetPrivateAsync<string[]>(nameof(GetPermissionsAsync), string.Empty, ct);
 
-    public async Task<string[]> GetPermissionsAsync() => (await GetPermissionsAsync(CancellationToken.None)).GetContent();
+    public async Task<string[]> GetPermissionsAsync() => (await GetPermissionsAsync(CancellationToken.None)).Deserialize();
 }

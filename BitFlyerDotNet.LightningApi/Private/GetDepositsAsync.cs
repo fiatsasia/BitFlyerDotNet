@@ -52,5 +52,5 @@ public partial class BitFlyerClient
     }
 
     public async Task<BfDeposit[]> GetDepositsAsync(long count = 0L, long before = 0L, long after = 0L)
-        => (await GetDepositsAsync(count, before, after, CancellationToken.None)).GetContent();
+        => (await GetDepositsAsync(count, before, after, CancellationToken.None)).Deserialize();
 }

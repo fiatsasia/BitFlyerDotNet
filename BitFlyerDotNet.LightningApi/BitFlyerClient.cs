@@ -90,7 +90,7 @@ public abstract class BitFlyerResponse
     {
     }
 
-    public T GetContent<T>()
+    public T Deserialize<T>()
     {
         if (IsError)
         {
@@ -114,11 +114,11 @@ public class BitFlyerResponse<T> : BitFlyerResponse
 
     T _response = default(T);
 
-    public T GetContent()
+    public T Deserialize()
     {
         if (object.Equals(_response, default(T)))
         {
-            _response = GetContent<T>();
+            _response = Deserialize<T>();
         }
         return _response;
     }

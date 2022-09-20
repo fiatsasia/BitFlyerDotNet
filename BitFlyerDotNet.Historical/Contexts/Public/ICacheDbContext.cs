@@ -6,29 +6,24 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
+namespace BitFlyerDotNet.Historical;
 
-namespace BitFlyerDotNet.Historical
+public interface ICacheDbContext : IDisposable
 {
-    public interface ICacheDbContext : IDisposable
-    {
-        IQueryable<DbManageRecord> ManageTable { get; }
-        IQueryable<DbExecution> Executions { get; }
-        IQueryable<DbExecution> GetExecutions(DateTime start, TimeSpan span);
-        IQueryable<DbOhlc> GetOhlcs(TimeSpan frameSpan, DateTime start, TimeSpan span);
+    IQueryable<DbManageRecord> ManageTable { get; }
+    IQueryable<DbExecution> Executions { get; }
+    IQueryable<DbExecution> GetExecutions(DateTime start, TimeSpan span);
+    IQueryable<DbOhlc> GetOhlcs(TimeSpan frameSpan, DateTime start, TimeSpan span);
 
-        DateTime LastExecutionTime { get; }
-        DateTime LastOhlcTime { get; }
+    DateTime LastExecutionTime { get; }
+    DateTime LastOhlcTime { get; }
 
-        void Add(DbManageRecord manageRec);
-        void Update(IEnumerable<DbManageRecord> manageRecs);
+    void Add(DbManageRecord manageRec);
+    void Update(IEnumerable<DbManageRecord> manageRecs);
 
-        void Add(DbExecution exec);
-        void Add(DbOhlc ohlc);
+    void Add(DbExecution exec);
+    void Add(DbOhlc ohlc);
 
-        void ClearCache();
-        void SaveChanges();
-    }
+    void ClearCache();
+    void SaveChanges();
 }

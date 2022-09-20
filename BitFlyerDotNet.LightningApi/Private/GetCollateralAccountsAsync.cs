@@ -26,5 +26,5 @@ public partial class BitFlyerClient
     public Task<BitFlyerResponse<BfCollateralAccount[]>> GetCollateralAccountsAsync(CancellationToken ct)
         => GetPrivateAsync<BfCollateralAccount[]>(nameof(GetCollateralAccountsAsync), string.Empty, ct);
 
-    public async Task<BfCollateralAccount[]> GetCollateralAccountsAsync() => (await GetCollateralAccountsAsync(CancellationToken.None)).GetContent();
+    public async Task<BfCollateralAccount[]> GetCollateralAccountsAsync() => (await GetCollateralAccountsAsync(CancellationToken.None)).Deserialize();
 }

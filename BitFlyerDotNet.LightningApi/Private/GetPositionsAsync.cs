@@ -58,5 +58,5 @@ public partial class BitFlyerClient
         return GetPrivateAsync<BfPosition[]>(nameof(GetPositionsAsync), "product_code=" + productCode, ct);
     }
 
-    public async Task<BfPosition[]> GetPositionsAsync(string productCode) => (await GetPositionsAsync(productCode, CancellationToken.None)).GetContent();
+    public async Task<BfPosition[]> GetPositionsAsync(string productCode) => (await GetPositionsAsync(productCode, CancellationToken.None)).Deserialize();
 }

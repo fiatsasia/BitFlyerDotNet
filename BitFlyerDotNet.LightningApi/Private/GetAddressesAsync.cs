@@ -35,5 +35,5 @@ public partial class BitFlyerClient
     public Task<BitFlyerResponse<BfCoinAddress[]>> GetAddressesAsync(CancellationToken ct)
         => GetPrivateAsync<BfCoinAddress[]>(nameof(GetAddressesAsync), string.Empty, ct);
 
-    public async Task<BfCoinAddress[]> GetAddressesAsync() => (await GetAddressesAsync(CancellationToken.None)).GetContent();
+    public async Task<BfCoinAddress[]> GetAddressesAsync() => (await GetAddressesAsync(CancellationToken.None)).Deserialize();
 }

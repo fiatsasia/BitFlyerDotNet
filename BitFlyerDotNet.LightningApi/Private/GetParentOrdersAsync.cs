@@ -97,5 +97,5 @@ public partial class BitFlyerClient
     /// <param name="after"></param>
     /// <returns></returns>
     public async Task<BfParentOrderStatus[]> GetParentOrdersAsync(string productCode, BfOrderState orderState = BfOrderState.Unknown, long count = 0, long before = 0, long after = 0)
-        => (await GetParentOrdersAsync(productCode, orderState, count, before, after, CancellationToken.None)).GetContent();
+        => (await GetParentOrdersAsync(productCode, orderState, count, before, after, CancellationToken.None)).Deserialize();
 }

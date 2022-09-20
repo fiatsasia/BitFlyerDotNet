@@ -6,19 +6,15 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using BitFlyerDotNet.LightningApi;
+namespace BitFlyerDotNet.Historical;
 
-namespace BitFlyerDotNet.Historical
+public interface IExecutionCache : IDisposable
 {
-    public interface IExecutionCache : IDisposable
-    {
-        long CommitCount { get; set; }
-        void OptimizeManageTable();
-        IObservable<BfExecution> FillGaps(BitFlyerClient client);
-        IObservable<BfExecution> UpdateRecents(BitFlyerClient client);
-        void Add(BfExecution exec);
-        void SaveChanges();
-        void InsertGap(long before, long after);
-    }
+    long CommitCount { get; set; }
+    void OptimizeManageTable();
+    IObservable<BfExecution> FillGaps(BitFlyerClient client);
+    IObservable<BfExecution> UpdateRecents(BitFlyerClient client);
+    void Add(BfExecution exec);
+    void SaveChanges();
+    void InsertGap(long before, long after);
 }

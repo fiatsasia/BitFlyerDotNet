@@ -60,5 +60,5 @@ public partial class BitFlyerClient
         return GetAsync<BfTicker>(nameof(GetTickerAsync), "product_code=" + productCode, ct);
     }
 
-    public async Task<BfTicker> GetTickerAsync(string productCode) => (await GetTickerAsync(productCode, CancellationToken.None)).GetContent();
+    public async Task<BfTicker> GetTickerAsync(string productCode) => (await GetTickerAsync(productCode, CancellationToken.None)).Deserialize();
 }

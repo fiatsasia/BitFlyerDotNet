@@ -30,7 +30,7 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public Task<BitFlyerResponse<BfMarket[]>> GetMarketsAsync(CancellationToken ct) => GetAsync<BfMarket[]>(nameof(GetMarketsAsync), string.Empty, ct);
 
-    public async Task<BfMarket[]> GetMarketsAsync() => (await GetMarketsAsync(CancellationToken.None)).GetContent();
+    public async Task<BfMarket[]> GetMarketsAsync() => (await GetMarketsAsync(CancellationToken.None)).Deserialize();
 
     /// <summary>
     /// Market List (U.S.)
@@ -39,7 +39,7 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public Task<BitFlyerResponse<BfMarket[]>> GetMarketsUsaAsync(CancellationToken ct) => GetAsync<BfMarket[]>(nameof(GetMarketsAsync) + UsaMarket, string.Empty, ct);
 
-    public async Task<BfMarket[]> GetMarketsUsaAsync() => (await GetMarketsUsaAsync(CancellationToken.None)).GetContent();
+    public async Task<BfMarket[]> GetMarketsUsaAsync() => (await GetMarketsUsaAsync(CancellationToken.None)).Deserialize();
 
     /// <summary>
     /// Market List (E.U.)
@@ -48,5 +48,5 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public Task<BitFlyerResponse<BfMarket[]>> GetMarketsEuAsync(CancellationToken ct) => GetAsync<BfMarket[]>(nameof(GetMarketsAsync) + EuMarket, string.Empty, ct);
 
-    public async Task<BfMarket[]> GetMarketsEuAsync() => (await GetMarketsEuAsync(CancellationToken.None)).GetContent();
+    public async Task<BfMarket[]> GetMarketsEuAsync() => (await GetMarketsEuAsync(CancellationToken.None)).Deserialize();
 }

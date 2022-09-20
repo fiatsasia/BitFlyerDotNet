@@ -29,5 +29,5 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public Task<BitFlyerResponse<BfBalance[]>> GetBalanceAsync(CancellationToken ct) => GetPrivateAsync<BfBalance[]>(nameof(GetBalanceAsync), string.Empty, ct);
 
-    public async Task<BfBalance[]> GetBalanceAsync() => (await GetBalanceAsync(CancellationToken.None)).GetContent();
+    public async Task<BfBalance[]> GetBalanceAsync() => (await GetBalanceAsync(CancellationToken.None)).Deserialize();
 }

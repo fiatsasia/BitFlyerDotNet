@@ -48,7 +48,7 @@ class BfxTransaction : IDisposable
                         resp = await _client.SendChildOrderAsync(childOrder, cts.Token);
                         if (!resp.IsError)
                         {
-                            id = resp.GetContent<BfChildOrderAcceptance>().ChildOrderAcceptanceId;
+                            id = resp.Deserialize<BfChildOrderAcceptance>().ChildOrderAcceptanceId;
                         }
                     }
                     else if (order is BfParentOrder parentOrder)
@@ -56,7 +56,7 @@ class BfxTransaction : IDisposable
                         resp = await _client.SendParentOrderAsync(parentOrder, cts.Token);
                         if (!resp.IsError)
                         {
-                            id = resp.GetContent<BfParentOrderAcceptance>().ParentOrderAcceptanceId;
+                            id = resp.Deserialize<BfParentOrderAcceptance>().ParentOrderAcceptanceId;
                         }
                     }
                     else

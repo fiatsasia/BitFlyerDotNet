@@ -6,17 +6,11 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using BitFlyerDotNet.LightningApi;
+namespace BitFlyerDotNet.Historical;
 
-namespace BitFlyerDotNet.Historical
+public class DbPosition
 {
-    public class DbPosition
+    public DbPosition(BfPosition pos)
     {
-        public DbPosition(BfPosition pos)
-        {
-        }
     }
 }
