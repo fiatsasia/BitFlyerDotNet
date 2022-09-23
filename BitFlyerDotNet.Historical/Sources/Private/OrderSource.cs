@@ -119,13 +119,13 @@ public class OrderSource : IDisposable
 
     public void UpdateRecentChildOrders(DateTime after)
     {
-        _ctx.Upsert(_productCode, _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, "", "", "", e => e.ChildOrderDate > after, CancellationToken.None).ToEnumerable());
+        _ctx.Upsert(_productCode, _client.GetChildOrdersAsync<BfChildOrderStatus>(_productCode, BfOrderState.Unknown, 0, 0, 0, "", "", "", e => e.ChildOrderDate > after, CancellationToken.None).ToEnumerable());
         _ctx.SaveChanges();
     }
 
     public void UpdateRecentExecutions(DateTime after)
     {
-        var execs = _client.GetPrivateExecutionsAsync(_productCode, 0, 0, 0, "", "", e => e.ExecutedTime >= after, CancellationToken.None).ToEnumerable();
+        var execs = _client.GetPrivateExecutionsAsync<BfPrivateExecution>(_productCode, 0, 0, 0, "", "", e => e.ExecDate >= after, CancellationToken.None).ToEnumerable();
         _ctx.InsertIfNotExits(_productCode, execs);
         _ctx.SaveChanges();
     }
@@ -480,14 +480,14 @@ public class OrderSource : IDisposable
         var latestQuery = _ctx.GetExecutions().OrderByDescending(e => e.ExecutionId).Take(1);
         if (latestQuery.Count() == 0)
         {
-            _client.GetPrivateExecutionsAsync(productCode, 0, 0, 0, "", "", e => e.ExecutedTime >= start, CancellationToken.None).ToEnumerable()
+            _client.GetPrivateExecutionsAsync<BfPrivateExecution>(productCode, 0, 0, 0, "", "", e => e.ExecDate >= start, CancellationToken.None).ToEnumerable()
                 .ForEach(e => _ctx.Executions.Add(new DbPrivateExecution(productCode, e)));
             _ctx.SaveChanges();
         }
         else
         {
             var after = latestQuery.First().ExecutionId;
-            _client.GetPrivateExecutionsAsync(productCode, 0, 0, after, "", "", null, CancellationToken.None).ToEnumerable()
+            _client.GetPrivateExecutionsAsync<BfPrivateExecution>(productCode, 0, 0, after, "", "", null, CancellationToken.None).ToEnumerable()
                 .ForEach(e => _ctx.Executions.Add(new DbPrivateExecution(productCode, e)));
             _ctx.SaveChanges();
 
@@ -495,7 +495,7 @@ public class OrderSource : IDisposable
             if (oldestQuery.Count() > 0)
             {
                 var oldest = oldestQuery.First();
-                _client.GetPrivateExecutionsAsync(productCode, 0, oldest.ExecutionId, 0, "", "", e => e.ExecutedTime >= start, CancellationToken.None).ToEnumerable()
+                _client.GetPrivateExecutionsAsync<BfPrivateExecution>(productCode, 0, oldest.ExecutionId, 0, "", "", e => e.ExecDate >= start, CancellationToken.None).ToEnumerable()
                     .ForEach(e => _ctx.Executions.Add(new DbPrivateExecution(productCode, e)));
                 _ctx.SaveChanges();
             }
@@ -509,14 +509,14 @@ public class OrderSource : IDisposable
         var latestQuery = _ctx.GetCollaterals().OrderByDescending(e => e.Id).Take(1);
         if (latestQuery.Count() == 0)
         {
-            await _client.GetCollateralHistoryAsync(0, 0, 0, e => e.Date >= start, CancellationToken.None)
+            await _client.GetCollateralHistoryAsync<BfCollateralHistory>(0, 0, 0, e => e.Date >= start, CancellationToken.None)
                 .ForEachAsync(e => _ctx.Collaterals.Add(new DbCollateral(e)));
             _ctx.SaveChanges();
         }
         else
         {
             var after = latestQuery.First().Id;
-            await _client.GetCollateralHistoryAsync(0, 0, after, null, CancellationToken.None)
+            await _client.GetCollateralHistoryAsync<BfCollateralHistory>(0, 0, after, null, CancellationToken.None)
                 .ForEachAsync(e => _ctx.Collaterals.Add(new DbCollateral(e)));
             _ctx.SaveChanges();
 
@@ -524,7 +524,7 @@ public class OrderSource : IDisposable
             if (oldestQuery.Count() > 0)
             {
                 var oldest = oldestQuery.First();
-                await _client.GetCollateralHistoryAsync(0, oldest.Id, 0, e => e.Date >= start, CancellationToken.None)
+                await _client.GetCollateralHistoryAsync<BfCollateralHistory>(0, oldest.Id, 0, e => e.Date >= start, CancellationToken.None)
                     .ForEachAsync(e => _ctx.Collaterals.Add(new DbCollateral(e)));
                 _ctx.SaveChanges();
             }
@@ -541,14 +541,14 @@ public class OrderSource : IDisposable
         var latestQuery = _ctx.GetBalances().OrderByDescending(e => e.Id).Take(1);
         if (latestQuery.Count() == 0)
         {
-            await _client.GetBalanceHistoryAsync(currencyCode, 0, 0, 0, e => e.EventDate >= start, CancellationToken.None)
+            await _client.GetBalanceHistoryAsync<BfBalanceHistory>(currencyCode, 0, 0, 0, e => e.EventDate >= start, CancellationToken.None)
                 .ForEachAsync(e => _ctx.Balances.Add(new DbBalance(e)));
             _ctx.SaveChanges();
         }
         else
         {
             var after = latestQuery.First().Id;
-            await _client.GetBalanceHistoryAsync(currencyCode, 0, 0, after, null, CancellationToken.None)
+            await _client.GetBalanceHistoryAsync<BfBalanceHistory>(currencyCode, 0, 0, after, null, CancellationToken.None)
                 .ForEachAsync(e => _ctx.Balances.Add(new DbBalance(e)));
             _ctx.SaveChanges();
 
@@ -556,7 +556,7 @@ public class OrderSource : IDisposable
             if (oldestQuery.Count() > 0)
             {
                 var oldest = oldestQuery.First();
-                await _client.GetBalanceHistoryAsync(currencyCode, 0, oldest.Id, 0, e => e.EventDate >= start, CancellationToken.None)
+                await _client.GetBalanceHistoryAsync<BfBalanceHistory>(currencyCode, 0, oldest.Id, 0, e => e.EventDate >= start, CancellationToken.None)
                     .ForEachAsync(e => _ctx.Balances.Add(new DbBalance(e)));
                 _ctx.SaveChanges();
             }

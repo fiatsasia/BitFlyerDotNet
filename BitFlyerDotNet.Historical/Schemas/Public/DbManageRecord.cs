@@ -56,9 +56,9 @@ public class DbManageRecord
     public void Update(BfExecution exec)
     {
         StartExecutionId = Math.Min(exec.Id, StartExecutionId);
-        StartExecutedTime = (exec.ExecutedTime < StartExecutedTime) ? exec.ExecutedTime : StartExecutedTime;
+        StartExecutedTime = (exec.ExecDate < StartExecutedTime) ? exec.ExecDate : StartExecutedTime;
         EndExecutionId = Math.Max(exec.Id, EndExecutionId);
-        EndExecutedTime = (exec.ExecutedTime > EndExecutedTime) ? exec.ExecutedTime : EndExecutedTime;
+        EndExecutedTime = (exec.ExecDate > EndExecutedTime) ? exec.ExecDate : EndExecutedTime;
         LastUpdatedTime = DateTime.UtcNow;
         ExecutionCount++;
     }

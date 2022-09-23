@@ -40,7 +40,7 @@ class BfxPrivateDataSource
         var ctx = _ctxs.GetOrAdd(productCode, _ => new());
 
         // Get child active orders
-        await foreach (var order in _client.GetChildOrdersAsync(productCode, orderState, count, 0, 0, "", "", "", e => true, CancellationToken.None))
+        await foreach (var order in _client.GetChildOrdersAsync<BfChildOrderStatus>(productCode, orderState, count, 0, 0, "", "", "", e => true, CancellationToken.None))
         {
             var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: order.ChildOrderId);
             yield return ctx.AddOrUpdate(order.ChildOrderAcceptanceId,

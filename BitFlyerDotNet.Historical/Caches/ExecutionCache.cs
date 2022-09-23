@@ -87,7 +87,7 @@ class ExecutionCache : IExecutionCache
         return _dbctx.ManageTable.Buffer(2, 1).SkipLast(1).Select(rec =>
         {
             var count = 0;
-            return client.GetExecutionsAsync(_productCode, 0, rec[0].StartExecutionId, rec[1].EndExecutionId, null, CancellationToken.None).ToObservable()
+            return client.GetExecutionsAsync<BfExecution>(_productCode, 0, rec[0].StartExecutionId, rec[1].EndExecutionId, null, CancellationToken.None).ToObservable()
             .Select(exec => { count++; return exec; })
             .Finally(() =>
             {
@@ -116,7 +116,7 @@ class ExecutionCache : IExecutionCache
             after = manageRec[0].EndExecutionId;
         }
 
-        return client.GetExecutionsAsync(_productCode, 0, 0, after, null, CancellationToken.None).ToObservable()
+        return client.GetExecutionsAsync<BfExecution>(_productCode, 0, 0, after, null, CancellationToken.None).ToObservable()
         .Select(exec =>
         {
             Add(exec);

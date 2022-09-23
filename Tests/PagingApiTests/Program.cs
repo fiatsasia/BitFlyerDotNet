@@ -33,42 +33,42 @@ using (var client = new BitFlyerClient(key, secret))
             switch (GetCh())
             {
                 case '1':
-                    await foreach (var element in client.GetBalanceHistoryAsync(BfCurrencyCode.JPY, 0, 0, 0, null, CancellationToken.None))
+                    await foreach (var element in client.GetBalanceHistoryAsync<BfBalanceHistory>(BfCurrencyCode.JPY, 0, 0, 0, null, CancellationToken.None))
                     {
                         Console.WriteLine(JsonConvert.SerializeObject(element));
                     }
                     break;
 
                 case '2':
-                    await foreach (var element in client.GetChildOrdersAsync(BfProductCode.FX_BTC_JPY, BfOrderState.Unknown, 10, 0, 0, "", "", "", null, CancellationToken.None))
+                    await foreach (var element in client.GetChildOrdersAsync<BfChildOrderStatus>(BfProductCode.FX_BTC_JPY, BfOrderState.Unknown, 10, 0, 0, "", "", "", null, CancellationToken.None))
                     {
                         Console.WriteLine(JsonConvert.SerializeObject(element));
                     }
                     break;
 
                 case '3':
-                    await foreach (var element in client.GetCoinInsAsync(0, 0, 0, null, CancellationToken.None))
+                    await foreach (var element in client.GetCoinInsAsync<BfCoinin>(0, 0, 0, null, CancellationToken.None))
                     {
                         Console.WriteLine(JsonConvert.SerializeObject(element));
                     }
                     break;
 
                 case '4':
-                    await foreach (var element in client.GetCoinOutsAsync(0, 0, 0, null, CancellationToken.None))
+                    await foreach (var element in client.GetCoinOutsAsync<BfCoinOut>(0, 0, 0, null, CancellationToken.None))
                     {
                         Console.WriteLine(JsonConvert.SerializeObject(element));
                     }
                     break;
 
                 case '5':
-                    await foreach (var element in client.GetCollateralHistoryAsync(10, 0, 0, null, CancellationToken.None))
+                    await foreach (var element in client.GetCollateralHistoryAsync<BfCollateralHistory>(10, 0, 0, null, CancellationToken.None))
                     {
                         Console.WriteLine(JsonConvert.SerializeObject(element));
                     }
                     break;
 
                 case '6':
-                    await foreach (var element in client.GetDepositsAsync(0, 0, 0, null, CancellationToken.None))
+                    await foreach (var element in client.GetDepositsAsync<BfDeposit>(0, 0, 0, null, CancellationToken.None))
                     {
                         Console.WriteLine(JsonConvert.SerializeObject(element));
                     }
@@ -82,14 +82,14 @@ using (var client = new BitFlyerClient(key, secret))
                     break;
 
                 case '8':
-                    await foreach (var element in client.GetPrivateExecutionsAsync(BfProductCode.FX_BTC_JPY, 100, 0, 0, "", "", null, CancellationToken.None))
+                    await foreach (var element in client.GetPrivateExecutionsAsync<BfPrivateExecution>(BfProductCode.FX_BTC_JPY, 100, 0, 0, "", "", null, CancellationToken.None))
                     {
                         Console.WriteLine(JsonConvert.SerializeObject(element));
                     }
                     break;
 
                 case '9':
-                    await foreach (var element in client.GetWithdrawalsAsync("", 0, 0, 0, null, CancellationToken.None))
+                    await foreach (var element in client.GetWithdrawalsAsync<BfWithdrawal>("", 0, 0, 0, null, CancellationToken.None))
                     {
                         Console.WriteLine(JsonConvert.SerializeObject(element));
                     }

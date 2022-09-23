@@ -276,23 +276,6 @@ namespace PrivateApiTests
         }
 
         [TestMethod]
-        public async Task GetChildOrdersRecent()
-        {
-            try
-            {
-                var after = DateTime.UtcNow - TimeSpan.FromDays(60);
-                var orders = _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, "", "", "",  e => e.ChildOrderDate > after, CancellationToken.None);
-                await foreach (var order in orders)
-                {
-                    Dump(order);
-                }
-            }
-            catch (BitFlyerUnauthorizedException) // Should enable from settings
-            {
-            }
-        }
-
-        [TestMethod]
         public async Task GetAddresses()
         {
             try

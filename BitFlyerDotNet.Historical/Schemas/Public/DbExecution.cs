@@ -62,7 +62,7 @@ public class DbExecution
     public DbExecution(BfExecution exec)
     {
         ExecutionId = exec.Id;
-        ExecutedTime = exec.ExecutedTime;
+        ExecutedTime = exec.ExecDate;
         Side = exec.Side;
         Price = exec.Price;
         Size = exec.Size;

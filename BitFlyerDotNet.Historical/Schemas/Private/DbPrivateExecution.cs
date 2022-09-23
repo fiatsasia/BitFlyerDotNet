@@ -77,7 +77,7 @@ public class DbPrivateExecution
         ChildOrderAcceptanceId = exec.ChildOrderAcceptanceId;
 
         Commission = exec.Commission;
-        ExecutedTime = exec.ExecutedTime;
+        ExecutedTime = exec.ExecDate;
     }
 
     public DbPrivateExecution(string productCode, BfChildOrderEvent coe)

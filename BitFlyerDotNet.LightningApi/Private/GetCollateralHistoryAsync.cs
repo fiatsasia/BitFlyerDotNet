@@ -11,22 +11,22 @@ namespace BitFlyerDotNet.LightningApi;
 public class BfCollateralHistory : IBfPagingElement
 {
     [JsonProperty(PropertyName = "id")]
-    public long Id { get; private set; }
+    public virtual long Id { get; set; }
 
     [JsonProperty(PropertyName = "currency_code")]
-    public string CurrencyCode { get; private set; }
+    public virtual string CurrencyCode { get; set; }
 
     [JsonProperty(PropertyName = "change")]
-    public decimal Change { get; private set; }
+    public virtual decimal Change { get; set; }
 
     [JsonProperty(PropertyName = "amount")]
-    public decimal Amount { get; private set; }
+    public virtual decimal Amount { get; set; }
 
     [JsonProperty(PropertyName = "reason_code")]
-    public string ReasonCode { get; private set; }
+    public virtual string ReasonCode { get; set; }
 
     [JsonProperty(PropertyName = "date")]
-    public DateTime Date { get; private set; }
+    public virtual DateTime Date { get; set; }
 }
 
 public partial class BitFlyerClient
@@ -35,11 +35,13 @@ public partial class BitFlyerClient
     /// Get Margin Change History
     /// <see href="https://scrapbox.io/BitFlyerDotNet/GetCollateralHistory">Online help</see>
     /// </summary>
+    /// <typeparam name="T"></typeparam>
     /// <param name="count"></param>
     /// <param name="before"></param>
     /// <param name="after"></param>
+    /// <param name="ct"></param>
     /// <returns></returns>
-    public Task<BitFlyerResponse<BfCollateralHistory[]>> GetCollateralHistoryAsync(long count, long before, long after, CancellationToken ct)
+    public Task<BitFlyerResponse<T[]>> GetCollateralHistoryAsync<T>(long count, long before, long after, CancellationToken ct) where T : BfCollateralHistory
     {
         var query = string.Format("{0}{1}{2}",
             (count > 0)  ? $"&count={count}"   : "",
@@ -47,9 +49,41 @@ public partial class BitFlyerClient
             (after > 0)  ? $"&after={after}"   : ""
         ).TrimStart('&');
 
-        return GetPrivateAsync<BfCollateralHistory[]>(nameof(GetCollateralHistoryAsync), query, ct);
+        return GetPrivateAsync<T[]>(nameof(GetCollateralHistoryAsync), query, ct);
     }
 
+    /// <summary>
+    /// Get Margin Change History
+    /// <see href="https://scrapbox.io/BitFlyerDotNet/GetCollateralHistory">Online help</see>
+    /// </summary>
+    /// <param name="count"></param>
+    /// <param name="before"></param>
+    /// <param name="after"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public Task<BitFlyerResponse<BfCollateralHistory[]>> GetCollateralHistoryAsync(long count, long before, long after, CancellationToken ct)
+        => GetCollateralHistoryAsync<BfCollateralHistory>(count, before, after, ct);
+
+    /// <summary>
+    /// Get Margin Change History
+    /// <see href="https://scrapbox.io/BitFlyerDotNet/GetCollateralHistory">Online help</see>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="count"></param>
+    /// <param name="before"></param>
+    /// <param name="after"></param>
+    /// <returns></returns>
+    public async Task<T[]> GetCollateralHistoryAsync<T>(long count = 0L, long before = 0L, long after = 0L) where T : BfCollateralHistory
+        => (await GetCollateralHistoryAsync<T>(count, before, after, CancellationToken.None)).Deserialize();
+
+    /// <summary>
+    /// Get Margin Change History
+    /// <see href="https://scrapbox.io/BitFlyerDotNet/GetCollateralHistory">Online help</see>
+    /// </summary>
+    /// <param name="count"></param>
+    /// <param name="before"></param>
+    /// <param name="after"></param>
+    /// <returns></returns>
     public async Task<BfCollateralHistory[]> GetCollateralHistoryAsync(long count = 0L, long before = 0L, long after = 0L)
-        => (await GetCollateralHistoryAsync(count, before, after, CancellationToken.None)).Deserialize();
+        => (await GetCollateralHistoryAsync<BfCollateralHistory>(count, before, after, CancellationToken.None)).Deserialize();
 }

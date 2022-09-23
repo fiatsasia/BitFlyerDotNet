@@ -133,7 +133,7 @@ namespace HistoricalCacheUtil
                 {
                     if ((++recordCount % 10000) == 0)
                     {
-                        Console.WriteLine("{0} {1} Completed {2} Elapsed", exec.ExecutedTime.ToLocalTime(), recordCount, sw.Elapsed);
+                        Console.WriteLine("{0} {1} Completed {2} Elapsed", exec.ExecDate.ToLocalTime(), recordCount, sw.Elapsed);
                     }
                     if (client.IsApiLimitReached)
                     {
@@ -169,7 +169,7 @@ namespace HistoricalCacheUtil
                 {
                     if ((++recordCount % 10000) == 0)
                     {
-                        Console.WriteLine("{0} {1} Completed {2} Elapsed", exec.ExecutedTime.ToLocalTime(), recordCount, sw.Elapsed);
+                        Console.WriteLine("{0} {1} Completed {2} Elapsed", exec.ExecDate.ToLocalTime(), recordCount, sw.Elapsed);
                     }
                 },
                 ex =>

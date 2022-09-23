@@ -137,9 +137,9 @@ namespace HistoricalApiTests
             var recentTime = DateTime.UtcNow;
             cache.UpdateRecents(client).Subscribe(exec =>
             {
-                if (exec.ExecutedTime.Day != recentTime.Day)
+                if (exec.ExecDate.Day != recentTime.Day)
                 {
-                    recentTime = exec.ExecutedTime;
+                    recentTime = exec.ExecDate;
                     Console.WriteLine("{0} Completed", recentTime.ToLocalTime().Date);
                 }
             },
@@ -160,9 +160,9 @@ namespace HistoricalApiTests
             var recentTime = DateTime.UtcNow;
             cache.FillGaps(client).Subscribe(exec =>
             {
-                if (exec.ExecutedTime.Day != recentTime.Day)
+                if (exec.ExecDate.Day != recentTime.Day)
                 {
-                    recentTime = exec.ExecutedTime;
+                    recentTime = exec.ExecDate;
                     Console.WriteLine("{0} Completed", recentTime.ToLocalTime().Date);
                 }
             },

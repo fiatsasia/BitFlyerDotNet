@@ -72,50 +72,75 @@ public partial class BitFlyerClient
         }
     }
 
-    public IAsyncEnumerable<BfExecution> GetExecutionsAsync(string productCode, long count, long before, long after, Func<BfExecution, bool> predicate, CancellationToken ct)
+    public IAsyncEnumerable<T> GetExecutionsAsync<T>(
+        string productCode,
+        long count, long before, long after,
+        Func<T, bool> predicate,
+        CancellationToken ct
+    ) where T : BfExecution
        => GetPagingElementsAsync(
-           (count, before, after, ct) => GetExecutionsAsync(productCode, count, before, after, ct),
+           (count, before, after, ct) => GetExecutionsAsync<T>(productCode, count, before, after, ct),
            count, before, after,
            predicate,
            ct
        );
 
-    public IAsyncEnumerable<BfBalanceHistory> GetBalanceHistoryAsync(string currencyCode, long count, long before, long after, Func<BfBalanceHistory, bool> predicate, CancellationToken ct)
+    public IAsyncEnumerable<T> GetBalanceHistoryAsync<T>(
+        string currencyCode,
+        long count, long before, long after,
+        Func<T, bool> predicate,
+        CancellationToken ct
+    ) where T : BfBalanceHistory
        => GetPagingElementsAsync(
-           (count, before, after, ct) => GetBalanceHistoryAsync(currencyCode, count, before, after, ct),
+           (count, before, after, ct) => GetBalanceHistoryAsync<T>(currencyCode, count, before, after, ct),
            count, before, after,
            predicate,
            ct
        );
 
-    public IAsyncEnumerable<BfChildOrderStatus> GetChildOrdersAsync(
+    public IAsyncEnumerable<T> GetChildOrdersAsync<T>(
         string productCode,
         BfOrderState orderState,
         long count, long before, long after,
         string childOrderId,
         string childOrderAcceptanceId,
         string parentOrderId,
-        Func<BfChildOrderStatus, bool> predicate,
+        Func<T, bool> predicate,
         CancellationToken ct
-    )
+    ) where T : BfChildOrderStatus
         => GetPagingElementsAsync(
-            (count, before, after, ct) => GetChildOrdersAsync(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, ct),
+            (count, before, after, ct) => GetChildOrdersAsync<T>(productCode, orderState, count, before, after, childOrderId, childOrderAcceptanceId, parentOrderId, ct),
             count, before, after,
             predicate,
             ct
         );
 
-    public IAsyncEnumerable<BfCoinin> GetCoinInsAsync(long count, long before, long after, Func<BfCoinin, bool> predicate, CancellationToken ct)
-       => GetPagingElementsAsync(GetCoinInsAsync, count, before, after, predicate, ct);
+    public IAsyncEnumerable<T> GetCoinInsAsync<T>(
+        long count, long before, long after,
+        Func<T, bool> predicate,
+        CancellationToken ct
+    ) where T : BfCoinin
+       => GetPagingElementsAsync(GetCoinInsAsync<T>, count, before, after, predicate, ct);
 
-    public IAsyncEnumerable<BfCoinOut> GetCoinOutsAsync(long count, long before, long after, Func<BfCoinOut, bool> predicate, CancellationToken ct)
-       => GetPagingElementsAsync(GetCoinOutsAsync, count, before, after, predicate, ct);
+    public IAsyncEnumerable<T> GetCoinOutsAsync<T>(
+        long count, long before, long after,
+        Func<T, bool> predicate, CancellationToken ct
+    ) where T : BfCoinOut
+       => GetPagingElementsAsync(GetCoinOutsAsync<T>, count, before, after, predicate, ct);
 
-    public IAsyncEnumerable<BfCollateralHistory> GetCollateralHistoryAsync(long count, long before, long after, Func<BfCollateralHistory, bool> predicate, CancellationToken ct)
-       => GetPagingElementsAsync(GetCollateralHistoryAsync, count, before, after, predicate, ct);
+    public IAsyncEnumerable<T> GetCollateralHistoryAsync<T>(
+        long count, long before, long after,
+        Func<T, bool> predicate,
+        CancellationToken ct
+    ) where T : BfCollateralHistory
+       => GetPagingElementsAsync(GetCollateralHistoryAsync<T>, count, before, after, predicate, ct);
 
-    public IAsyncEnumerable<BfDeposit> GetDepositsAsync(long count, long before, long after, Func<BfDeposit, bool> predicate, CancellationToken ct)
-       => GetPagingElementsAsync(GetDepositsAsync, count, before, after, predicate, ct);
+    public IAsyncEnumerable<T> GetDepositsAsync<T>(
+        long count, long before, long after,
+        Func<T, bool> predicate,
+        CancellationToken ct
+    ) where T : BfDeposit
+       => GetPagingElementsAsync(GetDepositsAsync<T>, count, before, after, predicate, ct);
 
     public IAsyncEnumerable<BfParentOrderStatus> GetParentOrdersAsync(string productCode, BfOrderState orderState, long count, long before, long after, Func<BfParentOrderStatus, bool> predicate, CancellationToken ct)
         => GetPagingElementsAsync(
@@ -125,24 +150,29 @@ public partial class BitFlyerClient
             ct
         );
 
-    public IAsyncEnumerable<BfPrivateExecution> GetPrivateExecutionsAsync(
+    public IAsyncEnumerable<T> GetPrivateExecutionsAsync<T>(
         string productCode,
         long count, long before, long after,
         string childOrderId,
         string childOrderAcceptanceId,
-        Func<BfPrivateExecution, bool> predicate,
+        Func<T, bool> predicate,
         CancellationToken ct
-    )
+    ) where T : BfPrivateExecution
         => GetPagingElementsAsync(
-            (count, before, after, ct) => GetPrivateExecutionsAsync(productCode, count, before, after, childOrderId, childOrderAcceptanceId, ct),
+            (count, before, after, ct) => GetPrivateExecutionsAsync<T>(productCode, count, before, after, childOrderId, childOrderAcceptanceId, ct),
             count, before, after,
             predicate,
             ct
         );
 
-    public IAsyncEnumerable<BfWithdrawal> GetWithdrawalsAsync(string messageId, long count, long before, long after, Func<BfWithdrawal, bool> predicate, CancellationToken ct)
+    public IAsyncEnumerable<T> GetWithdrawalsAsync<T>(
+        string messageId,
+        long count, long before, long after,
+        Func<T, bool> predicate,
+        CancellationToken ct
+    ) where T : BfWithdrawal
        => GetPagingElementsAsync(
-           (count, before, after, ct) => GetWithdrawalsAsync(messageId, count, before, after, ct),
+           (count, before, after, ct) => GetWithdrawalsAsync<T>(messageId, count, before, after, ct),
            count, before, after,
            predicate,
            ct
