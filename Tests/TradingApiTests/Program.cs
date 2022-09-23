@@ -23,7 +23,7 @@ partial class Program
 {
     const string ProductCode = BfProductCode.FX_BTC_JPY;
     const string TimeFormat = "yyyy/MM/dd HH:mm:ss.ffff";
-    const string OrderCacheFileName = "TradingApiTests.db3";
+    const string OrderCacheFileName = "TradingApiTests.db";
 
     static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true).KeyChar); if (echo) Console.WriteLine(ch); return ch; }
     const char ESCAPE = (char)0x1b;
@@ -41,8 +41,11 @@ partial class Program
 
         _orderSize = BfProductCode.GetMinimumOrderSize(ProductCode);
 
-        var connStr = "data source=" + Path.Combine(Properties["CacheDirectoryPath"], OrderCacheFileName);
-        using (App = new BfxApplication(key, secret))
+        var config = new BfxConfiguration
+        {
+            CacheDirectoryPath = Path.Combine(Properties["CacheDirectoryPath"], OrderCacheFileName).Replace("%LOCALAPPDATA%", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)),
+        };
+        using (App = new BfxApplication(config, key, secret))
         {
             App.AddTraceLoggingService(NLog.LogManager.GetLogger("debugOutput"));
             App.AddOrderTemplates("orderTemplates.json");

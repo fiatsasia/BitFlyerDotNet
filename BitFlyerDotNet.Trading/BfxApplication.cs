@@ -40,7 +40,7 @@ public class BfxApplication : IDisposable
             _client = new BitFlyerClient().AddTo(_disposables);
             _rts = new RealtimeSourceFactory();
         }
-        _pds = new(_client);
+        _pds = new(_client, config);
 
         VerifyOrderAsync = VerifyOrderDefaultAsync;
     }

@@ -37,6 +37,8 @@ public class BfxConfiguration
     public bool OrderPriceLimitter { get; } = true;
     public bool IsVerifyDisabled { get; internal set; }
 
+    public string CacheDirectoryPath { get; set; }
+
     public BfxConfiguration()
     {
         OrderSizeMax[BfProductCode.FX_BTC_JPY] = BfProductCode.GetMinimumOrderSize(BfProductCode.FX_BTC_JPY);

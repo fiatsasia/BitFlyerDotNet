@@ -11,12 +11,14 @@ namespace BitFlyerDotNet.Trading;
 class BfxPrivateDataSource
 {
     BitFlyerClient _client;
+    BfxConfiguration _config;
     ConcurrentDictionary<string, ConcurrentDictionary<string, BfxOrderContext>> _ctxs = new();
     BfxPositionManager _positions;
 
-    public BfxPrivateDataSource(BitFlyerClient client)
+    public BfxPrivateDataSource(BitFlyerClient client, BfxConfiguration config)
     {
         _client = client;
+        _config = config;
     }
 
     public BfxOrderContext CreateOrderContext(string productCode)
