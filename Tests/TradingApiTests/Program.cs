@@ -43,8 +43,9 @@ partial class Program
 
         var config = new BfxConfiguration
         {
-            CacheDirectoryPath = Path.Combine(Properties["CacheDirectoryPath"], OrderCacheFileName).Replace("%LOCALAPPDATA%", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)),
+            CacheFilePath = Path.Combine(Properties["CacheDirectoryPath"], OrderCacheFileName).Replace("%LOCALAPPDATA%", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)),
         };
+
         using (App = new BfxApplication(config, key, secret))
         {
             App.AddTraceLoggingService(NLog.LogManager.GetLogger("debugOutput"));

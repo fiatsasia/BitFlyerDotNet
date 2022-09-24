@@ -37,7 +37,7 @@ public class BfxConfiguration
     public bool OrderPriceLimitter { get; } = true;
     public bool IsVerifyDisabled { get; internal set; }
 
-    public string CacheDirectoryPath { get; set; }
+    public string CacheFilePath { get; set; }
 
     public BfxConfiguration()
     {

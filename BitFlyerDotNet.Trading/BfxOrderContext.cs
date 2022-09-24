@@ -22,7 +22,7 @@ class BfxOrderContext
     public decimal? TrailOffset { get; private set; }
     public int? MinuteToExpire { get; private set; }
     public BfTimeInForce? TimeInForce { get; private set; }
-    public ReadOnlyCollection<BfxOrderContext> Children => Array.AsReadOnly(_children);
+    public List<BfxOrderContext> Children { get; init; } = new();
     #endregion Order informations
 
     #region Order management info
@@ -42,11 +42,14 @@ class BfxOrderContext
     public decimal? TotalCommission { get; protected set; }
     public string? OrderFailedReason { get; protected set; }       // EventType = OrderFailed
 
-    public bool HasChildren => _children.Length > 0;
+    public bool HasChildren => Children.Count > 0;
     public bool IsActive => !string.IsNullOrEmpty(OrderAcceptanceId) && OrderState.HasValue && OrderState.Value == BfOrderState.Active;
 
-    ConcurrentDictionary<long, BfxExecution> _execs = new();
-    BfxOrderContext[] _children = new BfxOrderContext[0];
+    public ConcurrentDictionary<long, BfxExecution> _execs = new();
+
+    public BfxOrderContext()
+    {
+    }
 
     public BfxOrderContext(string productCode)
     {
@@ -55,18 +58,14 @@ class BfxOrderContext
 
     void ResizeChildren(int count)
     {
-        if (count <= _children.Length)
+        if (Children.Count >= count)
         {
             return;
         }
 
-        Array.Resize(ref _children, count);
-        for (var index = 0; index < _children.Length; index++)
+        while (Children.Count < count)
         {
-            if (_children[index] == null)
-            {
-                _children[index] = new BfxOrderContext(ProductCode);
-            }
+            Children.Add(new BfxOrderContext(ProductCode));
         }
     }
 
@@ -118,7 +117,7 @@ class BfxOrderContext
         ResizeChildren(detail.Parameters.Length);
         for (int index = 0; index < detail.Parameters.Length; index++)
         {
-            _children[index].Update(detail.Parameters[index]);
+            Children[index].Update(detail.Parameters[index]);
         }
 
         return this;
@@ -152,7 +151,7 @@ class BfxOrderContext
         ResizeChildren(order.Parameters.Count);
         for (int index = 0; index < order.Parameters.Count; index++)
         {
-            _children[index].Update(order.Parameters[index]);
+            Children[index].Update(order.Parameters[index]);
         }
         return this;
     }
@@ -185,7 +184,7 @@ class BfxOrderContext
                 {
                     var index = e.ChildOrderIndex.Value - 1;
                     ResizeChildren(index + 1);
-                    var child = _children[index];
+                    var child = Children[index];
                     child.OrderDate = e.EventDate;
                     child.OrderType = e.ChildOrderType.Value;
                     child.OrderAcceptanceId = e.ChildOrderAcceptanceId;
@@ -201,10 +200,10 @@ class BfxOrderContext
                 {
                     var index = e.ChildOrderIndex.Value - 1;
                     ResizeChildren(index + 1);
-                    var child = _children[index];
+                    var child = Children[index];
                     child.OrderAcceptanceId = e.ChildOrderAcceptanceId;
                     child.OrderState = BfOrderState.Completed;
-                    if (_children.All(c => c.OrderState == BfOrderState.Completed))
+                    if (Children.All(c => c.OrderState == BfOrderState.Completed))
                     {
                         OrderState = BfOrderState.Completed;
                     }
@@ -252,26 +251,52 @@ class BfxOrderContext
         ExecutedSize = status.ExecutedSize;
         TotalCommission = status.TotalCommission;
 
-        foreach (var exec in execs)
+        if (execs != default)
         {
-            _execs.GetOrAdd(exec.Id, _ => new BfxExecution(exec));
+            foreach (var exec in execs)
+            {
+                _execs.GetOrAdd(exec.Id, _ => new BfxExecution(exec));
+            }
         }
 
         return this;
     }
 
+    bool CompareChildOrderType(BfOrderType ordered, BfOrderType executed)
+    {
+        if (ordered == executed)
+        {
+            return true;
+        }
+        else if (ordered == BfOrderType.StopLimit && executed == BfOrderType.Limit)
+        {
+            return true;
+        }
+        else if (ordered == BfOrderType.Stop && executed == BfOrderType.Market)
+        {
+            return true;
+        }
+        else if (ordered == BfOrderType.Trail && executed == BfOrderType.Market)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     public BfxOrderContext UpdateChild(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
     {
-        var index = Array.FindIndex(_children, e => e.OrderAcceptanceId == status.ChildOrderAcceptanceId);
+        var index = Children.FindIndex(e => e.OrderAcceptanceId == status.ChildOrderAcceptanceId);
         if (index == -1)
         {
-            index = Array.FindIndex(_children, e => (e.OrderType == status.ChildOrderType && e.Side == status.Side && e.OrderSize == status.Size && e.OrderPrice == status.Price));
+            index = Children.FindIndex(e => (CompareChildOrderType(e.OrderType, status.ChildOrderType) && e.Side == status.Side && e.OrderSize == status.Size && e.OrderPrice == status.Price));
         }
 
         if (index >= 0)
         {
-            _children[index].Update(status, execs);
+            Children[index].Update(status, execs);
         }
+
         return this;
     }
 
