@@ -340,7 +340,7 @@ public class BfxApplication : IDisposable
     }
 
     public IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(string productCode, int count)
-        => _pds.GetOrderServerContextsAsync(productCode, BfOrderState.Unknown, count).Where(e => !e.HasChildren).Select(e => new BfxOrder(e));
+        => _pds.GetOrderServerContextsAsync(productCode, BfOrderState.All, count).Where(e => !e.HasChildren).Select(e => new BfxOrder(e));
 
     #region Manage positions
     public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;

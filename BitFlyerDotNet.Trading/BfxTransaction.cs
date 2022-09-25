@@ -10,15 +10,15 @@ namespace BitFlyerDotNet.Trading;
 
 class BfxTransaction : IDisposable
 {
-    public BfxOrderContext GetOrderContext() => _ctx;
+    public BfOrderContext GetOrderContext() => _ctx;
     public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
 
     BitFlyerClient _client;
-    BfxOrderContext _ctx;
+    BfOrderContext _ctx;
     BfxConfiguration _config;
     CancellationTokenSource _ctsCancelOrder;
 
-    public BfxTransaction(BitFlyerClient client, BfxOrderContext ctx, BfxConfiguration config)
+    public BfxTransaction(BitFlyerClient client, BfOrderContext ctx, BfxConfiguration config)
     {
         _client = client;
         _config = config;

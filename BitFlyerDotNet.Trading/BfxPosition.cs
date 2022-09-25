@@ -20,7 +20,7 @@ public class BfxPosition
     public decimal SwapForDifference { get; }
     public decimal SwapPointAccumulate { get; }
 
-    internal BfxPosition(BfxPositionContext pos, BfChildOrderEvent? ev = default)
+    internal BfxPosition(BfPositionContext pos, BfChildOrderEvent? ev = default)
     {
         OpenTime = pos.Time;
         CloseTime = ev?.EventDate;

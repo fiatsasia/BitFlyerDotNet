@@ -6,9 +6,9 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.Trading;
+namespace BitFlyerDotNet.LightningApi;
 
-class BfxPositionContext
+public class BfPositionContext
 {
     public string ChildOrderAcceptanceId { get; }
     public int ExecutionIndex { get; }
@@ -25,12 +25,12 @@ class BfxPositionContext
     decimal _sfd;
     public decimal SwapForDifference => _sfd * (CurrentSize / OpenSize);
 
-    private BfxPositionContext()
+    private BfPositionContext()
     {
         ChildOrderAcceptanceId = string.Empty;
     }
 
-    public BfxPositionContext(BfPosition pos)
+    public BfPositionContext(BfPosition pos)
     {
         ChildOrderAcceptanceId = string.Empty;
         Time = pos.OpenDate;
@@ -41,7 +41,7 @@ class BfxPositionContext
         _sfd = pos.SwapForDifference;
     }
 
-    public BfxPositionContext(BfChildOrderEvent e, decimal size)
+    public BfPositionContext(BfChildOrderEvent e, decimal size)
     {
         if (e.EventType != BfOrderEventType.Execution)
         {
@@ -58,9 +58,9 @@ class BfxPositionContext
 #pragma warning restore CS8629
     }
 
-    internal BfxPositionContext Split(decimal splitSize)
+    public BfPositionContext Split(decimal splitSize)
     {
-        var newPos = new BfxPositionContext
+        var newPos = new BfPositionContext
         {
             Time = this.Time,
             Price = this.Price,

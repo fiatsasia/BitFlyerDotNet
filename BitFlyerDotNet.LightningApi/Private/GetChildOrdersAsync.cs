@@ -10,55 +10,39 @@ namespace BitFlyerDotNet.LightningApi;
 
 public class BfChildOrderStatus : IBfPagingElement
 {
-    [JsonProperty(PropertyName = "id")]
     public virtual long Id { get; set; }
 
-    [JsonProperty(PropertyName = "child_order_id")]
     public virtual string ChildOrderId { get; set; }
 
-    [JsonProperty(PropertyName = "product_code")]
     public virtual string ProductCode { get; set; }
 
-    [JsonProperty(PropertyName = "side")]
     [JsonConverter(typeof(StringEnumConverter))]
     public virtual BfTradeSide Side { get; set; }
 
-    [JsonProperty(PropertyName = "child_order_type")]
     [JsonConverter(typeof(StringEnumConverter))]
     public virtual BfOrderType ChildOrderType { get; set; }
 
-    [JsonProperty(PropertyName = "price")]
-    public virtual decimal? Price { get; set; }
+    public virtual decimal Price { get; set; } // stored 0m when market order
 
-    [JsonProperty(PropertyName = "average_price")]
     public virtual decimal AveragePrice { get; set; }
 
-    [JsonProperty(PropertyName = "size")]
     public virtual decimal Size { get; set; }
 
-    [JsonProperty(PropertyName = "child_order_state")]
     [JsonConverter(typeof(StringEnumConverter))]
     public virtual BfOrderState ChildOrderState { get; set; }
 
-    [JsonProperty(PropertyName = "expire_date")]
     public virtual DateTime ExpireDate { get; set; }
 
-    [JsonProperty(PropertyName = "child_order_date")]
     public virtual DateTime ChildOrderDate { get; set; }
 
-    [JsonProperty(PropertyName = "child_order_acceptance_id")]
     public virtual string ChildOrderAcceptanceId { get; set; }
 
-    [JsonProperty(PropertyName = "outstanding_size")]
     public virtual decimal OutstandingSize { get; set; }
 
-    [JsonProperty(PropertyName = "cancel_size")]
     public virtual decimal CancelSize { get; set; }
 
-    [JsonProperty(PropertyName = "executed_size")]
     public virtual decimal ExecutedSize { get; set; }
 
-    [JsonProperty(PropertyName = "total_commission")]
     public virtual decimal TotalCommission { get; set; }
 }
 
@@ -93,7 +77,7 @@ public partial class BitFlyerClient
     {
         var query = string.Format("product_code={0}{1}{2}{3}{4}{5}{6}{7}",
             productCode,
-            orderState != BfOrderState.Unknown ? "&child_order_state=" + orderState.ToEnumString() : "",
+            orderState != BfOrderState.All ? "&child_order_state=" + orderState.ToEnumString() : "",
             (count > 0)  ? $"&count={count}"   : "",
             (before > 0) ? $"&before={before}" : "",
             (after > 0)  ? $"&after={after}"   : "",
@@ -146,7 +130,7 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public async Task<T[]> GetChildOrdersAsync<T>(
         string productCode,
-        BfOrderState orderState = BfOrderState.Unknown,
+        BfOrderState orderState = BfOrderState.All,
         long count = 0L,
         long before = 0L,
         long after = 0L,
@@ -171,7 +155,7 @@ public partial class BitFlyerClient
     /// <returns></returns>
     public async Task<BfChildOrderStatus[]> GetChildOrdersAsync(
         string productCode,
-        BfOrderState orderState = BfOrderState.Unknown,
+        BfOrderState orderState = BfOrderState.All,
         long count = 0L,
         long before = 0L,
         long after = 0L,

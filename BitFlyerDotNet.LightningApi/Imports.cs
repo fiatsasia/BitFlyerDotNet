@@ -30,3 +30,13 @@ global using Newtonsoft.Json;
 global using Newtonsoft.Json.Linq;
 global using Newtonsoft.Json.Serialization;
 global using Newtonsoft.Json.Converters;
+
+#if !NET5_0_OR_GREATER
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace System.Runtime.CompilerServices
+{
+    internal sealed class IsExternalInit { }
+}
+#endif

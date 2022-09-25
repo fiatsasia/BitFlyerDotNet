@@ -19,3 +19,13 @@ global using System.Reactive.Threading.Tasks;
 global using System.Reactive.Disposables;
 
 global using BitFlyerDotNet.LightningApi;
+
+#if !NET5_0_OR_GREATER
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace System.Runtime.CompilerServices
+{
+    internal sealed class IsExternalInit { }
+}
+#endif

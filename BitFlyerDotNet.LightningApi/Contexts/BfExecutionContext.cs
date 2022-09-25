@@ -6,9 +6,9 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.Trading;
+namespace BitFlyerDotNet.LightningApi;
 
-public class BfxExecution
+public class BfExecutionContext
 {
     public long Id { get; private set; }
     public DateTime Time { get; private set; }
@@ -21,7 +21,7 @@ public class BfxExecution
     public string OrderAcceptanceId { get; private set; }
 
 #pragma warning disable CS8629
-    public BfxExecution(BfChildOrderEvent e)
+    public BfExecutionContext(BfChildOrderEvent e)
     {
         if (e.EventType != BfOrderEventType.Execution) throw new ArgumentException();
         Id = e.ExecutionId.Value;
@@ -36,7 +36,7 @@ public class BfxExecution
     }
 #pragma warning restore CS8629
 
-    public BfxExecution(BfPrivateExecution exec)
+    public BfExecutionContext(BfPrivateExecution exec)
     {
         Id = exec.Id;
         Time = exec.ExecDate;

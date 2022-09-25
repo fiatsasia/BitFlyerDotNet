@@ -26,8 +26,7 @@ public abstract class BitFlyerResponse
 {
     static readonly JsonSerializerSettings _jsonDeserializeSettings = new()
     {
-        // To enable after develop/find PascalCaseNamingStrategy()
-        //ContractResolver = new DefaultContractResolver { NamingStrategy = new PascalCaseNamingStrategy() },
+        ContractResolver = new DefaultContractResolver { NamingStrategy = new SnakeCaseNamingStrategy() },
         DateFormatHandling = DateFormatHandling.IsoDateFormat,
         DateTimeZoneHandling = DateTimeZoneHandling.Utc
     };

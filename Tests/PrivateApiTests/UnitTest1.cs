@@ -190,7 +190,7 @@ namespace PrivateApiTests
         {
             try
             {
-                var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, null, null, null, CancellationToken.None);
+                var resp = await _client.GetChildOrdersAsync(_productCode, BfOrderState.All, 0, 0, 0, null, null, null, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.Deserialize();
@@ -402,7 +402,7 @@ namespace PrivateApiTests
         {
             try
             {
-                var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, CancellationToken.None);
+                var resp = await _client.GetParentOrdersAsync(_productCode, BfOrderState.All, 0, 0, 0, CancellationToken.None);
                 Assert.IsFalse(resp.IsError, resp.ErrorMessage);
                 Dump(resp);
                 var content = resp.Deserialize();
@@ -494,7 +494,7 @@ namespace PrivateApiTests
             try
             {
                 var after = DateTime.UtcNow - TimeSpan.FromDays(60);
-                var orders = _client.GetParentOrdersAsync(_productCode, BfOrderState.Unknown, 0, 0, 0, e => e.ParentOrderDate > after, CancellationToken.None);
+                var orders = _client.GetParentOrdersAsync(_productCode, BfOrderState.All, 0, 0, 0, e => e.ParentOrderDate > after, CancellationToken.None);
                 await foreach (var order in orders)
                 {
                     Dump(order);

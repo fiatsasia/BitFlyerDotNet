@@ -59,74 +59,87 @@ public class BfxOrderTemplate : BfxOrderTemplateBase
 
     BfChildOrder CreateChildOrder(string productCode, decimal size, BfTicker ticker)
     {
-        var order = new BfChildOrder();
-        order.ProductCode = productCode;
-        order.Size = size;
-        order.ChildOrderType = OrderType;
-        order.Side = Side;
-
-        if (order.ChildOrderType == BfOrderType.Limit)
+        decimal? price = default;
+        if (OrderType == BfOrderType.Limit)
         {
-            order.Price = GetTickerPrice(OrderPriceType, ticker);
+            price = GetTickerPrice(OrderPriceType, ticker);
             if (!string.IsNullOrEmpty(OrderPriceOffset))
             {
-                order.Price += BfProductCode.RoundPrice(productCode, order.Price.Value * ParseOffset(OrderPriceOffset));
+                price += BfProductCode.RoundPrice(productCode, price.Value * ParseOffset(OrderPriceOffset));
             }
         }
 
+        int? minuteToExpire = default;
         if (ExpirationPeriod.HasValue)
         {
-            order.MinuteToExpire = (int)Math.Round(ExpirationPeriod.Value.TotalMinutes, 0);
+            minuteToExpire = (int)Math.Round(ExpirationPeriod.Value.TotalMinutes, 0);
         }
-        order.TimeInForce = TimeInForce;
 
-        return order;
+        return new()
+        {
+            ProductCode = productCode,
+            Size = size,
+            Price = price,
+            ChildOrderType = OrderType,
+            Side = Side,
+            MinuteToExpire = minuteToExpire,
+            TimeInForce = TimeInForce,
+        };
     }
 
     BfParentOrderParameter CreateParameter(BfxOrderTemplateBase templ, string productCode, decimal size, BfTicker ticker)
     {
-        var order = new BfParentOrderParameter
+        decimal? price = default;
+        if (templ.OrderType == BfOrderType.Limit || templ.OrderType == BfOrderType.StopLimit)
+        {
+            price = GetTickerPrice(templ.OrderPriceType, ticker);
+            if (!string.IsNullOrEmpty(templ.OrderPriceOffset))
+            {
+                price += BfProductCode.RoundPrice(productCode, price.Value * ParseOffset(templ.OrderPriceOffset));
+            }
+        }
+
+        decimal? triggerPrice = default;
+        if (templ.OrderType == BfOrderType.Stop || templ.OrderType == BfOrderType.StopLimit)
+        {
+            triggerPrice = GetTickerPrice(templ.TriggerPriceType, ticker);
+            if (!string.IsNullOrEmpty(templ.TriggerPriceOffset))
+            {
+                triggerPrice += BfProductCode.RoundPrice(productCode, triggerPrice.Value * ParseOffset(templ.TriggerPriceOffset));
+            }
+        }
+
+        decimal? offset = default;
+        if (templ.OrderType == BfOrderType.Trail)
+        {
+            offset = GetTickerPrice(templ.TrailOffsetType, ticker);
+            if (!string.IsNullOrEmpty(templ.TrailOffsetRatio))
+            {
+                offset = BfProductCode.RoundPrice(productCode, offset.Value * ParseOffset(templ.TrailOffsetRatio));
+            }
+        }
+
+        return new()
         {
             ProductCode = productCode,
             ConditionType = templ.OrderType,
             Side = templ.Side,
-            Size = size
+            Size = size,
+            Price = price,
+            TriggerPrice = triggerPrice,
+            Offset = offset,
         };
-
-        if (templ.OrderType == BfOrderType.Limit || templ.OrderType == BfOrderType.StopLimit)
-        {
-            order.Price = GetTickerPrice(templ.OrderPriceType, ticker);
-            if (!string.IsNullOrEmpty(templ.OrderPriceOffset))
-            {
-                order.Price += BfProductCode.RoundPrice(productCode, order.Price.Value * ParseOffset(templ.OrderPriceOffset));
-            }
-        }
-
-        if (templ.OrderType == BfOrderType.Stop || templ.OrderType == BfOrderType.StopLimit)
-        {
-            order.TriggerPrice = GetTickerPrice(templ.TriggerPriceType, ticker);
-            if (!string.IsNullOrEmpty(templ.TriggerPriceOffset))
-            {
-                order.TriggerPrice += BfProductCode.RoundPrice(productCode, order.TriggerPrice.Value * ParseOffset(templ.TriggerPriceOffset));
-            }
-        }
-
-        if (templ.OrderType == BfOrderType.Trail)
-        {
-            order.Offset = GetTickerPrice(templ.TrailOffsetType, ticker);
-            if (!string.IsNullOrEmpty(templ.TrailOffsetRatio))
-            {
-                order.Offset = BfProductCode.RoundPrice(productCode, order.Offset.Value * ParseOffset(templ.TrailOffsetRatio));
-            }
-        }
-
-        return order;
     }
 
     BfParentOrder CreateParentOrder(string productCode, decimal size, BfTicker ticker)
     {
-        var order = new BfParentOrder();
-        order.OrderMethod = OrderType.IsSimpleConditionType() ? BfOrderType.Simple : OrderType;
+        var order = new BfParentOrder
+        {
+            OrderMethod = OrderType.IsSimpleConditionType() ? BfOrderType.Simple : OrderType,
+            TimeInForce = TimeInForce,
+            MinuteToExpire = ExpirationPeriod.HasValue ? (int)Math.Round(ExpirationPeriod.Value.TotalMinutes, 0) : default,
+        };
+
         if (order.OrderMethod == BfOrderType.Simple)
         {
             order.Parameters.Add(CreateParameter(this, productCode, size, ticker));
@@ -138,12 +151,6 @@ public class BfxOrderTemplate : BfxOrderTemplateBase
                 order.Parameters.Add(CreateParameter(child, productCode, size, ticker));
             }
         }
-
-        if (ExpirationPeriod.HasValue)
-        {
-            order.MinuteToExpire = (int)Math.Round(ExpirationPeriod.Value.TotalMinutes, 0);
-        }
-        order.TimeInForce = TimeInForce;
 
         return order;
     }

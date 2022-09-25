@@ -40,7 +40,7 @@ using (var client = new BitFlyerClient(key, secret))
                     break;
 
                 case '2':
-                    await foreach (var element in client.GetChildOrdersAsync<BfChildOrderStatus>(BfProductCode.FX_BTC_JPY, BfOrderState.Unknown, 10, 0, 0, "", "", "", null, CancellationToken.None))
+                    await foreach (var element in client.GetChildOrdersAsync<BfChildOrderStatus>(BfProductCode.FX_BTC_JPY, BfOrderState.All, 10, 0, 0, "", "", "", null, CancellationToken.None))
                     {
                         Console.WriteLine(JsonConvert.SerializeObject(element));
                     }
@@ -75,7 +75,7 @@ using (var client = new BitFlyerClient(key, secret))
                     break;
 
                 case '7':
-                    await foreach (var element in client.GetParentOrdersAsync(BfProductCode.FX_BTC_JPY, BfOrderState.Unknown, 100, 0, 0, null, CancellationToken.None))
+                    await foreach (var element in client.GetParentOrdersAsync(BfProductCode.FX_BTC_JPY, BfOrderState.All, 100, 0, 0, null, CancellationToken.None))
                     {
                         Console.WriteLine(JsonConvert.SerializeObject(element));
                     }

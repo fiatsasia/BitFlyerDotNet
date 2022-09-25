@@ -80,7 +80,7 @@ public partial class BitFlyerClient
     {
         var query = string.Format("product_code={0}{1}{2}{3}",
             productCode,
-            orderState != BfOrderState.Unknown ? "&parent_order_state=" + orderState.ToEnumString() : "",
+            orderState != BfOrderState.All ? "&parent_order_state=" + orderState.ToEnumString() : "",
             (count > 0)  ? $"&count={count}"   : "",
             (before > 0) ? $"&before={before}" : "",
             (after > 0)  ? $"&after={after}"   : ""
@@ -114,7 +114,7 @@ public partial class BitFlyerClient
     /// <param name="before"></param>
     /// <param name="after"></param>
     /// <returns></returns>
-    public async Task<T[]> GetParentOrdersAsync<T>(string productCode, BfOrderState orderState = BfOrderState.Unknown, long count = 0, long before = 0, long after = 0) where T : BfParentOrderStatus
+    public async Task<T[]> GetParentOrdersAsync<T>(string productCode, BfOrderState orderState = BfOrderState.All, long count = 0, long before = 0, long after = 0) where T : BfParentOrderStatus
         => (await GetParentOrdersAsync<T>(productCode, orderState, count, before, after, CancellationToken.None)).Deserialize();
 
     /// <summary>
@@ -127,6 +127,6 @@ public partial class BitFlyerClient
     /// <param name="before"></param>
     /// <param name="after"></param>
     /// <returns></returns>
-    public async Task<BfParentOrderStatus[]> GetParentOrdersAsync(string productCode, BfOrderState orderState = BfOrderState.Unknown, long count = 0, long before = 0, long after = 0)
+    public async Task<BfParentOrderStatus[]> GetParentOrdersAsync(string productCode, BfOrderState orderState = BfOrderState.All, long count = 0, long before = 0, long after = 0)
         => (await GetParentOrdersAsync<BfParentOrderStatus>(productCode, orderState, count, before, after, CancellationToken.None)).Deserialize();
 }

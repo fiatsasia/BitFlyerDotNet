@@ -12,7 +12,7 @@ class BfxPrivateDataSource
 {
     BitFlyerClient _client;
     BfxConfiguration _config;
-    ConcurrentDictionary<string, ConcurrentDictionary<string, BfxOrderContext>> _ctxs = new();
+    ConcurrentDictionary<string, ConcurrentDictionary<string, BfOrderContext>> _ctxs = new();
     BfxPositionManager _positions;
 
     public BfxPrivateDataSource(BitFlyerClient client, BfxConfiguration config)
@@ -21,23 +21,23 @@ class BfxPrivateDataSource
         _config = config;
     }
 
-    public BfxOrderContext CreateOrderContext(string productCode)
+    public BfOrderContext CreateOrderContext(string productCode)
     {
-        return new BfxOrderContext(productCode);
+        return new BfOrderContext(productCode);
     }
 
-    public BfxOrderContext GetOrCreateOrderContext(string productCode, string acceptanceId)
+    public BfOrderContext GetOrCreateOrderContext(string productCode, string acceptanceId)
     {
-        return _ctxs.GetOrAdd(productCode, _ => new()).TryGetValue(acceptanceId, out var ctx) ? ctx : new BfxOrderContext(productCode);
+        return _ctxs.GetOrAdd(productCode, _ => new()).TryGetValue(acceptanceId, out var ctx) ? ctx : new BfOrderContext(productCode);
     }
 
-    public BfxOrderContext TryRegisterOrderContext(string productCode, string acceptanceId, BfxOrderContext ctx)
+    public BfOrderContext TryRegisterOrderContext(string productCode, string acceptanceId, BfOrderContext ctx)
     {
         _ctxs.GetOrAdd(productCode, _ => new()).TryAdd(acceptanceId, ctx);
         return ctx;
     }
 
-    public async IAsyncEnumerable<BfxOrderContext> GetOrderServerContextsAsync(string productCode, BfOrderState orderState, int count)
+    public async IAsyncEnumerable<BfOrderContext> GetOrderServerContextsAsync(string productCode, BfOrderState orderState, int count)
     {
         var ctx = _ctxs.GetOrAdd(productCode, _ => new());
 
@@ -46,7 +46,7 @@ class BfxPrivateDataSource
         {
             var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: order.ChildOrderId);
             yield return ctx.AddOrUpdate(order.ChildOrderAcceptanceId,
-                _ => new BfxOrderContext(productCode).Update(order, execs),
+                _ => new BfOrderContext(productCode).Update(order, execs),
                 (_, ctx) => ctx.Update(order, execs)
             );
         }
@@ -56,7 +56,7 @@ class BfxPrivateDataSource
         {
             var parentOrderDetail = await _client.GetParentOrderAsync(productCode, parentOrderId: parentOrder.ParentOrderId);
             var pctx = ctx.AddOrUpdate(parentOrder.ParentOrderAcceptanceId,
-                _ => new BfxOrderContext(productCode).Update(parentOrder, parentOrderDetail),
+                _ => new BfOrderContext(productCode).Update(parentOrder, parentOrderDetail),
                 (_, ctx) => ctx.Update(parentOrder, parentOrderDetail)
             );
             foreach (var childOrder in await _client.GetChildOrdersAsync(productCode, parentOrderId: parentOrder.ParentOrderId))
@@ -64,7 +64,7 @@ class BfxPrivateDataSource
                 var execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: childOrder.ChildOrderId);
                 pctx.UpdateChild(childOrder, execs);
                 ctx.AddOrUpdate(childOrder.ChildOrderAcceptanceId,
-                    _ => new BfxOrderContext(productCode).Update(childOrder, execs),
+                    _ => new BfOrderContext(productCode).Update(childOrder, execs),
                     (_, ctx) => ctx.Update(childOrder, execs)
                 );
             }
@@ -72,7 +72,7 @@ class BfxPrivateDataSource
         }
     }
 
-    public IEnumerable<BfxOrderContext> GetOrderCacheContexts(string productCode)
+    public IEnumerable<BfOrderContext> GetOrderCacheContexts(string productCode)
         => _ctxs.GetOrAdd(productCode, _ => new()).Values.ToList();
 
     public async Task InitializePositionsAsync(string productCode)

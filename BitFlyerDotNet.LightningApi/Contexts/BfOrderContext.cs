@@ -8,9 +8,9 @@
 
 #pragma warning disable CS8629
 
-namespace BitFlyerDotNet.Trading;
+namespace BitFlyerDotNet.LightningApi;
 
-class BfxOrderContext
+public class BfOrderContext
 {
     #region Order informations
     public string ProductCode { get; }
@@ -22,7 +22,7 @@ class BfxOrderContext
     public decimal? TrailOffset { get; private set; }
     public int? MinuteToExpire { get; private set; }
     public BfTimeInForce? TimeInForce { get; private set; }
-    public List<BfxOrderContext> Children { get; init; } = new();
+    public List<BfOrderContext> Children { get; init; } = new();
     #endregion Order informations
 
     #region Order management info
@@ -33,7 +33,7 @@ class BfxOrderContext
     public BfOrderState? OrderState { get; private set; }
     #endregion Order management info
 
-    public long? PagingId { get; protected set; }
+    public long? Id { get; protected set; }
     public decimal? AveragePrice { get; protected set; }
     public decimal? OutstandingSize { get; protected set; }
     public decimal? CancelSize { get; protected set; }
@@ -45,13 +45,13 @@ class BfxOrderContext
     public bool HasChildren => Children.Count > 0;
     public bool IsActive => !string.IsNullOrEmpty(OrderAcceptanceId) && OrderState.HasValue && OrderState.Value == BfOrderState.Active;
 
-    public ConcurrentDictionary<long, BfxExecution> _execs = new();
+    public ConcurrentDictionary<long, BfExecutionContext> _execs = new();
 
-    public BfxOrderContext()
+    public BfOrderContext()
     {
     }
 
-    public BfxOrderContext(string productCode)
+    public BfOrderContext(string productCode)
     {
         ProductCode = productCode;
     }
@@ -65,24 +65,24 @@ class BfxOrderContext
 
         while (Children.Count < count)
         {
-            Children.Add(new BfxOrderContext(ProductCode));
+            Children.Add(new BfOrderContext(ProductCode));
         }
     }
 
-    public BfxOrderContext OrderAccepted(string acceptanceId)
+    public BfOrderContext OrderAccepted(string acceptanceId)
     {
         OrderAcceptanceId = acceptanceId;
         return this;
     }
 
-    public BfxOrderContext Update(IBfOrderEvent e) => e switch
+    public BfOrderContext Update(IBfOrderEvent e) => e switch
     {
         BfChildOrderEvent coe => Update(coe),
         BfParentOrderEvent poe => Update(poe),
         _ => throw new ArgumentException()
     };
 
-    BfxOrderContext Update(BfParentOrderDetailStatusParameter order)
+    BfOrderContext Update(BfParentOrderDetailStatusParameter order)
     {
         OrderType = order.ConditionType;
         Side = order.Side;
@@ -102,10 +102,10 @@ class BfxOrderContext
         return this;
     }
 
-    public BfxOrderContext Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
+    public BfOrderContext Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
     {
         OrderAcceptanceId = status.ParentOrderAcceptanceId;
-        PagingId = status.Id;
+        Id = status.Id;
         OrderId = status.ParentOrderId;
         OrderType = status.ParentOrderType;
         OrderState = status.ParentOrderState;
@@ -123,7 +123,7 @@ class BfxOrderContext
         return this;
     }
 
-    BfxOrderContext Update(BfParentOrderParameter order)
+    BfOrderContext Update(BfParentOrderParameter order)
     {
         OrderType = order.ConditionType;
         Side = order.Side;
@@ -134,14 +134,14 @@ class BfxOrderContext
         return this;
     }
 
-    public BfxOrderContext Update(IBfOrder order, string acceptanceId) => order switch
+    public BfOrderContext Update(IBfOrder order, string acceptanceId) => order switch
     {
         BfChildOrder childOrder => Update(childOrder, acceptanceId),
         BfParentOrder parentOrder => Update(parentOrder, acceptanceId),
         _ => throw new ArgumentException()
     };
 
-    public BfxOrderContext Update(BfParentOrder order, string acceptanceId)
+    public BfOrderContext Update(BfParentOrder order, string acceptanceId)
     {
         OrderAcceptanceId = acceptanceId;
         OrderType = order.OrderMethod;
@@ -156,7 +156,7 @@ class BfxOrderContext
         return this;
     }
 
-    BfxOrderContext Update(BfParentOrderEvent e)
+    BfOrderContext Update(BfParentOrderEvent e)
     {
         OrderId = e.ParentOrderId;
         OrderAcceptanceId = e.ParentOrderAcceptanceId;
@@ -221,7 +221,7 @@ class BfxOrderContext
         return this;
     }
 
-    public BfxOrderContext Update(BfChildOrder order, string acceptanceId)
+    public BfOrderContext Update(BfChildOrder order, string acceptanceId)
     {
         OrderAcceptanceId = acceptanceId;
         OrderType = order.ChildOrderType;
@@ -233,29 +233,29 @@ class BfxOrderContext
         return this;
     }
 
-    public BfxOrderContext Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+    public BfOrderContext Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
     {
         OrderAcceptanceId = status.ChildOrderAcceptanceId;
-        PagingId = status.Id;
+        Id = status.Id;
         OrderId = status.ChildOrderId;
         Side = status.Side;
         OrderType = status.ChildOrderType;
-        OrderPrice = status.Price;
-        AveragePrice = status.AveragePrice;
-        OrderSize = status.Size;
+        OrderPrice = status.Price > 0m ? status.Price : default;
+        AveragePrice = status.AveragePrice > 0m ? status.AveragePrice : default;
+        OrderSize = status.Size > 0m ? status.Size : default;
         OrderState = status.ChildOrderState;
         ExpireDate = status.ExpireDate;
         OrderDate = status.ChildOrderDate;
-        OutstandingSize = status.OutstandingSize;
-        CancelSize = status.CancelSize;
-        ExecutedSize = status.ExecutedSize;
-        TotalCommission = status.TotalCommission;
+        OutstandingSize = status.OutstandingSize > 0m ? status.OutstandingSize : default;
+        CancelSize = status.CancelSize > 0m ? status.CancelSize : default;
+        ExecutedSize = status.ExecutedSize > 0m ? status.ExecutedSize : default;
+        TotalCommission = status.TotalCommission > 0m ? status.TotalCommission : default;
 
         if (execs != default)
         {
             foreach (var exec in execs)
             {
-                _execs.GetOrAdd(exec.Id, _ => new BfxExecution(exec));
+                _execs.GetOrAdd(exec.Id, _ => new BfExecutionContext(exec));
             }
         }
 
@@ -284,7 +284,7 @@ class BfxOrderContext
         return false;
     }
 
-    public BfxOrderContext UpdateChild(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+    public BfOrderContext UpdateChild(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
     {
         var index = Children.FindIndex(e => e.OrderAcceptanceId == status.ChildOrderAcceptanceId);
         if (index == -1)
@@ -300,7 +300,7 @@ class BfxOrderContext
         return this;
     }
 
-    BfxOrderContext Update(BfChildOrderEvent e)
+    BfOrderContext Update(BfChildOrderEvent e)
     {
         OrderAcceptanceId = e.ChildOrderAcceptanceId;
         OrderId = e.ChildOrderId;
@@ -332,7 +332,7 @@ class BfxOrderContext
 
             case BfOrderEventType.Execution:
                 Side = e.Side;
-                _execs.TryAdd(e.ExecutionId.Value, new BfxExecution(e));
+                _execs.TryAdd(e.ExecutionId.Value, new BfExecutionContext(e));
                 ExecutedSize = _execs.Values.Sum(e => e.Size);
                 ExecutedPrice = Math.Round(_execs.Values.Sum(e => e.Price * e.Size) / ExecutedSize.Value, BfProductCode.GetPriceDecimals(ProductCode)); // VWAP
                 OrderState = (OrderSize > ExecutedSize) ? BfOrderState.Active : BfOrderState.Completed;

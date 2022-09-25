@@ -304,7 +304,7 @@ public enum BfTimeInForce
 
 public enum BfOrderState
 {
-    Unknown,
+    All,
     [EnumMember(Value = "ACTIVE")]
     Active,
     [EnumMember(Value = "COMPLETED")]
@@ -323,7 +323,6 @@ public enum BfOrderState
 /// </summary>
 public enum BfOrderEventType
 {
-    Unknown,
     [EnumMember(Value = "ORDER")]
     Order,
     [EnumMember(Value = "ORDER_FAILED")]

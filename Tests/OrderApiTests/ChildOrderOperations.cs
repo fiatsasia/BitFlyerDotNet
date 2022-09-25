@@ -106,7 +106,7 @@ namespace OrderApiTests
                             {
                                 Console.WriteLine("1)Not specified 2)Canceled 3)Parent children 4)Parent canceled children");
                                 Console.WriteLine("5)Child acceptance 6)Child acceptance canceled");
-                                var orderState = BfOrderState.Unknown;
+                                var orderState = BfOrderState.All;
                                 var parentOrderId = "";
                                 var childOrderAcceptanceId = "";
                                 switch (GetCh())

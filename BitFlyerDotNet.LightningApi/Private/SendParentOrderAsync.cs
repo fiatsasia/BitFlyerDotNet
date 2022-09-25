@@ -10,43 +10,43 @@ namespace BitFlyerDotNet.LightningApi;
 
 public class BfParentOrderParameter
 {
-    public string ProductCode { get; set; }
+    public string ProductCode { get; init; }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public BfOrderType ConditionType { get; set; }
+    public BfOrderType ConditionType { get; init; }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public BfTradeSide Side { get; set; }
+    public BfTradeSide Side { get; init; }
 
     [JsonConverter(typeof(DecimalJsonConverter))]
-    public decimal? Price { get; set; }
+    public decimal? Price { get; init; }
     public bool ShouldSerializePrice() { return ConditionType == BfOrderType.Limit || ConditionType == BfOrderType.StopLimit; }
 
     [JsonConverter(typeof(DecimalJsonConverter))]
-    public decimal Size { get; set; }
+    public decimal Size { get; init; }
 
     [JsonConverter(typeof(DecimalJsonConverter))]
-    public decimal? TriggerPrice { get; set; }
+    public decimal? TriggerPrice { get; init; }
     public bool ShouldSerializeTriggerPrice() { return ConditionType == BfOrderType.Stop || ConditionType == BfOrderType.StopLimit; }
 
     [JsonConverter(typeof(DecimalJsonConverter))]
-    public decimal? Offset { get; set; }
+    public decimal? Offset { get; init; }
     public bool ShouldSerializeOffset() { return ConditionType == BfOrderType.Trail; }
 }
 
 public class BfParentOrder : IBfOrder
 {
     [JsonConverter(typeof(StringEnumConverter))]
-    public BfOrderType OrderMethod { get; set; }
+    public BfOrderType OrderMethod { get; init; }
 
-    public int? MinuteToExpire { get; set; }
+    public int? MinuteToExpire { get; init; }
     public bool ShouldSerializeMinuteToExpire() => (MinuteToExpire.HasValue && MinuteToExpire.Value > 0); // default = 43200 (30 days)
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public BfTimeInForce? TimeInForce { get; set; }
+    public BfTimeInForce? TimeInForce { get; init; }
     public bool ShouldSerializeTimeInForce() => TimeInForce.HasValue;
 
-    public List<BfParentOrderParameter> Parameters { get; set; } = new ();
+    public List<BfParentOrderParameter> Parameters { get; init; } = new ();
 
 
     // This will be used order factory

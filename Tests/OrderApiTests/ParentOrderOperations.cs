@@ -111,7 +111,7 @@ namespace OrderApiTests
 
                         case 'G':
                             {
-                                var resp = await _client.GetParentOrdersAsync(ProductCode, BfOrderState.Unknown, 0, 0, 0, CancellationToken.None);
+                                var resp = await _client.GetParentOrdersAsync(ProductCode, BfOrderState.All, 0, 0, 0, CancellationToken.None);
                                 if (resp.IsOk)
                                 {
                                     var jobj = JsonConvert.DeserializeObject(resp.Json);

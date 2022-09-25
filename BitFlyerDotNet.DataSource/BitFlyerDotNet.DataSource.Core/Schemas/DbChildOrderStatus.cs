@@ -26,7 +26,7 @@ class DbChildOrderStatus : BfChildOrderStatus
     public override BfOrderType ChildOrderType { get; set; }
 
     [Column("price")]
-    public override decimal? Price { get; set; }
+    public override decimal Price { get; set; }
 
     [Column("average_price")]
     public override decimal AveragePrice { get; set; }
