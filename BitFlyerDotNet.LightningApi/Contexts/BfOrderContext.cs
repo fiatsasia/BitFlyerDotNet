@@ -6,34 +6,24 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-#pragma warning disable CS8629
-
 namespace BitFlyerDotNet.LightningApi;
 
 public class BfOrderContext
 {
-    #region Order informations
+    #region Index properties
     public string ProductCode { get; }
-    public BfOrderType OrderType { get; private set; }
-    public BfTradeSide? Side { get; private set; }
-    public decimal? OrderSize { get; private set; }
-    public decimal? OrderPrice { get; private set; }
-    public decimal? TriggerPrice { get; private set; }
-    public decimal? TrailOffset { get; private set; }
-    public int? MinuteToExpire { get; private set; }
-    public BfTimeInForce? TimeInForce { get; private set; }
-    public List<BfOrderContext> Children { get; init; } = new();
-    #endregion Order informations
-
-    #region Order management info
     public string? OrderAcceptanceId { get; private set; }
     public string? OrderId { get; private set; }
     public DateTime? OrderDate { get; private set; }
     public DateTime? ExpireDate { get; private set; }
     public BfOrderState? OrderState { get; private set; }
-    #endregion Order management info
-
     public long? Id { get; protected set; }
+    #endregion
+
+    #region Common properties
+    public BfOrderType OrderType { get; private set; }
+    public int? MinuteToExpire { get; private set; }
+    public BfTimeInForce? TimeInForce { get; private set; }
     public decimal? AveragePrice { get; protected set; }
     public decimal? OutstandingSize { get; protected set; }
     public decimal? CancelSize { get; protected set; }
@@ -41,18 +31,38 @@ public class BfOrderContext
     public decimal? ExecutedSize { get; protected set; }
     public decimal? TotalCommission { get; protected set; }
     public string? OrderFailedReason { get; protected set; }       // EventType = OrderFailed
+    #endregion
+
+    #region Child order only properties
+    public BfTradeSide? Side { get; private set; }
+    public decimal? OrderSize { get; private set; }
+    public decimal? OrderPrice { get; private set; }
+    public decimal? TriggerPrice { get; private set; }
+    public decimal? TrailOffset { get; private set; }
+    internal List<BfExecutionContext> Executions { get; init; } = new();
+    public virtual IReadOnlyList<BfExecutionContext> GetExecutions() => Executions;
+    internal BfOrderContext Parent { get; private set; }
+    public bool HasParent => Parent != null;
+    #endregion
+
+    #region Parent order ibly properties
+    static readonly List<BfOrderContext> EmptyChildren = new();
+    internal List<BfOrderContext> Children { get; private set; }
+    public virtual IReadOnlyList<BfOrderContext> GetChildren() => Children != default ? Children : EmptyChildren;
+    #endregion
 
     public bool HasChildren => Children.Count > 0;
     public bool IsActive => !string.IsNullOrEmpty(OrderAcceptanceId) && OrderState.HasValue && OrderState.Value == BfOrderState.Active;
 
-    public ConcurrentDictionary<long, BfExecutionContext> _execs = new();
+    BfPrivateDataSource _ds;
 
     public BfOrderContext()
     {
     }
 
-    public BfOrderContext(string productCode)
+    public BfOrderContext(BfPrivateDataSource ds, string productCode)
     {
+        _ds = ds;
         ProductCode = productCode;
     }
 
@@ -65,8 +75,13 @@ public class BfOrderContext
 
         while (Children.Count < count)
         {
-            Children.Add(new BfOrderContext(ProductCode));
+            Children.Add(new BfOrderContext(_ds, ProductCode));
         }
+    }
+
+    public virtual BfOrderContext ContextUpdated()
+    {
+        return _ds.Upsert(this);
     }
 
     public BfOrderContext OrderAccepted(string acceptanceId)
@@ -134,16 +149,15 @@ public class BfOrderContext
         return this;
     }
 
-    public BfOrderContext Update(IBfOrder order, string acceptanceId) => order switch
+    public BfOrderContext Update(IBfOrder order) => order switch
     {
-        BfChildOrder childOrder => Update(childOrder, acceptanceId),
-        BfParentOrder parentOrder => Update(parentOrder, acceptanceId),
+        BfChildOrder childOrder => Update(childOrder),
+        BfParentOrder parentOrder => Update(parentOrder),
         _ => throw new ArgumentException()
     };
 
-    public BfOrderContext Update(BfParentOrder order, string acceptanceId)
+    public BfOrderContext Update(BfParentOrder order)
     {
-        OrderAcceptanceId = acceptanceId;
         OrderType = order.OrderMethod;
         MinuteToExpire = order.MinuteToExpire;
         TimeInForce = order.TimeInForce;
@@ -221,19 +235,19 @@ public class BfOrderContext
         return this;
     }
 
-    public BfOrderContext Update(BfChildOrder order, string acceptanceId)
+    public BfOrderContext Update(BfChildOrder order)
     {
-        OrderAcceptanceId = acceptanceId;
         OrderType = order.ChildOrderType;
         Side = order.Side;
         OrderPrice = order.Price;
         OrderSize = order.Size;
         MinuteToExpire = order.MinuteToExpire;
         TimeInForce = order.TimeInForce;
+
         return this;
     }
 
-    public BfOrderContext Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+    public BfOrderContext Update(BfChildOrderStatus status)
     {
         OrderAcceptanceId = status.ChildOrderAcceptanceId;
         Id = status.Id;
@@ -251,11 +265,23 @@ public class BfOrderContext
         ExecutedSize = status.ExecutedSize > 0m ? status.ExecutedSize : default;
         TotalCommission = status.TotalCommission > 0m ? status.TotalCommission : default;
 
+        return this;
+    }
+
+    public BfOrderContext Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+    {
+        Update(status);
         if (execs != default)
         {
             foreach (var exec in execs)
             {
-                _execs.GetOrAdd(exec.Id, _ => new BfExecutionContext(exec));
+                var ctx = Executions.FirstOrDefault(e => e.Id == exec.Id);
+                if (ctx == null)
+                {
+                    ctx = new();
+                    Executions.Add(ctx);
+                }
+                ctx.Update(exec);
             }
         }
 
@@ -300,25 +326,25 @@ public class BfOrderContext
         return this;
     }
 
-    BfOrderContext Update(BfChildOrderEvent e)
+    BfOrderContext Update(BfChildOrderEvent ev)
     {
-        OrderAcceptanceId = e.ChildOrderAcceptanceId;
-        OrderId = e.ChildOrderId;
+        OrderAcceptanceId = ev.ChildOrderAcceptanceId;
+        OrderId = ev.ChildOrderId;
 
-        switch (e.EventType)
+        switch (ev.EventType)
         {
             case BfOrderEventType.Order:
-                OrderDate = e.EventDate;
-                OrderType = e.ChildOrderType.Value;
-                OrderPrice = e.Price;
-                Side = e.Side;
-                OrderSize = e.Size;
-                ExpireDate = e.ExpireDate;
+                OrderDate = ev.EventDate;
+                OrderType = ev.ChildOrderType.Value;
+                OrderPrice = ev.Price;
+                Side = ev.Side;
+                OrderSize = ev.Size;
+                ExpireDate = ev.ExpireDate;
                 OrderState = BfOrderState.Active;
                 break;
 
             case BfOrderEventType.OrderFailed:
-                OrderFailedReason = e.OrderFailedReason;
+                OrderFailedReason = ev.OrderFailedReason;
                 OrderState = BfOrderState.Rejected;
                 break;
 
@@ -331,11 +357,19 @@ public class BfOrderContext
                 break;
 
             case BfOrderEventType.Execution:
-                Side = e.Side;
-                _execs.TryAdd(e.ExecutionId.Value, new BfExecutionContext(e));
-                ExecutedSize = _execs.Values.Sum(e => e.Size);
-                ExecutedPrice = Math.Round(_execs.Values.Sum(e => e.Price * e.Size) / ExecutedSize.Value, BfProductCode.GetPriceDecimals(ProductCode)); // VWAP
-                OrderState = (OrderSize > ExecutedSize) ? BfOrderState.Active : BfOrderState.Completed;
+                {
+                    var exec = Executions.FirstOrDefault(e => e.Id == ev.ExecutionId.Value);
+                    if (exec == default)
+                    {
+                        exec = new();
+                        Executions.Add(exec);
+                    }
+                    exec.Update(ev);
+                    Side = ev.Side;
+                    ExecutedSize = Executions.Sum(e => e.Size);
+                    ExecutedPrice = Math.Round(Executions.Sum(e => e.Price * e.Size) / ExecutedSize.Value, BfProductCode.GetPriceDecimals(ProductCode)); // VWAP
+                    OrderState = (OrderSize > ExecutedSize) ? BfOrderState.Active : BfOrderState.Completed;
+                }
                 break;
 
             case BfOrderEventType.Expire:

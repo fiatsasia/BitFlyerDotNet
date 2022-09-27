@@ -16,24 +16,20 @@ class BfxMarket
     public bool IsInitialized { get; private set; }
     public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
 
-    BitFlyerClient _client;
     string _productCode;
-    BfxPrivateDataSource _pds;
-    BfxConfiguration _config;
+    BfxApplication _app;
 
     ConcurrentDictionary<string, BfxTransaction> _tx = new();
 
-    public BfxMarket(BitFlyerClient client, string productCode, BfxPrivateDataSource pds, BfxConfiguration config)
+    public BfxMarket(BfxApplication app, string productCode)
     {
-        _client = client;
+        _app = app;
         _productCode = productCode;
-        _pds = pds;
-        _config = config;
     }
 
     public async Task InitializeAsync()
     {
-        if (!_client.IsAuthenticated)
+        if (!_app.Client.IsAuthenticated)
         {
             throw new InvalidOperationException("Client is not authorized. To Authenticate first.");
         }
@@ -44,16 +40,16 @@ class BfxMarket
 
         IsInitialized = true;
 
-        await foreach (var ctx in _pds.GetOrderServerContextsAsync(_productCode, BfOrderState.Active, 0))
+        await foreach (var ctx in _app.DataSource.GetActiveOrderContextsAsync(_productCode))
         {
-            _tx.TryAdd(ctx.OrderAcceptanceId, new BfxTransaction(_client, ctx, _config));
+            _tx.TryAdd(ctx.OrderAcceptanceId, new BfxTransaction(_app, ctx));
         }
     }
 
     public async Task<string> PlaceOrderAsync<TOrder>(TOrder order, CancellationToken ct) where TOrder : IBfOrder
     {
         // Sometimes child order event arrives before send order process completion.
-        var tx = new BfxTransaction(_client, _pds.CreateOrderContext(_productCode), _config);
+        var tx = new BfxTransaction(_app, _app.DataSource.CreateOrderContext(_productCode).Update(order));
         tx.OrderChanged += OnOrderChanged;
         var acceptanceId = await tx.PlaceOrderAsync(order, ct);
         if (string.IsNullOrEmpty(acceptanceId))
@@ -61,8 +57,7 @@ class BfxMarket
             return default;
         }
         Log.Debug($"Transaction id:{acceptanceId} opened");
-        tx = _tx.GetOrAdd(acceptanceId, tx);
-        _pds.TryRegisterOrderContext(_productCode, acceptanceId, tx.GetOrderContext().Update(order, acceptanceId));
+        _tx.TryAdd(acceptanceId, tx);
         return acceptanceId;
     }
 
@@ -73,12 +68,12 @@ class BfxMarket
         var acceptanceId = e.GetAcceptanceId();
         var tx = _tx.GetOrAdd(acceptanceId, _ =>
         {
-            var tx = new BfxTransaction(_client, _pds.GetOrCreateOrderContext(_productCode, acceptanceId), _config);
+            var tx = new BfxTransaction(_app, _app.DataSource.GetOrCreateOrderContext(_productCode, acceptanceId));
             tx.OrderChanged += OnOrderChanged;
             Log.Debug($"Transaction id:{acceptanceId} opened");
             return tx;
         });
-        _pds.TryRegisterOrderContext(_productCode, acceptanceId, tx.GetOrderContext().Update(e));
+        tx.GetOrderContext().Update(e).ContextUpdated();
         tx.OnOrderEvent(e);
 
         if (!tx.GetOrderContext().IsActive)

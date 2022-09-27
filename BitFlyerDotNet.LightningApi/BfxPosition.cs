@@ -6,7 +6,7 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.Trading;
+namespace BitFlyerDotNet.LightningApi;
 
 public class BfxPosition
 {

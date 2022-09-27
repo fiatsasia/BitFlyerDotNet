@@ -45,8 +45,8 @@ public class BfxOrder
 
             case BfOrderType.Simple:
                 SetCommonPart(ctx);
-                SetIndividualPart(ctx.Children[0]);
-                OrderType = ctx.Children[0].OrderType;
+                SetIndividualPart(ctx.GetChildren()[0]);
+                OrderType = ctx.GetChildren()[0].OrderType;
                 break;
 
             case BfOrderType.IFD:
@@ -59,7 +59,7 @@ public class BfxOrder
         _children = new BfxOrder[ctx.OrderType.GetChildCount()];
         for (int i = 0; i < _children.Length; i++)
         {
-            _children[i] = new(ctx.Children[i]);
+            _children[i] = new(ctx.GetChildren()[i]);
         }
     }
 

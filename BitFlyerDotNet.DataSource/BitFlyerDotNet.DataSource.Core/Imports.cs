@@ -18,6 +18,8 @@ global using System.Reactive.Linq;
 global using System.Reactive.Threading.Tasks;
 global using System.Reactive.Disposables;
 
+global using LiteDB;
+
 global using BitFlyerDotNet.LightningApi;
 
 #if !NET5_0_OR_GREATER

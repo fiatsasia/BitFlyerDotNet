@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.Trading;
 
-public class BfxConfiguration
+public class BfxConfiguration : IBfConfiguration
 {
     public string DefaultProductCode { get; set; } = BfProductCode.FX_BTC_JPY;
 
@@ -38,6 +38,11 @@ public class BfxConfiguration
     public bool IsVerifyDisabled { get; internal set; }
 
     public string CacheFilePath { get; set; }
+
+    public TValue GetValue<TValue>(string key)
+    {
+        throw new NotImplementedException();
+    }
 
     public BfxConfiguration()
     {

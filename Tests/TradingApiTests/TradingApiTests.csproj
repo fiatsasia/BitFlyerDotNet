@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\BitFlyerDotNet.DataSource\BitFlyerDotNet.DataSource.Core\BitFlyerDotNet.DataSource.Core.csproj" />
     <ProjectReference Include="..\..\BitFlyerDotNet.Historical\BitFlyerDotNet.Historical.csproj" />
     <ProjectReference Include="..\..\BitFlyerDotNet.Trading\BitFlyerDotNet.Trading.csproj" />
   </ItemGroup>

@@ -16,6 +16,7 @@ global using System.Reactive.Linq;
 global using Newtonsoft.Json;
 global using BitFlyerDotNet.LightningApi;
 global using BitFlyerDotNet.Trading;
+global using BitFlyerDotNet.DataSource;
 
 namespace TradingApiTests;
 
@@ -48,9 +49,10 @@ partial class Program
 
         using (App = new BfxApplication(config, key, secret))
         {
+            //App.DataSource = new DsPrivateDataSource(App);
+            //App.AddDataSource(new BitFlyerDotNet.DataSource.SQLite());
             App.AddTraceLoggingService(NLog.LogManager.GetLogger("debugOutput"));
             App.AddOrderTemplates("orderTemplates.json");
-            // App.AddDataSource(new BitFlyerDotNet.DataSource.SQLite());
 
             App.PositionChanged += OnPositionChanged;
             App.OrderChanged += OnOrderChanged;
@@ -127,7 +129,7 @@ partial class Program
                             break;
 
                         case 'R':
-                            await foreach (var order in App.GetRecentOrdersAsync(ProductCode, 20))
+                            await foreach (var order in App.GetRecentOrdersAsync(ProductCode, TimeSpan.FromDays(30)))
                             {
                                 PrintOrder(order);
                             }

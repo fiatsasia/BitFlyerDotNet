@@ -20,8 +20,24 @@ public class BfExecutionContext
     public string OrderId { get; private set; }
     public string OrderAcceptanceId { get; private set; }
 
-#pragma warning disable CS8629
-    public BfExecutionContext(BfChildOrderEvent e)
+    public BfExecutionContext()
+    {
+    }
+
+    public BfExecutionContext Update(BfPrivateExecution exec)
+    {
+        Id = exec.Id;
+        Time = exec.ExecDate;
+        Side = exec.Side;
+        Price = exec.Price;
+        Size = exec.Size;
+        Commission = exec.Commission;
+        OrderId = exec.ChildOrderId;
+        OrderAcceptanceId = exec.ChildOrderAcceptanceId;
+        return this;
+    }
+
+    public BfExecutionContext Update(BfChildOrderEvent e)
     {
         if (e.EventType != BfOrderEventType.Execution) throw new ArgumentException();
         Id = e.ExecutionId.Value;
@@ -33,18 +49,6 @@ public class BfExecutionContext
         SwapForDifference = e.SwapForDifference;
         OrderId = e.ChildOrderId;
         OrderAcceptanceId = e.ChildOrderAcceptanceId;
-    }
-#pragma warning restore CS8629
-
-    public BfExecutionContext(BfPrivateExecution exec)
-    {
-        Id = exec.Id;
-        Time = exec.ExecDate;
-        Side = exec.Side;
-        Price = exec.Price;
-        Size = exec.Size;
-        Commission = exec.Commission;
-        OrderId = exec.ChildOrderId;
-        OrderAcceptanceId = exec.ChildOrderAcceptanceId;
+        return this;
     }
 }

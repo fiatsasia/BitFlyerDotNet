@@ -77,7 +77,7 @@ public class OrderSource : IDisposable
     //======================================================================
     public async void UpdateRecentParentOrders(DateTime after)
     {
-        await foreach (var parent in _client.GetParentOrdersAsync(_productCode, BfOrderState.All, 0, 0, 0, e => e.ParentOrderDate >= after, CancellationToken.None))
+        await foreach (var parent in _client.GetParentOrdersAsync<BfParentOrderStatus>(_productCode, BfOrderState.All, 0, 0, 0, e => e.ParentOrderDate >= after, CancellationToken.None))
         {
             var recParent = _ctx.FindParentOrder(_productCode, parent.ParentOrderAcceptanceId);
             var detail = await _client.GetParentOrderAsync(_productCode, parentOrderAcceptanceId: parent.ParentOrderAcceptanceId);

@@ -8,22 +8,25 @@
 
 #pragma warning disable CS8629
 
+using System.Runtime.Serialization;
+
 namespace BitFlyerDotNet.Trading;
 
-public class BfxApplication : IDisposable
+public class BfxApplication : IDisposable, IBfApplication
 {
     #region Properties and fields
     public Ulid Id { get; } = Ulid.NewUlid();
     public RealtimeSourceFactory RealtimeSource => _rts;
     public BfxConfiguration Config { get; }
+    public IBfConfiguration GetConfig() => Config;
     public bool IsInitialized => _markets.Count() > 0;
 
     CompositeDisposable _disposables = new();
-    BitFlyerClient _client;
+    public BitFlyerClient Client { get; private set; }
     RealtimeSourceFactory _rts;
     Dictionary<string, BfxMarket> _markets = new();
     Dictionary<string, BfxMarketDataSource> _mds = new();
-    BfxPrivateDataSource _pds;
+    public BfPrivateDataSource DataSource { get; set; }
     #endregion Properties and fields
 
     #region Initialize and Finalize
@@ -32,15 +35,15 @@ public class BfxApplication : IDisposable
         Config = config;
         if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(secret))
         {
-            _client = new BitFlyerClient(key, secret).AddTo(_disposables);
+            Client = new BitFlyerClient(key, secret).AddTo(_disposables);
             _rts = new RealtimeSourceFactory(key, secret).AddTo(_disposables);
         }
         else
         {
-            _client = new BitFlyerClient().AddTo(_disposables);
+            Client = new BitFlyerClient().AddTo(_disposables);
             _rts = new RealtimeSourceFactory();
         }
-        _pds = new(_client, config);
+        DataSource = new(this);
 
         VerifyOrderAsync = VerifyOrderDefaultAsync;
     }
@@ -61,15 +64,15 @@ public class BfxApplication : IDisposable
             return;
         }
 
-        var availableMarkets = await _client.GetMarketsAsync();
+        var availableMarkets = await Client.GetMarketsAsync();
         await _rts.TryOpenAsync();
 
         foreach (var mi in availableMarkets)
         {
-            var market = new BfxMarket(_client, mi.ProductCode, _pds, Config);
+            var market = new BfxMarket(this, mi.ProductCode);
             market.OrderChanged += (sender, e) => OrderChanged?.Invoke(sender, e);
             _markets[mi.ProductCode] = market;
-            _mds[mi.ProductCode] = new BfxMarketDataSource(mi.ProductCode, _client, _rts);
+            _mds[mi.ProductCode] = new BfxMarketDataSource(mi.ProductCode, Client, _rts);
             if (!string.IsNullOrEmpty(mi.Alias))
             {
                 _markets[mi.Alias] = _markets[mi.ProductCode];
@@ -77,7 +80,7 @@ public class BfxApplication : IDisposable
             }
         }
 
-        if (_client.IsAuthenticated)
+        if (Client.IsAuthenticated)
         {
             _rts.GetParentOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnOrderEvent(e)).AddTo(_disposables);
             _rts.GetChildOrderEventsSource().Subscribe(async e =>
@@ -86,9 +89,9 @@ public class BfxApplication : IDisposable
                 if (e.ProductCode == BfProductCode.FX_BTC_JPY && e.EventType == BfOrderEventType.Execution)
                 {
                     // child order subscription is scheduled on Rx default thread queueing scheduler
-                    await foreach (var pos in _pds.UpdatePositionAsync(e))
+                    await foreach (var pos in DataSource.UpdatePositionAsync(e))
                     {
-                        PositionChanged?.Invoke(this, new BfxPositionChangedEventArgs(pos, await _pds.GetTotalPositionSizeAsync()));
+                        PositionChanged?.Invoke(this, new BfxPositionChangedEventArgs(pos, await DataSource.GetTotalPositionSizeAsync()));
                     }
                 }
             }).AddTo(_disposables);
@@ -103,7 +106,7 @@ public class BfxApplication : IDisposable
 
     public async Task AuthenticateAsync(string key, string secret)
     {
-        if (_client.IsAuthenticated)
+        if (Client.IsAuthenticated)
         {
             return;
         }
@@ -113,7 +116,7 @@ public class BfxApplication : IDisposable
             await InitializeAsync();
         }
 
-        _client.Authenticate(key, secret);
+        Client.Authenticate(key, secret);
         await Task.Run(() => _rts.Authenticate(key, secret));
 
         _rts.GetParentOrderEventsSource().Subscribe(e => _markets[e.ProductCode].OnOrderEvent(e)).AddTo(_disposables);
@@ -131,7 +134,7 @@ public class BfxApplication : IDisposable
 
         if (productCode == BfProductCode.FX_BTC_JPY)
         {
-            await _pds.InitializePositionsAsync(BfProductCode.FX_BTC_JPY);
+            await DataSource.InitializePositionsAsync(BfProductCode.FX_BTC_JPY);
         }
 
         if (!_markets[productCode].IsInitialized)
@@ -313,38 +316,31 @@ public class BfxApplication : IDisposable
             await InitializeMarketAsync(productCode);
         }
 
-        var ctxs = _pds.GetOrderCacheContexts(productCode).Where(e => e.IsActive).ToDictionary(e => e.OrderAcceptanceId, e => e);
-
-        // Attach children to parent
-        foreach (var pctx in ctxs.Values.Where(e => e.HasChildren).ToList())
+        await foreach (var ctx in DataSource.GetActiveOrderContextsAsync(productCode))
         {
-            var parentOrder = new BfxOrder(pctx);
-            for (var childIndex = 0; childIndex < pctx.Children.Count; childIndex++)
+            if (ctx.HasParent)
             {
-                var cctx = pctx.Children[childIndex];
-                if (!string.IsNullOrEmpty(cctx.OrderAcceptanceId) && ctxs.TryGetValue(cctx.OrderAcceptanceId, out cctx))
-                {
-                    parentOrder.ReplaceChild(childIndex, cctx);
-                    ctxs.Remove(cctx.OrderAcceptanceId);
-                }
+                continue; // Skip children
             }
-            ctxs.Remove(pctx.OrderAcceptanceId);
-            yield return parentOrder;
-        }
-
-        // Enumerates independent child orders
-        foreach (var ctx in ctxs.Values)
-        {
-            yield return new(ctx);
+            yield return new BfxOrder(ctx);
         }
     }
 
-    public IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(string productCode, int count)
-        => _pds.GetOrderServerContextsAsync(productCode, BfOrderState.All, count).Where(e => !e.HasChildren).Select(e => new BfxOrder(e));
+    public async IAsyncEnumerable<BfxOrder> GetRecentOrdersAsync(string productCode, TimeSpan span)
+    {
+        await foreach (var ctx in DataSource.GetRecentOrderContextsAsync(productCode, span))
+        {
+            if (ctx.HasParent)
+            {
+                continue; // Skip children
+            }
+            yield return new BfxOrder(ctx);
+        }
+    }
 
     #region Manage positions
     public event EventHandler<BfxPositionChangedEventArgs>? PositionChanged;
 
-    public IAsyncEnumerable<BfxPosition> GetActivePositions(string productCode) => _pds.GetActivePositionsAsync(productCode);
+    public IAsyncEnumerable<BfxPosition> GetActivePositions(string productCode) => DataSource.GetActivePositionsAsync(productCode);
     #endregion Manage positions
 }

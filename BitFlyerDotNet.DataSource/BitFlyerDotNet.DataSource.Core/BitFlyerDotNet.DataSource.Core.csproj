@@ -6,11 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BitFlyerDotNet.LightningApi\BitFlyerDotNet.LightningApi.csproj" />
+    <PackageReference Include="LiteDB" Version="5.0.12" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Objects\" />
+    <ProjectReference Include="..\..\BitFlyerDotNet.LightningApi\BitFlyerDotNet.LightningApi.csproj" />
   </ItemGroup>
 
 </Project>

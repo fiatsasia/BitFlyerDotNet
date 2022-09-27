@@ -13,15 +13,13 @@ class BfxTransaction : IDisposable
     public BfOrderContext GetOrderContext() => _ctx;
     public event EventHandler<BfxOrderChangedEventArgs>? OrderChanged;
 
-    BitFlyerClient _client;
+    BfxApplication _app;
     BfOrderContext _ctx;
-    BfxConfiguration _config;
     CancellationTokenSource _ctsCancelOrder;
 
-    public BfxTransaction(BitFlyerClient client, BfOrderContext ctx, BfxConfiguration config)
+    public BfxTransaction(BfxApplication app, BfOrderContext ctx)
     {
-        _client = client;
-        _config = config;
+        _app = app;
         _ctx = ctx;
         _ctsCancelOrder = new CancellationTokenSource();
     }
@@ -36,16 +34,16 @@ class BfxTransaction : IDisposable
     {
         using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct, _ctsCancelOrder.Token))
         {
-            cts.CancelAfter(_config.SendOrderTimeout);
+            cts.CancelAfter(_app.Config.SendOrderTimeout);
             try
             {
-                for (var retry = 0; retry <= _config.OrderRetryMax; retry++)
+                for (var retry = 0; retry <= _app.Config.OrderRetryMax; retry++)
                 {
                     BitFlyerResponse resp;
                     string id = string.Empty;
                     if (order is BfChildOrder childOrder)
                     {
-                        resp = await _client.SendChildOrderAsync(childOrder, cts.Token);
+                        resp = await _app.Client.SendChildOrderAsync(childOrder, cts.Token);
                         if (!resp.IsError)
                         {
                             id = resp.Deserialize<BfChildOrderAcceptance>().ChildOrderAcceptanceId;
@@ -53,7 +51,7 @@ class BfxTransaction : IDisposable
                     }
                     else if (order is BfParentOrder parentOrder)
                     {
-                        resp = await _client.SendParentOrderAsync(parentOrder, cts.Token);
+                        resp = await _app.Client.SendParentOrderAsync(parentOrder, cts.Token);
                         if (!resp.IsError)
                         {
                             id = resp.Deserialize<BfParentOrderAcceptance>().ParentOrderAcceptanceId;
@@ -66,7 +64,7 @@ class BfxTransaction : IDisposable
 
                     if (!string.IsNullOrEmpty(id))
                     {
-                        _ctx.OrderAccepted(id);
+                        _ctx.OrderAccepted(id).ContextUpdated();
                         OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.OrderAccepted, _ctx));
                         return id;
                     }
@@ -74,7 +72,7 @@ class BfxTransaction : IDisposable
                     Log.Warn($"SendChildOrder failed: {resp.StatusCode} {resp.ErrorMessage}");
                     Log.Info("Trying retry...");
                     OrderChanged?.Invoke(this, new BfxOrderChangedEventArgs(BfxOrderEventType.RetryingOrder, _ctx));
-                    await Task.Delay(_config.OrderRetryInterval);
+                    await Task.Delay(_app.Config.OrderRetryInterval);
                 }
             }
             catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
@@ -107,7 +105,7 @@ class BfxTransaction : IDisposable
         _ctsCancelOrder.Cancel();
         using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct))
         {
-            cts.CancelAfter(_config.SendCancelOrderTimeout);
+            cts.CancelAfter(_app.Config.SendCancelOrderTimeout);
             if (!_ctx.IsActive)
             {
                 Log.Debug("Cancel order requested but not active");
@@ -118,11 +116,11 @@ class BfxTransaction : IDisposable
             BitFlyerResponse resp;
             if (!_ctx.HasChildren)
             {
-                resp = await _client.CancelChildOrderAsync(_ctx.ProductCode, string.Empty, _ctx.OrderAcceptanceId, cts?.Token ?? CancellationToken.None);
+                resp = await _app.Client.CancelChildOrderAsync(_ctx.ProductCode, string.Empty, _ctx.OrderAcceptanceId, cts?.Token ?? CancellationToken.None);
             }
             else
             {
-                resp = await _client.CancelParentOrderAsync(_ctx.ProductCode, string.Empty, _ctx.OrderAcceptanceId, cts?.Token ?? CancellationToken.None);
+                resp = await _app.Client.CancelParentOrderAsync(_ctx.ProductCode, string.Empty, _ctx.OrderAcceptanceId, cts?.Token ?? CancellationToken.None);
             }
             if (!resp.IsError)
             {

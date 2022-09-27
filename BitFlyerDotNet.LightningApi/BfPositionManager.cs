@@ -6,16 +6,16 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.Trading;
+namespace BitFlyerDotNet.LightningApi;
 
-class BfxPositionManager
+class BfPositionManager
 {
     public string ProductCode { get; private set; }
     public decimal TotalSize => Math.Abs(_q.Sum(e => e.CurrentSize));
 
     ConcurrentQueue<BfPositionContext> _q = new ConcurrentQueue<BfPositionContext>();
 
-    public BfxPositionManager(BfPosition[] positions)
+    public BfPositionManager(BfPosition[] positions)
     {
         ProductCode = BfProductCode.FX_BTC_JPY;
         positions.ForEach(e => _q.Enqueue(new BfPositionContext(e)));
