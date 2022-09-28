@@ -38,6 +38,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BitFlyerDotNet.DataSource\BitFlyerDotNet.DataSource.LiteDB\BitFlyerDotNet.DataSource.LiteDB.csproj" />
     <ProjectReference Include="..\BitFlyerDotNet.LightningApi\BitFlyerDotNet.LightningApi.csproj" />
   </ItemGroup>
 

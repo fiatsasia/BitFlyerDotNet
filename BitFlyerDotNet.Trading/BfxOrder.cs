@@ -28,7 +28,7 @@ public class BfxOrder
 
     BfxOrder[] _children;
 
-    internal BfxOrder(BfOrderContext ctx)
+    internal BfxOrder(BdOrderContext ctx)
     {
         ProductCode = ctx.ProductCode;
 
@@ -45,8 +45,8 @@ public class BfxOrder
 
             case BfOrderType.Simple:
                 SetCommonPart(ctx);
-                SetIndividualPart(ctx.GetChildren()[0]);
-                OrderType = ctx.GetChildren()[0].OrderType;
+                SetIndividualPart(ctx.GetChild(0));
+                OrderType = ctx.GetChild(0).OrderType;
                 break;
 
             case BfOrderType.IFD:
@@ -59,16 +59,16 @@ public class BfxOrder
         _children = new BfxOrder[ctx.OrderType.GetChildCount()];
         for (int i = 0; i < _children.Length; i++)
         {
-            _children[i] = new(ctx.GetChildren()[i]);
+            _children[i] = new(ctx.GetChild(i));
         }
     }
 
-    internal void ReplaceChild(int childIndex, BfOrderContext child)
+    internal void ReplaceChild(int childIndex, BdOrderContext child)
     {
         _children[childIndex] = new(child);
     }
 
-    void SetCommonPart(BfOrderContext os)
+    void SetCommonPart(BdOrderContext os)
     {
         OrderType = os.OrderType;
         OrderAcceptanceId = os.OrderAcceptanceId;
@@ -78,7 +78,7 @@ public class BfxOrder
         OrderState = os.OrderState;
     }
 
-    void SetIndividualPart(BfOrderContext os)
+    void SetIndividualPart(BdOrderContext os)
     {
         Side = os.Side;
         OrderSize = os.OrderSize;

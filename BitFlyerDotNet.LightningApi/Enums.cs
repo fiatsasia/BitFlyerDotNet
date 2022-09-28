@@ -44,45 +44,31 @@ public static class BfProductCode
     public const string BTC_USD = "BTC_USD";
     public const string BTC_EUR = "BTC_EUR";
 
-    static Dictionary<string, int> _priceDecimals = new()
+    static Dictionary<string, (int priceDecimal, decimal minimumOrderSize, string format)> _specs = new()
     {
-        { BTC_JPY, 0 },
-        { XRP_JPY, 0 },
-        { ETH_JPY, 0 },
-        { XLM_JPY, 0 },
-        { MONA_JPY, 0 },
-        { ETH_BTC, 5 },
-        { BCH_BTC, 5 },
-        { FX_BTC_JPY, 0 },
-        { BTCJPY_MAT1WK, 0 },
-        { BTCJPY_MAT2WK, 0 },
-        { BTCJPY_MAT3M, 0 },
-        { BTC_USD, 2 },
-        { BTC_EUR, 2 },
+        { BTC_JPY,      (0, 0.001m, "F0") },
+        { XRP_JPY,      (0, 0.001m, "F0") },
+        { ETH_JPY,      (0, 0.001m, "F0") },
+        { XLM_JPY,      (0, 0.001m, "F0") },
+        { MONA_JPY,     (0, 0.001m, "F0") },
+        { ETH_BTC,      (5, 0.01m,  "F5") },
+        { BCH_BTC,      (5, 0.01m,  "F5") },
+        { FX_BTC_JPY,   (0, 0.01m,  "F0") },
+        { BTCJPY_MAT1WK,(0, 0.001m, "F0") },
+        { BTCJPY_MAT2WK,(0, 0.001m, "F0") },
+        { BTCJPY_MAT3M, (0, 0.001m, "F0") },
+        { BTC_USD,      (2, 0.001m, "F2") },
+        { BTC_EUR,      (2, 0.001m, "F2") },
     };
 
     static BfProductCode()
     {
     }
 
-    public static decimal GetMinimumOrderSize(string productCode)
-    {
-        switch (productCode)
-        {
-            case FX_BTC_JPY:
-            case ETH_BTC:
-            case BCH_BTC:
-                return 0.01m;
-
-            default:
-                return 0.001m;
-        }
-    }
-
-    public static int GetPriceDecimals(string productCode) => _priceDecimals[productCode];
-
-    public static decimal RoundPrice(string productCode, decimal price)
-        => Math.Round(price, GetPriceDecimals(productCode));
+    public static int GetPriceDecimals(string productCode) => _specs[productCode].priceDecimal;
+    public static decimal GetMinimumOrderSize(string productCode) => _specs[productCode].minimumOrderSize;
+    public static decimal RoundPrice(string productCode, decimal price) => Math.Round(price, GetPriceDecimals(productCode));
+    public static decimal FixSizeDecimalPoint(string productCode, decimal price) => decimal.Parse(price.ToString(_specs[productCode].format));
 }
 
 public enum BfMarketType
@@ -192,6 +178,7 @@ public enum BfTransactionStatus
 /// </summary>
 public enum BfOrderType
 {
+    Unknown,
     [EnumMember(Value = "LIMIT")]
     Limit,
     [EnumMember(Value = "MARKET")]

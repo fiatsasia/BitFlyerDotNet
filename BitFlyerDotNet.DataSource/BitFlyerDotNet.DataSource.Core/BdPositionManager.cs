@@ -6,19 +6,19 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.LightningApi;
+namespace BitFlyerDotNet.DataSource;
 
-class BfPositionManager
+class BdPositionManager
 {
     public string ProductCode { get; private set; }
     public decimal TotalSize => Math.Abs(_q.Sum(e => e.CurrentSize));
 
-    ConcurrentQueue<BfPositionContext> _q = new ConcurrentQueue<BfPositionContext>();
+    ConcurrentQueue<BdPositionContext> _q = new ConcurrentQueue<BdPositionContext>();
 
-    public BfPositionManager(BfPosition[] positions)
+    public BdPositionManager(BfPosition[] positions)
     {
         ProductCode = BfProductCode.FX_BTC_JPY;
-        positions.ForEach(e => _q.Enqueue(new BfPositionContext(e)));
+        positions.ForEach(e => _q.Enqueue(new BdPositionContext(e)));
     }
 
     public IEnumerable<BfxPosition> GetActivePositions()
@@ -34,17 +34,17 @@ class BfPositionManager
         }
 
         var executedSize = e.Side == BfTradeSide.Buy ? e.Size.Value : -e.Size.Value;
-        BfPositionContext ctx;
+        BdPositionContext ctx;
         if (!_q.TryPeek(out ctx) || Math.Sign(ctx.OpenSize) == Math.Sign(executedSize)) // empty or same side
         {
-            ctx = new BfPositionContext(e, e.Size.Value);
+            ctx = new BdPositionContext(e, e.Size.Value);
             _q.Enqueue(ctx);
             return new BfxPosition[] { new BfxPosition(ctx) };
         }
 
         // Process to another side
         var closeSize = executedSize;
-        var closedPos = new List<BfPositionContext>();
+        var closedPos = new List<BdPositionContext>();
         while (_q.TryPeek(out ctx) && Math.Abs(closeSize) > 0m)
         {
             if (Math.Abs(closeSize) >= Math.Abs(ctx.CurrentSize))
@@ -68,7 +68,7 @@ class BfPositionManager
 
         if (closeSize > 0m)
         {
-            ctx = new BfPositionContext(e, Math.Abs(closeSize));
+            ctx = new BdPositionContext(e, Math.Abs(closeSize));
             _q.Enqueue(ctx);
             result.Add(new BfxPosition(ctx));
         }

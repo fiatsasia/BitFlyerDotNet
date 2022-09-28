@@ -6,7 +6,7 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.LightningApi;
+namespace BitFlyerDotNet.DataSource;
 
 public class BfxPosition
 {
@@ -20,7 +20,7 @@ public class BfxPosition
     public decimal SwapForDifference { get; }
     public decimal SwapPointAccumulate { get; }
 
-    internal BfxPosition(BfPositionContext pos, BfChildOrderEvent? ev = default)
+    internal BfxPosition(BdPositionContext pos, BfChildOrderEvent? ev = default)
     {
         OpenTime = pos.Time;
         CloseTime = ev?.EventDate;

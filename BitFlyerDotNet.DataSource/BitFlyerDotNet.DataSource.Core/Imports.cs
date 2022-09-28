@@ -18,7 +18,9 @@ global using System.Reactive.Linq;
 global using System.Reactive.Threading.Tasks;
 global using System.Reactive.Disposables;
 
-global using LiteDB;
+global using Newtonsoft.Json;
+global using Newtonsoft.Json.Converters;
+
 
 global using BitFlyerDotNet.LightningApi;
 

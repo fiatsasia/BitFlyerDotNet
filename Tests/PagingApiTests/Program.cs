@@ -4,8 +4,6 @@ using BitFlyerDotNet.LightningApi;
 using Newtonsoft.Json;
 using System.Xml.Linq;
 
-using static System.Formats.Asn1.AsnWriter;
-
 var properties = XDocument.Load(args[0]).Element("RunSettings").Element("TestRunParameters").Elements("Parameter").ToDictionary(e => e.Attribute("name").Value, e => e.Attribute("value").Value);
 var key = properties["ApiKey"];
 var secret = properties["ApiSecret"];

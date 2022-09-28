@@ -20,4 +20,11 @@ public static class IBfOrderExtensions
         BfChildOrder childOrder => childOrder.ProductCode,
         _ => throw new ArgumentException()
     };
+
+    public static BfOrderType GetOrderType(this IBfOrder order) => order switch
+    {
+        BfParentOrder parentOrder => parentOrder.OrderMethod != BfOrderType.Simple ? parentOrder.OrderMethod : parentOrder.Parameters[0].ConditionType,
+        BfChildOrder childOrder => childOrder.ChildOrderType,
+        _ => throw new ArgumentException()
+    };
 }

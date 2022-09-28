@@ -6,9 +6,10 @@
 // Fiats Inc. Nakano, Tokyo, Japan
 //
 
-namespace BitFlyerDotNet.LightningApi;
+namespace BitFlyerDotNet.DataSource;
 
-public class BfOrderContext
+[JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+public class BdOrderContext
 {
     #region Index properties
     public string ProductCode { get; }
@@ -16,13 +17,16 @@ public class BfOrderContext
     public string? OrderId { get; private set; }
     public DateTime? OrderDate { get; private set; }
     public DateTime? ExpireDate { get; private set; }
+    [JsonConverter(typeof(StringEnumConverter))]
     public BfOrderState? OrderState { get; private set; }
     public long? Id { get; protected set; }
     #endregion
 
     #region Common properties
+    [JsonConverter(typeof(StringEnumConverter))]
     public BfOrderType OrderType { get; private set; }
     public int? MinuteToExpire { get; private set; }
+    [JsonConverter(typeof(StringEnumConverter))]
     public BfTimeInForce? TimeInForce { get; private set; }
     public decimal? AveragePrice { get; protected set; }
     public decimal? OutstandingSize { get; protected set; }
@@ -34,143 +38,183 @@ public class BfOrderContext
     #endregion
 
     #region Child order only properties
+    [JsonConverter(typeof(StringEnumConverter))]
     public BfTradeSide? Side { get; private set; }
     public decimal? OrderSize { get; private set; }
     public decimal? OrderPrice { get; private set; }
     public decimal? TriggerPrice { get; private set; }
     public decimal? TrailOffset { get; private set; }
-    internal List<BfExecutionContext> Executions { get; init; } = new();
-    public virtual IReadOnlyList<BfExecutionContext> GetExecutions() => Executions;
-    internal BfOrderContext Parent { get; private set; }
+    internal List<BdExecutionContext> Executions { get; init; } = new();
+    public virtual IReadOnlyList<BdExecutionContext> GetExecutions() => Executions;
+    internal BdOrderContext Parent { get; private set; }
+    public virtual void SetParent(BdOrderContext parent) => Parent = parent;
     public bool HasParent => Parent != null;
     #endregion
 
     #region Parent order ibly properties
-    static readonly List<BfOrderContext> EmptyChildren = new();
-    internal List<BfOrderContext> Children { get; private set; }
-    public virtual IReadOnlyList<BfOrderContext> GetChildren() => Children != default ? Children : EmptyChildren;
+    static readonly List<BdOrderContext> EmptyChildren = new();
+    [JsonProperty]
+    internal List<BdOrderContext> Children { get; private set; }
+    public virtual IReadOnlyList<BdOrderContext> GetChildren() => Children != default ? Children : EmptyChildren;
+    public virtual BdOrderContext GetChild(int childIndex) => Children != default ? Children[childIndex] : default;
+    public virtual void SetChild(int childIndex, BdOrderContext child) => Children[childIndex] = child;
     #endregion
 
-    public bool HasChildren => Children.Count > 0;
+    [JsonIgnore]
+    public bool HasChildren => Children != default;
+    [JsonIgnore]
     public bool IsActive => !string.IsNullOrEmpty(OrderAcceptanceId) && OrderState.HasValue && OrderState.Value == BfOrderState.Active;
 
-    BfPrivateDataSource _ds;
+    BdPrivateDataSource _ds;
 
-    public BfOrderContext()
+    public BdOrderContext()
     {
     }
 
-    public BfOrderContext(BfPrivateDataSource ds, string productCode)
+    public BdOrderContext(BdPrivateDataSource ds, string productCode)
     {
         _ds = ds;
         ProductCode = productCode;
     }
 
+    public BdOrderContext(BdPrivateDataSource ds, string productCode, BfOrderType orderType)
+    {
+        _ds = ds;
+        ProductCode = productCode;
+        OrderType = orderType;
+    }
+
     void ResizeChildren(int count)
     {
-        if (Children.Count >= count)
+        if (Children == default)
+        {
+            Children = new();
+        }
+        else if (Children.Count >= count)
         {
             return;
         }
 
         while (Children.Count < count)
         {
-            Children.Add(new BfOrderContext(_ds, ProductCode));
+            var child = _ds.CreateOrderContext(ProductCode);
+            child.SetParent(this);
+            Children.Add(child);
         }
     }
 
-    public virtual BfOrderContext ContextUpdated()
+    public virtual BdOrderContext ContextUpdated()
     {
         return _ds.Upsert(this);
     }
 
-    public BfOrderContext OrderAccepted(string acceptanceId)
+    public BdOrderContext OrderAccepted(string acceptanceId)
     {
         OrderAcceptanceId = acceptanceId;
         return this;
     }
 
-    public BfOrderContext Update(IBfOrderEvent e) => e switch
+    public BdOrderContext Update(IBfOrderEvent e) => e switch
     {
         BfChildOrderEvent coe => Update(coe),
         BfParentOrderEvent poe => Update(poe),
         _ => throw new ArgumentException()
     };
 
-    BfOrderContext Update(BfParentOrderDetailStatusParameter order)
+    BfOrderType UpdateOrderType(BfOrderType current, BfOrderType update)
     {
-        OrderType = order.ConditionType;
+        switch (current)
+        {
+            case BfOrderType.Stop:
+            case BfOrderType.StopLimit:
+            case BfOrderType.Trail:
+                return current;
+
+            default:
+                return update;
+        }
+    }
+
+    decimal? UpdateDecimalNullable(decimal value) => value > 0m ? value : null;
+    decimal? UpdateDecimalNullable(decimal? value) => (value.HasValue && value.Value > 0m) ? value.Value : null;
+    decimal? UpdatePrice(decimal price) => price == 0m ? null : BfProductCode.FixSizeDecimalPoint(ProductCode, price);
+    decimal? UpdatePrice(decimal? price) => (price.HasValue && price.Value == 0m) ? null : BfProductCode.FixSizeDecimalPoint(ProductCode, price.Value);
+
+
+    BdOrderContext Update(BfParentOrderDetailStatusParameter order)
+    {
+        OrderType = UpdateOrderType(OrderType, order.ConditionType);
         Side = order.Side;
         OrderSize = order.Size;
         if (OrderType == BfOrderType.Limit || OrderType == BfOrderType.StopLimit)
         {
-            OrderPrice = order.Price;
+            OrderPrice = UpdatePrice(order.Price);
         }
         if (OrderType == BfOrderType.Stop || OrderType == BfOrderType.StopLimit)
         {
-            TriggerPrice = order.TriggerPrice;
+            TriggerPrice = UpdatePrice(order.TriggerPrice);
         }
         if (OrderType == BfOrderType.Trail)
         {
-            TrailOffset = order.Offset;
+            TrailOffset = UpdatePrice(order.Offset);
         }
         return this;
     }
 
-    public BfOrderContext Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
+    public BdOrderContext Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
     {
         OrderAcceptanceId = status.ParentOrderAcceptanceId;
         Id = status.Id;
         OrderId = status.ParentOrderId;
-        OrderType = status.ParentOrderType;
+        OrderType = UpdateOrderType(OrderType, status.ParentOrderType);
         OrderState = status.ParentOrderState;
         ExpireDate = status.ExpireDate;
         OrderDate = status.ParentOrderDate;
-        TotalCommission = status.TotalCommission;
+        TotalCommission = UpdateDecimalNullable(status.TotalCommission);
         TimeInForce = detail.TimeInForce;
 
         ResizeChildren(detail.Parameters.Length);
         for (int index = 0; index < detail.Parameters.Length; index++)
         {
-            Children[index].Update(detail.Parameters[index]);
+            GetChild(index).Update(detail.Parameters[index]);
         }
 
         return this;
     }
 
-    BfOrderContext Update(BfParentOrderParameter order)
+    BdOrderContext Update(BfParentOrderParameter order)
     {
-        OrderType = order.ConditionType;
+        OrderType = UpdateOrderType(OrderType, order.ConditionType);
         Side = order.Side;
-        OrderPrice = order.Price;
+        OrderPrice = UpdatePrice(order.Price);
         OrderSize = order.Size;
-        TriggerPrice = order.TriggerPrice;
-        TrailOffset = order.Offset;
+        TriggerPrice = UpdatePrice(order.TriggerPrice);
+        TrailOffset = UpdatePrice(order.Offset);
         return this;
     }
 
-    public BfOrderContext Update(IBfOrder order) => order switch
+    public BdOrderContext Update(IBfOrder order) => order switch
     {
         BfChildOrder childOrder => Update(childOrder),
         BfParentOrder parentOrder => Update(parentOrder),
         _ => throw new ArgumentException()
     };
 
-    public BfOrderContext Update(BfParentOrder order)
+    public BdOrderContext Update(BfParentOrder order)
     {
-        OrderType = order.OrderMethod;
+        OrderType = UpdateOrderType(OrderType, order.OrderMethod);
         MinuteToExpire = order.MinuteToExpire;
         TimeInForce = order.TimeInForce;
 
         ResizeChildren(order.Parameters.Count);
         for (int index = 0; index < order.Parameters.Count; index++)
         {
-            Children[index].Update(order.Parameters[index]);
+            GetChild(index).Update(order.Parameters[index]);
         }
         return this;
     }
 
-    BfOrderContext Update(BfParentOrderEvent e)
+    BdOrderContext Update(BfParentOrderEvent e)
     {
         OrderId = e.ParentOrderId;
         OrderAcceptanceId = e.ParentOrderAcceptanceId;
@@ -179,7 +223,7 @@ public class BfOrderContext
         {
             case BfOrderEventType.Order:
                 OrderDate = e.EventDate;
-                OrderType = e.ParentOrderType.Value;
+                OrderType = UpdateOrderType(OrderType, e.ParentOrderType.Value);
                 ExpireDate = e.ExpireDate;
                 OrderState = BfOrderState.Active;
                 ResizeChildren(OrderType.GetChildCount());
@@ -198,12 +242,12 @@ public class BfOrderContext
                 {
                     var index = e.ChildOrderIndex.Value - 1;
                     ResizeChildren(index + 1);
-                    var child = Children[index];
+                    var child = GetChild(index);
                     child.OrderDate = e.EventDate;
-                    child.OrderType = e.ChildOrderType.Value;
+                    child.OrderType = UpdateOrderType(child.OrderType, e.ChildOrderType.Value);
                     child.OrderAcceptanceId = e.ChildOrderAcceptanceId;
                     child.Side = e.Side;
-                    child.OrderPrice = e.Price > decimal.Zero ? e.Price : null;
+                    child.OrderPrice = UpdatePrice(e.Price);
                     child.OrderSize = e.Size;
                     child.ExpireDate = e.ExpireDate;
                     child.OrderState = BfOrderState.Active;
@@ -214,10 +258,10 @@ public class BfOrderContext
                 {
                     var index = e.ChildOrderIndex.Value - 1;
                     ResizeChildren(index + 1);
-                    var child = Children[index];
+                    var child = GetChild(index);
                     child.OrderAcceptanceId = e.ChildOrderAcceptanceId;
                     child.OrderState = BfOrderState.Completed;
-                    if (Children.All(c => c.OrderState == BfOrderState.Completed))
+                    if (GetChildren().All(c => c.OrderState == BfOrderState.Completed))
                     {
                         OrderState = BfOrderState.Completed;
                     }
@@ -235,11 +279,11 @@ public class BfOrderContext
         return this;
     }
 
-    public BfOrderContext Update(BfChildOrder order)
+    public BdOrderContext Update(BfChildOrder order)
     {
-        OrderType = order.ChildOrderType;
+        OrderType = UpdateOrderType(OrderType, order.ChildOrderType);
         Side = order.Side;
-        OrderPrice = order.Price;
+        OrderPrice = UpdatePrice(order.Price);
         OrderSize = order.Size;
         MinuteToExpire = order.MinuteToExpire;
         TimeInForce = order.TimeInForce;
@@ -247,28 +291,28 @@ public class BfOrderContext
         return this;
     }
 
-    public BfOrderContext Update(BfChildOrderStatus status)
+    public BdOrderContext Update(BfChildOrderStatus status)
     {
         OrderAcceptanceId = status.ChildOrderAcceptanceId;
         Id = status.Id;
         OrderId = status.ChildOrderId;
         Side = status.Side;
-        OrderType = status.ChildOrderType;
-        OrderPrice = status.Price > 0m ? status.Price : default;
-        AveragePrice = status.AveragePrice > 0m ? status.AveragePrice : default;
-        OrderSize = status.Size > 0m ? status.Size : default;
+        OrderType = UpdateOrderType(OrderType, status.ChildOrderType);
+        OrderPrice = UpdatePrice(status.Price);
+        AveragePrice = UpdatePrice(status.AveragePrice);
+        OrderSize = status.Size;
         OrderState = status.ChildOrderState;
         ExpireDate = status.ExpireDate;
         OrderDate = status.ChildOrderDate;
-        OutstandingSize = status.OutstandingSize > 0m ? status.OutstandingSize : default;
-        CancelSize = status.CancelSize > 0m ? status.CancelSize : default;
-        ExecutedSize = status.ExecutedSize > 0m ? status.ExecutedSize : default;
-        TotalCommission = status.TotalCommission > 0m ? status.TotalCommission : default;
+        OutstandingSize = UpdateDecimalNullable(status.OutstandingSize);
+        CancelSize = UpdateDecimalNullable(status.CancelSize);
+        ExecutedSize = UpdateDecimalNullable(status.ExecutedSize);
+        TotalCommission = UpdateDecimalNullable(status.TotalCommission);
 
         return this;
     }
 
-    public BfOrderContext Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+    public BdOrderContext Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
     {
         Update(status);
         if (execs != default)
@@ -310,23 +354,44 @@ public class BfOrderContext
         return false;
     }
 
-    public BfOrderContext UpdateChild(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+    public BdOrderContext UpdateChild(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
     {
-        var index = Children.FindIndex(e => e.OrderAcceptanceId == status.ChildOrderAcceptanceId);
+        var children = GetChildren().ToList(); // IReadOnlyList<T> doesn't have FindIndex method. See https://github.com/dotnet/runtime/issues/24227
+        var index = children.FindIndex(e => e.OrderAcceptanceId == status.ChildOrderAcceptanceId);
         if (index == -1)
         {
-            index = Children.FindIndex(e => (CompareChildOrderType(e.OrderType, status.ChildOrderType) && e.Side == status.Side && e.OrderSize == status.Size && e.OrderPrice == status.Price));
+            index = children.FindIndex(e => (CompareChildOrderType(e.OrderType, status.ChildOrderType) && e.Side == status.Side && e.OrderSize == status.Size && e.OrderPrice == status.Price));
         }
 
         if (index >= 0)
         {
-            Children[index].Update(status, execs);
+            children[index].Update(status, execs);
         }
 
         return this;
     }
 
-    BfOrderContext Update(BfChildOrderEvent ev)
+    public BdOrderContext UpdateChild(BdOrderContext child)
+    {
+        var children = GetChildren().ToList(); // IReadOnlyList<T> doesn't have FindIndex method. See https://github.com/dotnet/runtime/issues/24227
+        var index = children.FindIndex(e => e.OrderAcceptanceId == child.OrderAcceptanceId);
+        if (index == -1)
+        {
+            index = children.FindIndex(e => (CompareChildOrderType(e.OrderType, child.OrderType) && e.Side == child.Side && e.OrderSize == child.OrderSize && e.OrderPrice == child.OrderPrice));
+        }
+
+        if (index >= 0 && !Object.ReferenceEquals(GetChild(index), child))
+        {
+            var tempChild = GetChild(index);
+            child.OrderType = UpdateOrderType(tempChild.OrderType, child.OrderType);
+            SetChild(index, child);
+            child.SetParent(this);
+        }
+
+        return this;
+    }
+
+    BdOrderContext Update(BfChildOrderEvent ev)
     {
         OrderAcceptanceId = ev.ChildOrderAcceptanceId;
         OrderId = ev.ChildOrderId;
@@ -335,7 +400,7 @@ public class BfOrderContext
         {
             case BfOrderEventType.Order:
                 OrderDate = ev.EventDate;
-                OrderType = ev.ChildOrderType.Value;
+                OrderType = UpdateOrderType(OrderType, ev.ChildOrderType.Value);
                 OrderPrice = ev.Price;
                 Side = ev.Side;
                 OrderSize = ev.Size;

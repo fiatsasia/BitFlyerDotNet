@@ -49,7 +49,7 @@ class BfxMarket
     public async Task<string> PlaceOrderAsync<TOrder>(TOrder order, CancellationToken ct) where TOrder : IBfOrder
     {
         // Sometimes child order event arrives before send order process completion.
-        var tx = new BfxTransaction(_app, _app.DataSource.CreateOrderContext(_productCode).Update(order));
+        var tx = new BfxTransaction(_app, _app.DataSource.CreateOrderContext(_productCode, order.GetOrderType()).Update(order));
         tx.OrderChanged += OnOrderChanged;
         var acceptanceId = await tx.PlaceOrderAsync(order, ct);
         if (string.IsNullOrEmpty(acceptanceId))

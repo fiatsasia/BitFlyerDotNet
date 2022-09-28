@@ -8,19 +8,17 @@
 
 global using System;
 global using System.Linq;
+global using System.IO;
 global using System.Collections.Generic;
 global using System.Collections.Concurrent;
-global using System.Collections.ObjectModel;
 global using System.Threading;
 global using System.Threading.Tasks;
-global using System.IO;
-global using System.Diagnostics;
+global using System.Runtime.Serialization;
+global using System.Reactive.Linq;
+global using System.Reactive.Threading.Tasks;
 global using System.Reactive.Disposables;
-global using Newtonsoft.Json;
-global using Newtonsoft.Json.Linq;
-global using Newtonsoft.Json.Serialization;
+
 global using BitFlyerDotNet.LightningApi;
-global using BitFlyerDotNet.DataSource;
 
 #if !NET5_0_OR_GREATER
 // Licensed to the .NET Foundation under one or more agreements.
