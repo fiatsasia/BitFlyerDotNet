@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.DataSource;
 
-public class BdPositionContext
+public class BfPositionContext
 {
     public string ChildOrderAcceptanceId { get; }
     public int ExecutionIndex { get; }
@@ -25,12 +25,12 @@ public class BdPositionContext
     decimal _sfd;
     public decimal SwapForDifference => _sfd * (CurrentSize / OpenSize);
 
-    private BdPositionContext()
+    private BfPositionContext()
     {
         ChildOrderAcceptanceId = string.Empty;
     }
 
-    public BdPositionContext(BfPosition pos)
+    public BfPositionContext(BfPosition pos)
     {
         ChildOrderAcceptanceId = string.Empty;
         Time = pos.OpenDate;
@@ -41,7 +41,7 @@ public class BdPositionContext
         _sfd = pos.SwapForDifference;
     }
 
-    public BdPositionContext(BfChildOrderEvent e, decimal size)
+    public BfPositionContext(BfChildOrderEvent e, decimal size)
     {
         if (e.EventType != BfOrderEventType.Execution)
         {
@@ -58,9 +58,9 @@ public class BdPositionContext
 #pragma warning restore CS8629
     }
 
-    public BdPositionContext Split(decimal splitSize)
+    public BfPositionContext Split(decimal splitSize)
     {
-        var newPos = new BdPositionContext
+        var newPos = new BfPositionContext
         {
             Time = this.Time,
             Price = this.Price,

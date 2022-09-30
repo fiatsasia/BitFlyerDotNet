@@ -328,3 +328,4 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+/BitFlyerDotNet.DataSource/BitFlyerDotNet.DataSource.Core/Contexts/BfxOrderContext.cs

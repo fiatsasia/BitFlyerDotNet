@@ -11,7 +11,7 @@ static char GetCh(bool echo = true) { var ch = Char.ToUpper(Console.ReadKey(true
 const char ESCAPE = (char)0x1b;
 
 using var client = new BitFlyerClient(key, secret);
-using var ds = new BdPrivateDataSource(client);
+using var ds = new BfPrivateDataSource(client);
 
 while (true)
 {

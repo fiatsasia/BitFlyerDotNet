@@ -21,12 +21,12 @@ public class BfxOrderChangedEventArgs : EventArgs
         Order = order;
     }
 
-    internal BfxOrderChangedEventArgs(BfxOrderEventType eventType, BdOrderContext status)
+    internal BfxOrderChangedEventArgs(BfxOrderEventType eventType, BfOrderContextBase status)
         : this(eventType, new BfxOrder(status))
     {
     }
 
-    internal BfxOrderChangedEventArgs(IBfOrderEvent e, BdOrderContext status)
+    internal BfxOrderChangedEventArgs(IBfOrderEvent e, BfOrderContextBase status)
         : this(
             e switch
             {

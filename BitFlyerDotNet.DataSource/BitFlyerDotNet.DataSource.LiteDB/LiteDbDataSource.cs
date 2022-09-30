@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.DataSource;
 
-public class LiteDbDataSource : BdPrivateDataSource
+public class LiteDbDataSource : BfPrivateDataSource
 {
     LiteDatabase _db;
     ILiteCollection<DbOrderContext> _colOrders;
@@ -31,17 +31,17 @@ public class LiteDbDataSource : BdPrivateDataSource
         _db.Dispose();
     }
 
-    public override BdOrderContext CreateOrderContext(string productCode)
+    public override BfOrderContextBase CreateOrderContext(string productCode)
     {
         return new DbOrderContext(this, productCode);
     }
 
-    public override BdOrderContext GetOrCreateOrderContext(string productCode, string acceptanceId)
+    public override BfOrderContextBase GetOrCreateOrderContext(string productCode, string acceptanceId)
     {
         return TryGetOnCache(productCode, acceptanceId, out var ctx) ? ctx : new DbOrderContext(this, productCode);
     }
 
-    public override bool TryGetOnCache(string productCode, string orderId, out BdOrderContext ctx)
+    public override bool TryGetOnCache(string productCode, string orderId, out BfOrderContextBase ctx)
     {
         var dbctx = _colOrders.Query().Where($"ANY({nameof(DbOrderContext.Children)}[@.{nameof(DbOrderContext.OrderId)} = '{orderId}']) = true");
         if (dbctx.Count() == 0)
@@ -54,7 +54,7 @@ public class LiteDbDataSource : BdPrivateDataSource
         return true;
     }
 
-    public override IAsyncEnumerable<BdOrderContext> GetRecentOrderContextsAsync(string productCode, TimeSpan span)
+    public override IAsyncEnumerable<BfOrderContextBase> GetRecentOrderContextsAsync(string productCode, TimeSpan span)
     {
         throw new NotSupportedException();
     }

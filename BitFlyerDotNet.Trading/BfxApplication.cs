@@ -26,7 +26,7 @@ public class BfxApplication : IDisposable, IBfApplication
     RealtimeSourceFactory _rts;
     Dictionary<string, BfxMarket> _markets = new();
     Dictionary<string, BfxMarketDataSource> _mds = new();
-    public BdPrivateDataSource DataSource { get; set; }
+    public BfPrivateDataSource DataSource { get; set; }
     #endregion Properties and fields
 
     #region Initialize and Finalize

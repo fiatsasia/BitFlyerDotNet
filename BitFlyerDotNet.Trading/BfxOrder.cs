@@ -28,7 +28,7 @@ public class BfxOrder
 
     BfxOrder[] _children;
 
-    internal BfxOrder(BdOrderContext ctx)
+    internal BfxOrder(BfOrderContextBase ctx)
     {
         ProductCode = ctx.ProductCode;
 
@@ -63,12 +63,12 @@ public class BfxOrder
         }
     }
 
-    internal void ReplaceChild(int childIndex, BdOrderContext child)
+    internal void ReplaceChild(int childIndex, BfOrderContextBase child)
     {
         _children[childIndex] = new(child);
     }
 
-    void SetCommonPart(BdOrderContext os)
+    void SetCommonPart(BfOrderContextBase os)
     {
         OrderType = os.OrderType;
         OrderAcceptanceId = os.OrderAcceptanceId;
@@ -78,7 +78,7 @@ public class BfxOrder
         OrderState = os.OrderState;
     }
 
-    void SetIndividualPart(BdOrderContext os)
+    void SetIndividualPart(BfOrderContextBase os)
     {
         Side = os.Side;
         OrderSize = os.OrderSize;

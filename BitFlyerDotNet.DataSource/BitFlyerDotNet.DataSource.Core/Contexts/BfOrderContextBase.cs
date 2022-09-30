@@ -9,7 +9,7 @@
 namespace BitFlyerDotNet.DataSource;
 
 [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
-public class BdOrderContext
+public abstract class BfOrderContextBase
 {
     #region Index properties
     public string ProductCode { get; }
@@ -44,77 +44,50 @@ public class BdOrderContext
     public decimal? OrderPrice { get; private set; }
     public decimal? TriggerPrice { get; private set; }
     public decimal? TrailOffset { get; private set; }
-    internal List<BdExecutionContext> Executions { get; init; } = new();
-    public virtual IReadOnlyList<BdExecutionContext> GetExecutions() => Executions;
-    internal BdOrderContext Parent { get; private set; }
-    public virtual void SetParent(BdOrderContext parent) => Parent = parent;
+    internal List<BfExecutionContext> Executions { get; init; } = new();
+    public virtual IReadOnlyList<BfExecutionContext> GetExecutions() => Executions;
+    internal BfOrderContextBase Parent { get; private set; }
+    public virtual void SetParent(BfOrderContextBase parent) => Parent = parent;
     public bool HasParent => Parent != null;
     #endregion
 
     #region Parent order ibly properties
-    static readonly List<BdOrderContext> EmptyChildren = new();
-    [JsonProperty]
-    internal List<BdOrderContext> Children { get; private set; }
-    public virtual IReadOnlyList<BdOrderContext> GetChildren() => Children != default ? Children : EmptyChildren;
-    public virtual BdOrderContext GetChild(int childIndex) => Children != default ? Children[childIndex] : default;
-    public virtual void SetChild(int childIndex, BdOrderContext child) => Children[childIndex] = child;
+    public abstract BfOrderContextBase GetChild(int childIndex);
+    public abstract void SetChild(int childIndex, BfOrderContextBase child);
+    protected abstract void SetChildrenSize(int count);
+    public abstract int ChildCount();
+    public virtual IEnumerable<BfOrderContextBase> GetChildren() { for (int i = 0; i < ChildCount(); i++) yield return GetChild(i); }
     #endregion
 
     [JsonIgnore]
-    public bool HasChildren => Children != default;
+    public bool HasChildren => ChildCount() > 0;
     [JsonIgnore]
     public bool IsActive => !string.IsNullOrEmpty(OrderAcceptanceId) && OrderState.HasValue && OrderState.Value == BfOrderState.Active;
 
-    BdPrivateDataSource _ds;
-
-    public BdOrderContext()
+    public BfOrderContextBase()
     {
     }
 
-    public BdOrderContext(BdPrivateDataSource ds, string productCode)
+    public BfOrderContextBase(string productCode)
     {
-        _ds = ds;
         ProductCode = productCode;
     }
 
-    public BdOrderContext(BdPrivateDataSource ds, string productCode, BfOrderType orderType)
+    public BfOrderContextBase(string productCode, BfOrderType orderType)
     {
-        _ds = ds;
         ProductCode = productCode;
         OrderType = orderType;
     }
 
-    void ResizeChildren(int count)
-    {
-        if (Children == default)
-        {
-            Children = new();
-        }
-        else if (Children.Count >= count)
-        {
-            return;
-        }
+    public abstract BfOrderContextBase ContextUpdated();
 
-        while (Children.Count < count)
-        {
-            var child = _ds.CreateOrderContext(ProductCode);
-            child.SetParent(this);
-            Children.Add(child);
-        }
-    }
-
-    public virtual BdOrderContext ContextUpdated()
-    {
-        return _ds.Upsert(this);
-    }
-
-    public BdOrderContext OrderAccepted(string acceptanceId)
+    public BfOrderContextBase OrderAccepted(string acceptanceId)
     {
         OrderAcceptanceId = acceptanceId;
         return this;
     }
 
-    public BdOrderContext Update(IBfOrderEvent e) => e switch
+    public BfOrderContextBase Update(IBfOrderEvent e) => e switch
     {
         BfChildOrderEvent coe => Update(coe),
         BfParentOrderEvent poe => Update(poe),
@@ -141,7 +114,7 @@ public class BdOrderContext
     decimal? UpdatePrice(decimal? price) => (price.HasValue && price.Value == 0m) ? null : BfProductCode.FixSizeDecimalPoint(ProductCode, price.Value);
 
 
-    BdOrderContext Update(BfParentOrderDetailStatusParameter order)
+    BfOrderContextBase Update(BfParentOrderDetailStatusParameter order)
     {
         OrderType = UpdateOrderType(OrderType, order.ConditionType);
         Side = order.Side;
@@ -161,7 +134,7 @@ public class BdOrderContext
         return this;
     }
 
-    public BdOrderContext Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
+    public BfOrderContextBase Update(BfParentOrderStatus status, BfParentOrderDetailStatus detail)
     {
         OrderAcceptanceId = status.ParentOrderAcceptanceId;
         Id = status.Id;
@@ -173,7 +146,7 @@ public class BdOrderContext
         TotalCommission = UpdateDecimalNullable(status.TotalCommission);
         TimeInForce = detail.TimeInForce;
 
-        ResizeChildren(detail.Parameters.Length);
+        SetChildrenSize(detail.Parameters.Length);
         for (int index = 0; index < detail.Parameters.Length; index++)
         {
             GetChild(index).Update(detail.Parameters[index]);
@@ -182,7 +155,7 @@ public class BdOrderContext
         return this;
     }
 
-    BdOrderContext Update(BfParentOrderParameter order)
+    BfOrderContextBase Update(BfParentOrderParameter order)
     {
         OrderType = UpdateOrderType(OrderType, order.ConditionType);
         Side = order.Side;
@@ -193,20 +166,20 @@ public class BdOrderContext
         return this;
     }
 
-    public BdOrderContext Update(IBfOrder order) => order switch
+    public BfOrderContextBase Update(IBfOrder order) => order switch
     {
         BfChildOrder childOrder => Update(childOrder),
         BfParentOrder parentOrder => Update(parentOrder),
         _ => throw new ArgumentException()
     };
 
-    public BdOrderContext Update(BfParentOrder order)
+    public BfOrderContextBase Update(BfParentOrder order)
     {
         OrderType = UpdateOrderType(OrderType, order.OrderMethod);
         MinuteToExpire = order.MinuteToExpire;
         TimeInForce = order.TimeInForce;
 
-        ResizeChildren(order.Parameters.Count);
+        SetChildrenSize(order.Parameters.Count);
         for (int index = 0; index < order.Parameters.Count; index++)
         {
             GetChild(index).Update(order.Parameters[index]);
@@ -214,7 +187,7 @@ public class BdOrderContext
         return this;
     }
 
-    BdOrderContext Update(BfParentOrderEvent e)
+    BfOrderContextBase Update(BfParentOrderEvent e)
     {
         OrderId = e.ParentOrderId;
         OrderAcceptanceId = e.ParentOrderAcceptanceId;
@@ -226,7 +199,7 @@ public class BdOrderContext
                 OrderType = UpdateOrderType(OrderType, e.ParentOrderType.Value);
                 ExpireDate = e.ExpireDate;
                 OrderState = BfOrderState.Active;
-                ResizeChildren(OrderType.GetChildCount());
+                SetChildrenSize(OrderType.GetChildCount());
                 break;
 
             case BfOrderEventType.OrderFailed:
@@ -241,7 +214,7 @@ public class BdOrderContext
             case BfOrderEventType.Trigger:
                 {
                     var index = e.ChildOrderIndex.Value - 1;
-                    ResizeChildren(index + 1);
+                    SetChildrenSize(index + 1);
                     var child = GetChild(index);
                     child.OrderDate = e.EventDate;
                     child.OrderType = UpdateOrderType(child.OrderType, e.ChildOrderType.Value);
@@ -257,7 +230,7 @@ public class BdOrderContext
             case BfOrderEventType.Complete: // Complete child
                 {
                     var index = e.ChildOrderIndex.Value - 1;
-                    ResizeChildren(index + 1);
+                    SetChildrenSize(index + 1);
                     var child = GetChild(index);
                     child.OrderAcceptanceId = e.ChildOrderAcceptanceId;
                     child.OrderState = BfOrderState.Completed;
@@ -279,7 +252,7 @@ public class BdOrderContext
         return this;
     }
 
-    public BdOrderContext Update(BfChildOrder order)
+    public BfOrderContextBase Update(BfChildOrder order)
     {
         OrderType = UpdateOrderType(OrderType, order.ChildOrderType);
         Side = order.Side;
@@ -291,7 +264,7 @@ public class BdOrderContext
         return this;
     }
 
-    public BdOrderContext Update(BfChildOrderStatus status)
+    public BfOrderContextBase Update(BfChildOrderStatus status)
     {
         OrderAcceptanceId = status.ChildOrderAcceptanceId;
         Id = status.Id;
@@ -312,7 +285,7 @@ public class BdOrderContext
         return this;
     }
 
-    public BdOrderContext Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+    public BfOrderContextBase Update(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
     {
         Update(status);
         if (execs != default)
@@ -354,7 +327,7 @@ public class BdOrderContext
         return false;
     }
 
-    public BdOrderContext UpdateChild(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
+    public BfOrderContextBase UpdateChild(BfChildOrderStatus status, IEnumerable<BfPrivateExecution> execs)
     {
         var children = GetChildren().ToList(); // IReadOnlyList<T> doesn't have FindIndex method. See https://github.com/dotnet/runtime/issues/24227
         var index = children.FindIndex(e => e.OrderAcceptanceId == status.ChildOrderAcceptanceId);
@@ -371,7 +344,7 @@ public class BdOrderContext
         return this;
     }
 
-    public BdOrderContext UpdateChild(BdOrderContext child)
+    public BfOrderContextBase UpdateChild(BfOrderContextBase child)
     {
         var children = GetChildren().ToList(); // IReadOnlyList<T> doesn't have FindIndex method. See https://github.com/dotnet/runtime/issues/24227
         var index = children.FindIndex(e => e.OrderAcceptanceId == child.OrderAcceptanceId);
@@ -391,7 +364,7 @@ public class BdOrderContext
         return this;
     }
 
-    BdOrderContext Update(BfChildOrderEvent ev)
+    BfOrderContextBase Update(BfChildOrderEvent ev)
     {
         OrderAcceptanceId = ev.ChildOrderAcceptanceId;
         OrderId = ev.ChildOrderId;

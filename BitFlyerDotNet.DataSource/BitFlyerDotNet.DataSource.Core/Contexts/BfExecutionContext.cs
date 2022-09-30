@@ -8,7 +8,7 @@
 
 namespace BitFlyerDotNet.DataSource;
 
-public class BdExecutionContext
+public class BfExecutionContext
 {
     public long Id { get; private set; }
     public DateTime Time { get; private set; }
@@ -20,11 +20,11 @@ public class BdExecutionContext
     public string OrderId { get; private set; }
     public string OrderAcceptanceId { get; private set; }
 
-    public BdExecutionContext()
+    public BfExecutionContext()
     {
     }
 
-    public BdExecutionContext Update(BfPrivateExecution exec)
+    public BfExecutionContext Update(BfPrivateExecution exec)
     {
         Id = exec.Id;
         Time = exec.ExecDate;
@@ -37,7 +37,7 @@ public class BdExecutionContext
         return this;
     }
 
-    public BdExecutionContext Update(BfChildOrderEvent e)
+    public BfExecutionContext Update(BfChildOrderEvent e)
     {
         if (e.EventType != BfOrderEventType.Execution) throw new ArgumentException();
         Id = e.ExecutionId.Value;

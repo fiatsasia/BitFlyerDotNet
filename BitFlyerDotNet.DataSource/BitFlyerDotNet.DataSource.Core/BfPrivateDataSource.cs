@@ -10,18 +10,18 @@ using System.Runtime.CompilerServices;
 
 namespace BitFlyerDotNet.DataSource;
 
-public class BdPrivateDataSource : IDisposable
+public class BfPrivateDataSource : IDisposable, IBfPrivateDataSource
 {
     BitFlyerClient _client;
-    ConcurrentDictionary<string, ConcurrentDictionary<string, BdOrderContext>> _ctxs = new();
-    BdPositionManager _positions;
+    ConcurrentDictionary<string, ConcurrentDictionary<string, BfOrderContext>> _ctxs = new();
+    BfPositionManager _positions;
 
-    public BdPrivateDataSource(IBfApplication app)
+    public BfPrivateDataSource(IBfApplication app)
     {
         _client = app.Client;
     }
 
-    public BdPrivateDataSource(BitFlyerClient client)
+    public BfPrivateDataSource(BitFlyerClient client)
     {
         _client = client;
     }
@@ -30,31 +30,35 @@ public class BdPrivateDataSource : IDisposable
     {
     }
 
-    public virtual BdOrderContext CreateOrderContext(string productCode)
+    public virtual BfOrderContextBase CreateOrderContext(string productCode)
     {
-        return new BdOrderContext(this, productCode);
+        return new BfOrderContext(this, productCode);
     }
 
-    public virtual BdOrderContext CreateOrderContext(string productCode, BfOrderType orderType)
+    public virtual BfOrderContextBase CreateOrderContext(string productCode, BfOrderType orderType)
     {
-        return new BdOrderContext(this, productCode, orderType);
+        return new BfOrderContext(this, productCode, orderType);
     }
 
-    public virtual BdOrderContext GetOrCreateOrderContext(string productCode, string acceptanceId)
+    public virtual BfOrderContextBase GetOrCreateOrderContext(string productCode, string acceptanceId)
     {
-        return TryGetOnCache(productCode, acceptanceId, out var ctx) ? ctx : new BdOrderContext(this, productCode);
+        return TryGetOnCache(productCode, acceptanceId, out var ctx) ? ctx : new BfOrderContext(this, productCode);
     }
 
-    public BdOrderContext Upsert(BdOrderContext ctx)
+    public BfOrderContextBase Upsert(BfOrderContextBase ctx)
     {
-        _ctxs.GetOrAdd(ctx.ProductCode, _ => new()).TryAdd(ctx.OrderAcceptanceId, ctx);
+        _ctxs.GetOrAdd(ctx.ProductCode, _ => new()).TryAdd(ctx.OrderAcceptanceId, (BfOrderContext)ctx);
         return ctx;
     }
 
-    public virtual bool TryGetOnCache(string productCode, string orderId, out BdOrderContext ctx)
-        => _ctxs.GetOrAdd(productCode, _ => new()).TryGetValue(orderId, out ctx);
+    public virtual bool TryGetOnCache(string productCode, string orderId, out BfOrderContextBase ctx)
+    {
+        var result = _ctxs.GetOrAdd(productCode, _ => new()).TryGetValue(orderId, out var xctx);
+        ctx = xctx;
+        return result;
+    }
 
-    async IAsyncEnumerable<BdOrderContext> GetOrderContextsAsync(string productCode, BfOrderState state, Func<BfParentOrderStatus, bool> parentPredicate, Func<BfChildOrderStatus, bool> childPredicate, [EnumeratorCancellation] CancellationToken ct)
+    async IAsyncEnumerable<BfOrderContextBase> GetOrderContextsAsync(string productCode, BfOrderState state, Func<BfParentOrderStatus, bool> parentPredicate, Func<BfChildOrderStatus, bool> childPredicate, [EnumeratorCancellation] CancellationToken ct)
     {
         var execExpireDate = DateTime.UtcNow - TimeSpan.FromDays(30);
         await foreach (var parentOrder in _client.GetParentOrdersAsync(productCode, state, 0, 0, 0, parentPredicate, ct))
@@ -94,10 +98,10 @@ public class BdPrivateDataSource : IDisposable
         }
     }
 
-    public virtual IAsyncEnumerable<BdOrderContext> GetActiveOrderContextsAsync(string productCode)
+    public virtual IAsyncEnumerable<BfOrderContextBase> GetActiveOrderContextsAsync(string productCode)
         => GetOrderContextsAsync(productCode, BfOrderState.Active, e => true, e => true, CancellationToken.None);
 
-    public virtual IAsyncEnumerable<BdOrderContext> GetRecentOrderContextsAsync(string productCode, TimeSpan span)
+    public virtual IAsyncEnumerable<BfOrderContextBase> GetRecentOrderContextsAsync(string productCode, TimeSpan span)
     {
         var now = DateTime.UtcNow;
         return GetOrderContextsAsync(productCode, BfOrderState.All, e => (now - e.ParentOrderDate) <= span, e => (now - e.ChildOrderDate) <= span, CancellationToken.None);
