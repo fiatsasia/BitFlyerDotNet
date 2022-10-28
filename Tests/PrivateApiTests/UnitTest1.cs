@@ -494,7 +494,7 @@ namespace PrivateApiTests
             try
             {
                 var after = DateTime.UtcNow - TimeSpan.FromDays(60);
-                var orders = _client.GetParentOrdersAsync<BfParentOrderStatus>(_productCode, BfOrderState.All, 0, 0, 0, e => e.ParentOrderDate > after, CancellationToken.None);
+                var orders = _client.GetParentOrdersAsync(_productCode, BfOrderState.All, 0, 0, 0, e => e.ParentOrderDate > after, CancellationToken.None);
                 await foreach (var order in orders)
                 {
                     Dump(order);

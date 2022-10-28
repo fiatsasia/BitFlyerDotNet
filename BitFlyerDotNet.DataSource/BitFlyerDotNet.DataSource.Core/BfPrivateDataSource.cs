@@ -12,18 +12,18 @@ namespace BitFlyerDotNet.DataSource;
 
 public class BfPrivateDataSource : IDisposable, IBfPrivateDataSource
 {
-    BitFlyerClient _client;
+    protected BitFlyerClient Client { get; private set; }
     ConcurrentDictionary<string, ConcurrentDictionary<string, BfOrderContext>> _ctxs = new();
     BfPositionManager _positions;
 
     public BfPrivateDataSource(IBfApplication app)
     {
-        _client = app.Client;
+        Client = app.Client;
     }
 
     public BfPrivateDataSource(BitFlyerClient client)
     {
-        _client = client;
+        Client = client;
     }
 
     public virtual void Dispose()
@@ -58,19 +58,25 @@ public class BfPrivateDataSource : IDisposable, IBfPrivateDataSource
         return result;
     }
 
-    async IAsyncEnumerable<BfOrderContextBase> GetOrderContextsAsync(string productCode, BfOrderState state, Func<BfParentOrderStatus, bool> parentPredicate, Func<BfChildOrderStatus, bool> childPredicate, [EnumeratorCancellation] CancellationToken ct)
+    async IAsyncEnumerable<BfOrderContextBase> GetOrderContextsAsync(
+        string productCode,
+        BfOrderState state,
+        Func<BfParentOrderStatus, bool> parentPredicate,
+        Func<BfChildOrderStatus, bool> childPredicate,
+        [EnumeratorCancellation] CancellationToken ct
+    )
     {
         var execExpireDate = DateTime.UtcNow - TimeSpan.FromDays(30);
-        await foreach (var parentOrder in _client.GetParentOrdersAsync(productCode, state, 0, 0, 0, parentPredicate, ct))
+        await foreach (var parentOrder in Client.GetParentOrdersAsync(productCode, state, 0, 0, 0, parentPredicate, ct))
         {
-            var parentOrderDetail = await _client.GetParentOrderAsync(productCode, parentOrderId: parentOrder.ParentOrderId);
+            var parentOrderDetail = await Client.GetParentOrderAsync(productCode, parentOrderId: parentOrder.ParentOrderId);
             var ctx = GetOrCreateOrderContext(productCode, parentOrder.ParentOrderAcceptanceId).Update(parentOrder, parentOrderDetail);
-            foreach (var childOrder in await _client.GetChildOrdersAsync(productCode, parentOrderId: parentOrder.ParentOrderId))
+            foreach (var childOrder in await Client.GetChildOrdersAsync(productCode, parentOrderId: parentOrder.ParentOrderId))
             {
                 var execs = default(BfPrivateExecution[]);
                 if (childOrder.ExecutedSize > 0m && childOrder.ExpireDate > execExpireDate)
                 {
-                    execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: childOrder.ChildOrderId);
+                    execs = await Client.GetPrivateExecutionsAsync(productCode, childOrderId: childOrder.ChildOrderId);
                 }
                 //
                 // 元のOrderTupeが上書きされて本体が判らなくなる StopLimit -> Limit
@@ -81,7 +87,7 @@ public class BfPrivateDataSource : IDisposable, IBfPrivateDataSource
             yield return ctx;
         }
 
-        await foreach (var order in _client.GetChildOrdersAsync(productCode, state, 0, 0, 0, "", "", "", childPredicate, ct))
+        await foreach (var order in Client.GetChildOrdersAsync(productCode, state, 0, 0, 0, "", "", "", childPredicate, ct))
         {
             if (TryGetOnCache(productCode, order.ChildOrderId, out var ctx))
             {
@@ -92,7 +98,7 @@ public class BfPrivateDataSource : IDisposable, IBfPrivateDataSource
             var execs = default(BfPrivateExecution[]);
             if (order.ExecutedSize > 0m && order.ExpireDate > execExpireDate)
             {
-                execs = await _client.GetPrivateExecutionsAsync(productCode, childOrderId: order.ChildOrderId);
+                execs = await Client.GetPrivateExecutionsAsync(productCode, childOrderId: order.ChildOrderId);
             }
             yield return CreateOrderContext(productCode, order.ChildOrderType).Update(order, execs).ContextUpdated();
         }
@@ -111,7 +117,7 @@ public class BfPrivateDataSource : IDisposable, IBfPrivateDataSource
     {
         if (_positions == default)
         {
-            _positions = new(await _client.GetPositionsAsync(productCode));
+            _positions = new(await Client.GetPositionsAsync(productCode));
         }
     }
 

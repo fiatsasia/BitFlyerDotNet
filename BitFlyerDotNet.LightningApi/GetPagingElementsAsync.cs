@@ -142,6 +142,20 @@ public partial class BitFlyerClient
     ) where T : BfDeposit
        => GetPagingElementsAsync(GetDepositsAsync<T>, count, before, after, predicate, ct);
 
+    public IAsyncEnumerable<BfParentOrderStatus> GetParentOrdersAsync(
+        string productCode,
+        BfOrderState orderState,
+        long count, long before, long after,
+        Func<BfParentOrderStatus, bool> predicate,
+        CancellationToken ct
+    )
+        => GetPagingElementsAsync(
+            (count, before, after, ct) => GetParentOrdersAsync<BfParentOrderStatus>(productCode, orderState, count, before, after, ct),
+            count, before, after,
+            predicate,
+            ct
+        );
+
     public IAsyncEnumerable<T> GetParentOrdersAsync<T>(
         string productCode,
         BfOrderState orderState,
