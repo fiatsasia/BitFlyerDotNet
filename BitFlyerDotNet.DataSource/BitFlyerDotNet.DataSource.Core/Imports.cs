@@ -13,6 +13,7 @@ global using System.Collections.Generic;
 global using System.Collections.Concurrent;
 global using System.Threading;
 global using System.Threading.Tasks;
+global using System.Data;
 global using System.Runtime.Serialization;
 global using System.Reactive.Linq;
 global using System.Reactive.Threading.Tasks;
@@ -20,6 +21,7 @@ global using System.Reactive.Disposables;
 
 global using Newtonsoft.Json;
 global using Newtonsoft.Json.Converters;
+global using Dapper;
 
 
 global using BitFlyerDotNet.LightningApi;

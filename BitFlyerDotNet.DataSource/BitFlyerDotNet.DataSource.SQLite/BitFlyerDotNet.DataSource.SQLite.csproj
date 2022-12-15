@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Data.SQLite" Version="1.0.117" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\BitFlyerDotNet.DataSource.Core\BitFlyerDotNet.DataSource.Core.csproj" />
   </ItemGroup>
 
