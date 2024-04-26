@@ -101,5 +101,5 @@ PM> Install-Package BitFlyerDotNet.Historical
 質問やリクエストがあればお気軽にお知らせください。
 
 Fiats Inc.  
-<https://www.fiats.asia/>  
+<https://www.fiats.jp/>  
 Located in Tokyo, Japan.
